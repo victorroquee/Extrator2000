@@ -5,11 +5,668 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>VSL Cloner</title>
   <style>
-    body { background: #0f0f0f; color: #e5e5e5; font-family: sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }
-    p { font-size: 1.2rem; }
+    /* ── Reset & Base ─────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #0a0a0a;
+      color: #e0e0e0;
+      font-family: system-ui, -apple-system, sans-serif;
+      font-size: 15px;
+      line-height: 1.6;
+      min-height: 100vh;
+      padding: 0 0 60px;
+    }
+
+    /* ── Layout ───────────────────────────────────────────────────── */
+    .container {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 0 16px;
+    }
+
+    /* ── Header ───────────────────────────────────────────────────── */
+    .app-header {
+      background: #111;
+      border-bottom: 1px solid #333;
+      padding: 18px 0;
+      margin-bottom: 32px;
+    }
+    .app-header h1 {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: #ff6b35;
+      letter-spacing: -0.3px;
+    }
+    .app-header p {
+      font-size: 0.82rem;
+      color: #888;
+      margin-top: 2px;
+    }
+
+    /* ── Cards / Panels ───────────────────────────────────────────── */
+    .card {
+      background: #1a1a1a;
+      border: 1px solid #333;
+      border-radius: 8px;
+      padding: 24px;
+      margin-bottom: 20px;
+    }
+    .card-title {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #666;
+      margin-bottom: 16px;
+    }
+    .card-title .badge {
+      display: inline-block;
+      background: #ff6b35;
+      color: #fff;
+      font-size: 0.65rem;
+      padding: 1px 6px;
+      border-radius: 10px;
+      margin-left: 8px;
+      vertical-align: middle;
+    }
+
+    /* ── Form elements ────────────────────────────────────────────── */
+    label {
+      display: block;
+      font-size: 0.8rem;
+      color: #999;
+      margin-bottom: 6px;
+    }
+    input[type="text"],
+    input[type="url"],
+    textarea {
+      width: 100%;
+      background: #2a2a2a;
+      border: 1px solid #333;
+      border-radius: 6px;
+      color: #e0e0e0;
+      font-family: inherit;
+      font-size: 0.9rem;
+      padding: 10px 12px;
+      transition: border-color 0.15s;
+      outline: none;
+    }
+    input[type="text"]:focus,
+    input[type="url"]:focus,
+    textarea:focus {
+      border-color: #ff6b35;
+    }
+    input::placeholder,
+    textarea::placeholder {
+      color: #555;
+    }
+    textarea {
+      resize: vertical;
+      min-height: 80px;
+    }
+    textarea.mono {
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 0.82rem;
+    }
+
+    /* ── Buttons ──────────────────────────────────────────────────── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-family: inherit;
+      font-weight: 600;
+      padding: 11px 22px;
+      font-size: 0.9rem;
+      transition: opacity 0.15s, transform 0.1s;
+    }
+    .btn:active { transform: scale(0.98); }
+    .btn:disabled {
+      opacity: 0.38;
+      cursor: not-allowed;
+      transform: none;
+    }
+    .btn-primary {
+      background: #ff6b35;
+      color: #fff;
+    }
+    .btn-primary:not(:disabled):hover { opacity: 0.88; }
+    .btn-export {
+      background: #2a8a2a;
+      color: #fff;
+      width: 100%;
+      justify-content: center;
+      padding: 14px 22px;
+      font-size: 1rem;
+      margin-top: 4px;
+    }
+    .btn-export:not(:disabled):hover { opacity: 0.88; }
+
+    /* ── URL row ──────────────────────────────────────────────────── */
+    .url-row {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+    }
+    .url-row input {
+      flex: 1;
+    }
+    .url-row .btn {
+      flex-shrink: 0;
+      margin-top: 0;
+    }
+
+    /* ── Spinner ──────────────────────────────────────────────────── */
+    .spinner {
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      display: none;
+    }
+    .btn.loading .spinner { display: block; }
+    .btn.loading .btn-label { display: none; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Summary card ─────────────────────────────────────────────── */
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+    .summary-item {
+      background: #222;
+      border: 1px solid #333;
+      border-radius: 6px;
+      padding: 14px;
+      text-align: center;
+    }
+    .summary-item .value {
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: #ff6b35;
+      display: block;
+    }
+    .summary-item .desc {
+      font-size: 0.75rem;
+      color: #888;
+      margin-top: 2px;
+    }
+    .summary-item.detected .value { color: #4ade80; }
+    .summary-item.not-detected .value { color: #888; }
+
+    /* ── Two-col header scripts ───────────────────────────────────── */
+    .two-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    /* ── Checkout items ───────────────────────────────────────────── */
+    .checkout-item {
+      display: grid;
+      grid-template-columns: 120px 1fr;
+      gap: 10px;
+      align-items: start;
+      margin-bottom: 14px;
+    }
+    .checkout-item:last-child { margin-bottom: 0; }
+    .checkout-meta {
+      padding-top: 10px;
+    }
+    .checkout-meta .platform {
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: #ff6b35;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .checkout-meta .anchor {
+      font-size: 0.72rem;
+      color: #777;
+      margin-top: 2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .checkout-meta .bundle-tag {
+      display: inline-block;
+      font-size: 0.65rem;
+      background: #2a2a2a;
+      border: 1px solid #444;
+      color: #aaa;
+      border-radius: 4px;
+      padding: 1px 5px;
+      margin-top: 4px;
+    }
+
+    /* ── Error banner ─────────────────────────────────────────────── */
+    .error-banner {
+      background: #3a1010;
+      border: 1px solid #7a2020;
+      border-radius: 6px;
+      color: #f87171;
+      font-size: 0.85rem;
+      padding: 12px 16px;
+      margin-top: 12px;
+      display: none;
+    }
+    .error-banner.visible { display: block; }
+
+    /* ── Hidden sections ──────────────────────────────────────────── */
+    .section-hidden { display: none; }
+
+    /* ── Responsive ───────────────────────────────────────────────── */
+    @media (max-width: 600px) {
+      .two-col { grid-template-columns: 1fr; }
+      .summary-grid { grid-template-columns: 1fr; }
+      .checkout-item { grid-template-columns: 1fr; }
+      .url-row { flex-direction: column; }
+      .url-row .btn { width: 100%; justify-content: center; }
+    }
   </style>
 </head>
 <body>
-  <p>VSL Cloner — Interface em desenvolvimento (Fase 2)</p>
+
+  <!-- ── App Header ───────────────────────────────────────────────── -->
+  <header class="app-header">
+    <div class="container">
+      <h1>VSL Cloner</h1>
+      <p>Clone qualquer pagina VSL e gere sua versao de afiliado em menos de 1 minuto</p>
+    </div>
+  </header>
+
+  <div class="container">
+
+    <!-- ── Secao A: URL Input ──────────────────────────────────────── -->
+    <section class="card" id="section-fetch">
+      <p class="card-title">A — Pagina VSL para Clonar</p>
+
+      <label for="url-input">URL da pagina VSL</label>
+      <div class="url-row">
+        <input
+          type="url"
+          id="url-input"
+          placeholder="https://exemplo.com/pagina-vsl"
+          autocomplete="off"
+          spellcheck="false"
+        />
+        <button class="btn btn-primary" id="btn-fetch" type="button">
+          <span class="spinner" aria-hidden="true"></span>
+          <span class="btn-label">Extrair Pagina</span>
+        </button>
+      </div>
+
+      <div class="error-banner" id="fetch-error" role="alert"></div>
+    </section>
+
+    <!-- ── Secao Resumo ────────────────────────────────────────────── -->
+    <section class="card section-hidden" id="section-summary">
+      <p class="card-title">Resultado da Extracao</p>
+      <div class="summary-grid">
+        <div class="summary-item" id="summary-scripts">
+          <span class="value" id="val-scripts">0</span>
+          <span class="desc">Scripts / Trackers Removidos</span>
+        </div>
+        <div class="summary-item" id="summary-vsl">
+          <span class="value" id="val-vsl">-</span>
+          <span class="desc">Player VSL Detectado</span>
+        </div>
+        <div class="summary-item">
+          <span class="value" id="val-links">0</span>
+          <span class="desc">Links de Checkout Encontrados</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Secao B: Header Scripts ────────────────────────────────── -->
+    <section class="card section-hidden" id="section-header">
+      <p class="card-title">B — Scripts de Header do Afiliado</p>
+      <div class="two-col">
+        <div>
+          <label for="header-pixel">Pixel &amp; Scripts de Rastreamento</label>
+          <textarea
+            id="header-pixel"
+            class="mono"
+            placeholder="<!-- Cole aqui seu Meta Pixel, GTM, etc -->"
+            rows="5"
+          ></textarea>
+        </div>
+        <div>
+          <label for="header-preload">Script VTURB / Preload</label>
+          <textarea
+            id="header-preload"
+            class="mono"
+            placeholder="<!-- Cole aqui o script de preload do VTURB -->"
+            rows="5"
+          ></textarea>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Secao C: Player Embed ──────────────────────────────────── -->
+    <section class="card section-hidden" id="section-player">
+      <p class="card-title">C — Embed do Player VTURB</p>
+      <label for="vsl-embed">Codigo de embed do seu player</label>
+      <textarea
+        id="vsl-embed"
+        class="mono"
+        placeholder="<!-- Cole aqui o embed completo do seu player VTURB -->"
+        rows="6"
+        style="min-height: 110px;"
+      ></textarea>
+    </section>
+
+    <!-- ── Secao D: Checkout Links ────────────────────────────────── -->
+    <section class="card section-hidden" id="section-checkout">
+      <p class="card-title">
+        D — Links de Checkout do Afiliado
+        <span class="badge" id="checkout-count-badge">0</span>
+      </p>
+      <div id="checkout-inputs-container">
+        <!-- Preenchido dinamicamente por JS -->
+      </div>
+    </section>
+
+    <!-- ── Botao Export ────────────────────────────────────────────── -->
+    <section class="card">
+      <button class="btn btn-export" id="btn-export" type="button" disabled>
+        Gerar Pagina Afiliado
+      </button>
+    </section>
+
+  </div><!-- /.container -->
+
+  <script>
+    'use strict';
+
+    // ── Estado da aplicacao ──────────────────────────────────────────
+    const state = {
+      fetchedHtml: null,          // HTML limpo retornado pelo /api/fetch (apenas em memoria)
+      checkoutLinks: [],          // Array completo com { selector, anchorText, href, platform, bundle }
+    };
+
+    // ── Referencias ao DOM ───────────────────────────────────────────
+    const urlInput         = document.getElementById('url-input');
+    const btnFetch         = document.getElementById('btn-fetch');
+    const fetchError       = document.getElementById('fetch-error');
+
+    const sectionSummary   = document.getElementById('section-summary');
+    const sectionHeader    = document.getElementById('section-header');
+    const sectionPlayer    = document.getElementById('section-player');
+    const sectionCheckout  = document.getElementById('section-checkout');
+
+    const valScripts       = document.getElementById('val-scripts');
+    const valVsl           = document.getElementById('val-vsl');
+    const valLinks         = document.getElementById('val-links');
+    const summaryVslItem   = document.getElementById('summary-vsl');
+
+    const headerPixel      = document.getElementById('header-pixel');
+    const headerPreload    = document.getElementById('header-preload');
+    const vslEmbed         = document.getElementById('vsl-embed');
+
+    const checkoutContainer    = document.getElementById('checkout-inputs-container');
+    const checkoutCountBadge   = document.getElementById('checkout-count-badge');
+
+    const btnExport        = document.getElementById('btn-export');
+
+    // ── Helpers ──────────────────────────────────────────────────────
+
+    function showSection(el) {
+      el.classList.remove('section-hidden');
+    }
+
+    function showError(msg) {
+      fetchError.textContent = msg;
+      fetchError.classList.add('visible');
+    }
+
+    function clearError() {
+      fetchError.textContent = '';
+      fetchError.classList.remove('visible');
+    }
+
+    function setFetchLoading(loading) {
+      btnFetch.disabled = loading;
+      if (loading) {
+        btnFetch.classList.add('loading');
+      } else {
+        btnFetch.classList.remove('loading');
+      }
+    }
+
+    function bundleLabel(bundle) {
+      if (bundle === 2) return '2 Potes';
+      if (bundle === 3) return '3 Potes';
+      if (bundle === 6) return '6 Potes';
+      return null;
+    }
+
+    // ── Renderiza inputs de checkout ─────────────────────────────────
+
+    function renderCheckoutInputs(links) {
+      checkoutContainer.innerHTML = '';
+
+      if (links.length === 0) {
+        // UI-06: Sem links detectados -> 3 inputs vazios (2, 3, 6 potes)
+        [
+          { label: 'Bundle 2 Potes', placeholder: 'https://seu-link-afiliado.com/?bundle=2' },
+          { label: 'Bundle 3 Potes', placeholder: 'https://seu-link-afiliado.com/?bundle=3' },
+          { label: 'Bundle 6 Potes', placeholder: 'https://seu-link-afiliado.com/?bundle=6' },
+        ].forEach(function(item, i) {
+          var div = document.createElement('div');
+          div.className = 'checkout-item';
+          div.innerHTML =
+            '<div class="checkout-meta">' +
+              '<div class="platform">Sem Deteccao</div>' +
+              '<div class="anchor">' + item.label + '</div>' +
+            '</div>' +
+            '<div>' +
+              '<label for="checkout-empty-' + i + '">Link do Afiliado</label>' +
+              '<input type="url" id="checkout-empty-' + i + '" ' +
+                'data-empty-index="' + i + '" ' +
+                'placeholder="' + item.placeholder + '" />' +
+            '</div>';
+          checkoutContainer.appendChild(div);
+        });
+        return;
+      }
+
+      // UI-05: Inputs pre-preenchidos com URL original
+      links.forEach(function(link, i) {
+        var div = document.createElement('div');
+        div.className = 'checkout-item';
+        var bundleTagHtml = link.bundle
+          ? '<span class="bundle-tag">' + bundleLabel(link.bundle) + '</span>'
+          : '';
+        div.innerHTML =
+          '<div class="checkout-meta">' +
+            '<div class="platform">' + escapeHtml(link.platform || 'Generico') + '</div>' +
+            '<div class="anchor">' + escapeHtml(link.anchorText || '') + '</div>' +
+            bundleTagHtml +
+          '</div>' +
+          '<div>' +
+            '<label for="checkout-link-' + i + '">Link do Afiliado</label>' +
+            '<input type="url" id="checkout-link-' + i + '" ' +
+              'data-link-index="' + i + '" ' +
+              'value="' + escapeAttr(link.href || '') + '" ' +
+              'placeholder="https://seu-link-afiliado.com/" />' +
+          '</div>';
+        checkoutContainer.appendChild(div);
+      });
+    }
+
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    function escapeAttr(str) {
+      return String(str).replace(/"/g, '&quot;');
+    }
+
+    // ── Constroi payload de checkout para export ─────────────────────
+
+    function buildCheckoutPayload() {
+      if (state.checkoutLinks.length === 0) {
+        // Inputs de bundle vazios — so envia se preenchidos
+        var result = [];
+        var emptyInputs = checkoutContainer.querySelectorAll('input[data-empty-index]');
+        emptyInputs.forEach(function(input) {
+          var val = input.value.trim();
+          if (val) {
+            // Sem selector definido — apenas envia o link (servidor vai ignorar sem selector)
+            result.push({ selector: null, affiliateHref: val });
+          }
+        });
+        return result;
+      }
+
+      // Links detectados: usa selector do estado original
+      return state.checkoutLinks.map(function(link, i) {
+        var input = checkoutContainer.querySelector('input[data-link-index="' + i + '"]');
+        var affiliateHref = input ? input.value.trim() : (link.href || '');
+        return {
+          selector: link.selector,
+          affiliateHref: affiliateHref,
+        };
+      });
+    }
+
+    // ── Acao: Fetch ──────────────────────────────────────────────────
+
+    btnFetch.addEventListener('click', async function() {
+      var url = urlInput.value.trim();
+      if (!url) {
+        showError('Digite a URL da pagina VSL antes de extrair.');
+        return;
+      }
+
+      clearError();
+      setFetchLoading(true);
+
+      try {
+        var response = await fetch('/api/fetch', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url: url }),
+        });
+
+        var data = await response.json();
+
+        if (!response.ok) {
+          showError(data.error || 'Erro ao buscar a pagina. Verifique a URL e tente novamente.');
+          return;
+        }
+
+        // Armazena HTML apenas em memoria (nao injeta no DOM)
+        state.fetchedHtml = data.html;
+        state.checkoutLinks = (data.summary && data.summary.checkoutLinks) || [];
+
+        // Atualiza resumo
+        var scriptsRemoved = (data.summary && data.summary.scriptsRemoved) || 0;
+        var vslDetected    = (data.summary && data.summary.vslDetected)    || false;
+        var linksFound     = state.checkoutLinks.length;
+
+        valScripts.textContent = scriptsRemoved;
+        valLinks.textContent   = linksFound;
+
+        if (vslDetected) {
+          valVsl.textContent = 'Sim';
+          summaryVslItem.className = 'summary-item detected';
+        } else {
+          valVsl.textContent = 'Nao';
+          summaryVslItem.className = 'summary-item not-detected';
+        }
+
+        checkoutCountBadge.textContent = linksFound;
+
+        // Renderiza checkout inputs
+        renderCheckoutInputs(state.checkoutLinks);
+
+        // Exibe secoes ocultas
+        showSection(sectionSummary);
+        showSection(sectionHeader);
+        showSection(sectionPlayer);
+        showSection(sectionCheckout);
+
+        // Habilita botao de export
+        btnExport.disabled = false;
+
+      } catch (err) {
+        showError('Falha de conexao com o servidor. Verifique se o servidor esta rodando.');
+      } finally {
+        setFetchLoading(false);
+      }
+    });
+
+    // Permite acionar fetch com Enter no campo URL
+    urlInput.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') btnFetch.click();
+    });
+
+    // ── Acao: Export ─────────────────────────────────────────────────
+
+    btnExport.addEventListener('click', async function() {
+      if (!state.fetchedHtml) {
+        showError('Nenhuma pagina foi extraida. Extraia primeiro.');
+        return;
+      }
+
+      clearError();
+      btnExport.disabled = true;
+      btnExport.textContent = 'Gerando pagina...';
+
+      try {
+        var payload = {
+          html:           state.fetchedHtml,
+          headerPixel:    headerPixel.value,
+          headerPreload:  headerPreload.value,
+          vslembed:       vslEmbed.value,
+          checkoutLinks:  buildCheckoutPayload(),
+        };
+
+        var response = await fetch('/api/export', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) {
+          var errData = await response.json().catch(function() { return {}; });
+          showError(errData.error || 'Erro ao gerar pagina. Tente novamente.');
+          return;
+        }
+
+        // Dispara download via Blob URL
+        var blob = await response.blob();
+        var blobUrl = URL.createObjectURL(blob);
+        var anchor = document.createElement('a');
+        anchor.href = blobUrl;
+        anchor.download = 'pagina-afiliado.html';
+        document.body.appendChild(anchor);
+        anchor.click();
+        document.body.removeChild(anchor);
+        URL.revokeObjectURL(blobUrl);
+
+      } catch (err) {
+        showError('Falha de conexao ao exportar. Verifique se o servidor esta rodando.');
+      } finally {
+        btnExport.disabled = false;
+        btnExport.textContent = 'Gerar Pagina Afiliado';
+      }
+    });
+
+  </script>
 </body>
 </html>

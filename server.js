@@ -232,11 +232,34 @@ app.post('/api/fetch', async (req, res) => {
     return res.status(400).json({ error: 'Campo "url" é obrigatório.' });
   }
 
+  // T-01-03 mitigation: reject non-http(s) schemes and private IP ranges
+  try {
+    const parsed = new URL(url);
+    if (!['http:', 'https:'].includes(parsed.protocol)) {
+      return res.status(400).json({ error: 'Only http and https URLs are allowed' });
+    }
+    // Block private / loopback addresses
+    const hostname = parsed.hostname.toLowerCase();
+    if (
+      hostname === 'localhost' ||
+      hostname === '127.0.0.1' ||
+      hostname.startsWith('192.168.') ||
+      hostname.startsWith('10.') ||
+      hostname.startsWith('172.') ||
+      hostname.endsWith('.local')
+    ) {
+      return res.status(400).json({ error: 'Private/loopback URLs are not allowed' });
+    }
+  } catch {
+    return res.status(400).json({ error: 'Invalid URL' });
+  }
+
   let rawHtml;
   try {
     const response = await axios.get(url, {
       maxRedirects: 10,
       timeout: 30000,
+      maxContentLength: 10 * 1024 * 1024, // T-01-04: limit response size to 10 MB
       headers: {
         'User-Agent':
           'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
@@ -288,53 +311,53 @@ app.post('/api/export', (req, res) => {
     $('head').append(headerPreload);
   }
 
-  // EXPORT-03: Replace placeholder with vslembed
+  // EXPORT-03: Replace <!-- [VSL_PLACEHOLDER] --> block with vslembed.
+  // Operate on the serialised HTML string because cheerio cannot select comments.
+  let outputHtml = $.html();
+
   if (vslembed && vslembed.trim()) {
-    const placeholder = $('#vsl-placeholder');
-    if (placeholder.length) {
-      placeholder.prev('!-- [VSL_PLACEHOLDER] -->');
-      placeholder.replaceWith(vslembed);
-    } else {
-      // Try replacing the comment + div combination
-      const bodyHtml = $('body').html() || '';
-      const replaced = bodyHtml.replace(
-        /<!-- \[VSL_PLACEHOLDER\] -->\s*<div[^>]*id="vsl-placeholder"[^>]*>[\s\S]*?<\/div>/,
-        vslembed
-      );
-      $('body').html(replaced);
-    }
+    // Matches comment + the placeholder div (both id="vsl-placeholder" and id="vsl-cloner-placeholder")
+    outputHtml = outputHtml.replace(
+      /<!--\s*\[VSL_PLACEHOLDER\]\s*-->[\s\S]*?<div id="vsl(?:-cloner)?-placeholder"[\s\S]*?<\/div>/,
+      vslembed
+    );
   }
 
-  // EXPORT-04: Replace checkout link hrefs
-  if (Array.isArray(checkoutLinks)) {
+  // EXPORT-04: Replace checkout link hrefs.
+  // Re-parse outputHtml (post-embed replacement) for selector-based substitution.
+  if (Array.isArray(checkoutLinks) && checkoutLinks.length > 0) {
+    const $2 = cheerio.load(outputHtml, { decodeEntities: false });
     for (const link of checkoutLinks) {
-      if (!link.selector || !link.affiliateUrl) continue;
+      // Support both affiliateHref (plan schema) and affiliateUrl (legacy)
+      const affiliateHref = link.affiliateHref || link.affiliateUrl;
+      if (!link.selector || !affiliateHref) continue;
       try {
-        $(link.selector).each((_, el) => {
-          if ($(el).attr('href') !== undefined) {
-            $(el).attr('href', link.affiliateUrl);
+        $2(link.selector).each((_, el) => {
+          if ($2(el).attr('href') !== undefined) {
+            $2(el).attr('href', affiliateHref);
           }
-          if ($(el).attr('onclick') !== undefined) {
+          if ($2(el).attr('onclick') !== undefined) {
             // Replace URL inside onclick string
-            const onclick = $(el).attr('onclick') || '';
+            const onclick = $2(el).attr('onclick') || '';
             const updatedOnclick = onclick.replace(
               /https?:\/\/[^\s'"]+/g,
-              link.affiliateUrl
+              affiliateHref
             );
-            $(el).attr('onclick', updatedOnclick);
+            $2(el).attr('onclick', updatedOnclick);
           }
         });
       } catch (_) {
-        // Invalid selector — skip
+        // T-02-03 mitigation: Invalid selector — skip silently
+        console.warn(`[export] invalid selector skipped: ${link.selector}`);
       }
     }
+    outputHtml = $2.html();
   }
 
   // EXPORT-05: Return as downloadable HTML file
-  const finalHtml = $.html();
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
   res.setHeader('Content-Disposition', 'attachment; filename="pagina-afiliado.html"');
-  return res.send(finalHtml);
+  return res.send(outputHtml);
 });
 
 // ── Health check ─────────────────────────────────────────────────────────────
@@ -344,7 +367,7 @@ app.get('/api/health', (_, res) => res.json({ ok: true }));
 // ── Start ────────────────────────────────────────────────────────────────────
 
 app.listen(PORT, () => {
-  console.log(`VSL Cloner rodando em http://localhost:${PORT}`);
+  console.log(`VSL Cloner running at http://localhost:${PORT}`);
 });
 
 module.exports = app;

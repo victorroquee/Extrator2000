@@ -39,8 +39,9 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. Header textareas (Pixel & Scripts, Script VTURB/Preload), player embed textarea, and checkout link inputs are all visible and editable
   4. When 0 checkout links are detected, three labeled empty inputs appear (Bundle 2, 3, and 6 Potes)
   5. "Gerar Página Afiliado" button is present and triggers file download
-**Plans**: TBD
-**UI hint**: yes
+**Plans**: 1 plan
+Plans:
+- [ ] 02-01-PLAN.md — Complete public/index.html: dark theme, all sections, JS state management, API integration
 
 ### Phase 3: Integration & Polish
 **Goal**: Users can clone any supported VSL page end-to-end — from URL input to downloaded affiliate HTML — in under 1 minute
@@ -61,5 +62,5 @@ Phases execute in numeric order: 1 → 2 → 3
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Backend API | 0/? | Not started | - |
-| 2. Frontend UI | 0/? | Not started | - |
+| 2. Frontend UI | 0/1 | Planned | - |
 | 3. Integration & Polish | 0/? | Not started | - |

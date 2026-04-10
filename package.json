@@ -1,0 +1,18 @@
+{
+  "name": "vsl-cloner",
+  "version": "1.0.0",
+  "description": "Clonador de páginas VSL para afiliados de marketing digital",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "keywords": ["vsl", "marketing", "afiliado"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "axios": "^1.6.0",
+    "cheerio": "^1.0.0",
+    "express": "^4.18.2"
+  }
+}

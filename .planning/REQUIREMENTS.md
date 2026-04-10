@@ -74,17 +74,41 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| FETCH-01..04 | Phase 1 | Pending |
-| CLEAN-01..08 | Phase 1 | Pending |
-| CHECK-01..04 | Phase 1 | Pending |
-| EXPORT-01..05 | Phase 1 | Pending |
-| UI-01..08 | Phase 2 | Pending |
+| FETCH-01 | Phase 1 | Pending |
+| FETCH-02 | Phase 1 | Pending |
+| FETCH-03 | Phase 1 | Pending |
+| FETCH-04 | Phase 1 | Pending |
+| CLEAN-01 | Phase 1 | Pending |
+| CLEAN-02 | Phase 1 | Pending |
+| CLEAN-03 | Phase 1 | Pending |
+| CLEAN-04 | Phase 1 | Pending |
+| CLEAN-05 | Phase 1 | Pending |
+| CLEAN-06 | Phase 1 | Pending |
+| CLEAN-07 | Phase 1 | Pending |
+| CLEAN-08 | Phase 1 | Pending |
+| CHECK-01 | Phase 1 | Pending |
+| CHECK-02 | Phase 1 | Pending |
+| CHECK-03 | Phase 1 | Pending |
+| CHECK-04 | Phase 1 | Pending |
+| EXPORT-01 | Phase 1 | Pending |
+| EXPORT-02 | Phase 1 | Pending |
+| EXPORT-03 | Phase 1 | Pending |
+| EXPORT-04 | Phase 1 | Pending |
+| EXPORT-05 | Phase 1 | Pending |
+| UI-01 | Phase 2 | Pending |
+| UI-02 | Phase 2 | Pending |
+| UI-03 | Phase 2 | Pending |
+| UI-04 | Phase 2 | Pending |
+| UI-05 | Phase 2 | Pending |
+| UI-06 | Phase 2 | Pending |
+| UI-07 | Phase 2 | Pending |
+| UI-08 | Phase 2 | Pending |
 
 **Coverage:**
-- v1 requirements: 26 total
-- Mapped to phases: 26
+- v1 requirements: 29 total (21 backend + 8 UI)
+- Mapped to phases: 29
 - Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-04-10*
-*Last updated: 2026-04-10 after initial definition*
+*Last updated: 2026-04-10 after roadmap creation*

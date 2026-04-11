@@ -424,7 +424,11 @@ function applyCheckoutLinks(outputHtml, checkoutLinks) {
         $2(link.selector).each((_, el) => {
           if ($2(el).attr('href') !== undefined) $2(el).attr('href', affiliateHref);
           if ($2(el).attr('onclick') !== undefined) {
-            $2(el).attr('onclick', ($2(el).attr('onclick') || '').replace(/https?:\/\/[^\s'"]+/g, affiliateHref));
+            const oldOnclick = $2(el).attr('onclick') || '';
+            const checkoutUrlMatch = oldOnclick.match(/https?:\/\/[^\s'"]+/);
+            if (checkoutUrlMatch) {
+              $2(el).attr('onclick', oldOnclick.replace(checkoutUrlMatch[0], affiliateHref));
+            }
           }
         });
       } catch (_) {
@@ -446,7 +450,12 @@ function applyCheckoutLinks(outputHtml, checkoutLinks) {
       // Use the first non-empty affiliate link from the list
       const affiliateHref = noSelector[0].affiliateHref || noSelector[0].affiliateUrl;
       if (href) $3(el).attr('href', affiliateHref);
-      if (onclick) $3(el).attr('onclick', onclick.replace(/https?:\/\/[^\s'"]+/g, affiliateHref));
+      if (onclick) {
+        const checkoutUrlMatch = onclick.match(/https?:\/\/[^\s'"]+/);
+        if (checkoutUrlMatch) {
+          $3(el).attr('onclick', onclick.replace(checkoutUrlMatch[0], affiliateHref));
+        }
+      }
     });
     outputHtml = $3.html();
   }

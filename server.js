@@ -514,10 +514,11 @@ function buildExportHtml({ html, headerPixel, headerPreload, vslembed, checkoutL
       /(?:var|let|const)\s+delaySeconds\s*=\s*\d+(?:\.\d+)?/,
       `var delaySeconds = ${safeDelay}`
     );
-    const delayTag = `<script>\n${rebuilt}\n<\/script>`;
-    if (outputHtml.includes('</body>')) {
+    const delayTag = `<script>\n${rebuilt}\n</script>`;
+    if (/<\/body>/i.test(outputHtml)) {
       // PITFALLS.md Pitfall 5: fallback for missing </body>
-      outputHtml = outputHtml.replace('</body>', `${delayTag}\n</body>`);
+      // Case-insensitive replace handles </BODY>, </Body>, etc.
+      outputHtml = outputHtml.replace(/<\/body>/i, `${delayTag}\n</body>`);
     } else {
       outputHtml += delayTag; // malformed HTML fallback
     }

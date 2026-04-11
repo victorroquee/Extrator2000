@@ -448,8 +448,24 @@ function applyCheckoutLinks(outputHtml, checkoutLinks) {
 
 // ── Shared: build modified HTML from export payload ──────────────────────────
 
-function buildExportHtml({ html, headerPixel, headerPreload, vslembed, checkoutLinks }) {
+/**
+ * Builds the affiliate HTML from the canonical clean HTML + affiliate fields.
+ * EXPORT-06: Idempotency guard — if data-vsl-injected is already present on
+ * <head>, returns html unchanged. This protects against future refactors that
+ * might accidentally send already-exported HTML as the payload.
+ * The frontend MUST always send state.fetchedHtml (canonical clean HTML, set
+ * once at fetch time, never overwritten). — PITFALLS.md Pitfall 1
+ */
+function buildExportHtml({ html, headerPixel, headerPreload, vslembed, checkoutLinks,
+                           delaySeconds, delayScriptContent }) {
   const $ = cheerio.load(html, { decodeEntities: false });
+
+  // EXPORT-06: Defensive idempotency guard — skip all injections if already done
+  if ($('head').attr('data-vsl-injected')) {
+    return html; // already exported — return unchanged
+  }
+  // Mark as injected (will be present in the downloaded HTML; harmless annotation)
+  $('head').attr('data-vsl-injected', '1');
 
   if (headerPixel && headerPixel.trim()) $('head').append(headerPixel);
   if (headerPreload && headerPreload.trim()) $('head').append(headerPreload);
@@ -463,19 +479,42 @@ function buildExportHtml({ html, headerPixel, headerPreload, vslembed, checkoutL
     );
   }
 
-  return applyCheckoutLinks(outputHtml, checkoutLinks);
+  outputHtml = applyCheckoutLinks(outputHtml, checkoutLinks);
+
+  // DELAY-03: Inject rebuilt delay block near </body> using String ops (not cheerio)
+  // String ops required — cheerio serialize would mangle </script> inside string literals
+  // (PITFALLS.md Pitfall 7)
+  if (delayScriptContent && delaySeconds !== undefined && delaySeconds !== null) {
+    // PITFALLS.md Pitfall 10: clamp to non-negative integer, minimum 1
+    const safeDelay = Math.max(1, Math.round(Number(delaySeconds) || 1));
+    const rebuilt = delayScriptContent.replace(
+      /(?:var|let|const)\s+delaySeconds\s*=\s*\d+(?:\.\d+)?/,
+      `var delaySeconds = ${safeDelay}`
+    );
+    const delayTag = `<script>\n${rebuilt}\n<\/script>`;
+    if (outputHtml.includes('</body>')) {
+      // PITFALLS.md Pitfall 5: fallback for missing </body>
+      outputHtml = outputHtml.replace('</body>', `${delayTag}\n</body>`);
+    } else {
+      outputHtml += delayTag; // malformed HTML fallback
+    }
+  }
+
+  return outputHtml;
 }
 
 // ── Route: POST /api/export ──────────────────────────────────────────────────
 
 app.post('/api/export', (req, res) => {
-  const { html, headerPixel, headerPreload, vslembed, checkoutLinks } = req.body;
+  const { html, headerPixel, headerPreload, vslembed, checkoutLinks,
+          delaySeconds, delayScriptContent } = req.body;
 
   if (!html || typeof html !== 'string') {
     return res.status(400).json({ error: 'Campo "html" é obrigatório.' });
   }
 
-  const outputHtml = buildExportHtml({ html, headerPixel, headerPreload, vslembed, checkoutLinks });
+  const outputHtml = buildExportHtml({ html, headerPixel, headerPreload, vslembed,
+                                       checkoutLinks, delaySeconds, delayScriptContent });
 
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
   res.setHeader('Content-Disposition', 'attachment; filename="pagina-afiliado.html"');
@@ -485,13 +524,15 @@ app.post('/api/export', (req, res) => {
 // ── Route: POST /api/export-zip ──────────────────────────────────────────────
 
 app.post('/api/export-zip', async (req, res) => {
-  const { html, headerPixel, headerPreload, vslembed, checkoutLinks, pageUrl } = req.body;
+  const { html, headerPixel, headerPreload, vslembed, checkoutLinks, pageUrl,
+          delaySeconds, delayScriptContent } = req.body;
 
   if (!html || typeof html !== 'string') {
     return res.status(400).json({ error: 'Campo "html" é obrigatório.' });
   }
 
-  let outputHtml = buildExportHtml({ html, headerPixel, headerPreload, vslembed, checkoutLinks });
+  let outputHtml = buildExportHtml({ html, headerPixel, headerPreload, vslembed,
+                                     checkoutLinks, delaySeconds, delayScriptContent });
 
   // Collect and download assets if we have the original page URL
   const usedPaths = new Set();
@@ -577,3 +618,4 @@ module.exports = app;
 module.exports.cleanHtml = cleanHtml;
 module.exports.detectCheckoutLinks = detectCheckoutLinks;
 module.exports.detectVturbDelay = detectVturbDelay;
+module.exports.buildExportHtml = buildExportHtml;

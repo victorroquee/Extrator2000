@@ -2,7 +2,7 @@
 
 const fs = require('fs');
 const cheerio = require('cheerio');
-const { cleanHtml, detectCheckoutLinks } = require('./server');
+const { cleanHtml, detectCheckoutLinks, detectVturbDelay, buildExportHtml: _buildExportHtml } = require('./server');
 
 // ── Simple assertion helper ──────────────────────────────────────────────────
 
@@ -110,9 +110,68 @@ assert(links.every(l => l.selector),
   'every link.selector is truthy',
   links.map(l => l.selector || '(missing)').join(', '));
 
+// ── DELAY-01 / DELAY-03 / EXPORT-06 assertions ──────────────────────────────
+
+// DELAY-01: detect delay from fixture (fixture must have delay block; add if absent)
+// Use an inline mini-fixture for deterministic testing
+const delayFixtureHtml = `<html><head></head><body>
+<script>var delaySeconds = 10;
+function displayHiddenElements() { document.querySelectorAll('.hidden').forEach(function(el){ el.style.display=''; }); }
+setTimeout(displayHiddenElements, delaySeconds * 1000);
+</script></body></html>`;
+
+const delayResult = detectVturbDelay(delayFixtureHtml);
+assert(delayResult !== null, 'DELAY-01: detectVturbDelay finds block when present', 'not null', delayResult);
+assert(delayResult && delayResult.delaySeconds === 10, 'DELAY-01: delaySeconds extracted correctly', 10, delayResult && delayResult.delaySeconds);
+assert(delayResult && delayResult.delayScriptContent.includes('displayHiddenElements'),
+  'DELAY-01: full script body preserved in delayScriptContent', 'contains displayHiddenElements',
+  delayResult && delayResult.delayScriptContent ? 'found' : 'NOT FOUND');
+
+const noDelayResult = detectVturbDelay('<html><head></head><body></body></html>');
+assert(noDelayResult === null, 'DELAY-01: returns null when no delay block present', null, noDelayResult);
+
+// DELAY-03: export replaces only the numeric value, preserves function body
+// Use pre-cleaned HTML (no delay script) as input — mirrors real flow where
+// cleanHtml() removes the delay block (which contains vturb/smartplayer keywords)
+// before the HTML is stored in state.fetchedHtml and later passed to buildExportHtml
+const cleanBaseHtml = '<html><head></head><body><p>page content</p></body></html>';
+const exportedDelay = _buildExportHtml({
+  html: cleanBaseHtml,
+  headerPixel: '',
+  headerPreload: '',
+  vslembed: '',
+  checkoutLinks: [],
+  delaySeconds: 5,
+  delayScriptContent: delayResult && delayResult.delayScriptContent,
+});
+assertContains(exportedDelay, 'var delaySeconds = 5', 'DELAY-03: new delaySeconds value injected');
+assertNotContains(exportedDelay, 'var delaySeconds = 10', 'DELAY-03: old delaySeconds value removed');
+assertContains(exportedDelay, 'displayHiddenElements', 'DELAY-03: original function body preserved');
+
+// EXPORT-06: calling buildExportHtml twice with same input does not duplicate pixel
+const pixelHtml = '<html><head></head><body></body></html>';
+const firstExport = _buildExportHtml({
+  html: pixelHtml,
+  headerPixel: '<script>console.log("pixel")</script>',
+  headerPreload: '',
+  vslembed: '',
+  checkoutLinks: [],
+});
+const secondExport = _buildExportHtml({
+  html: firstExport,
+  headerPixel: '<script>console.log("pixel")</script>',
+  headerPreload: '',
+  vslembed: '',
+  checkoutLinks: [],
+});
+const pixelCount1 = (firstExport.match(/console\.log\("pixel"\)/g) || []).length;
+const pixelCount2 = (secondExport.match(/console\.log\("pixel"\)/g) || []).length;
+assert(pixelCount1 === 1, 'EXPORT-06: first export has exactly 1 pixel injection', 1, pixelCount1);
+assert(pixelCount2 === 1, 'EXPORT-06: second export does not duplicate pixel (idempotency sentinel)', 1, pixelCount2);
+
 // ── Results ──────────────────────────────────────────────────────────────────
 
-const total = 15; // total assertions defined above
+const total = 24; // 15 original + 9 new Phase 4 assertions
 const passed = total - failures.length;
 
 if (failures.length > 0) {

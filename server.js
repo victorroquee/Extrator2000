@@ -115,9 +115,11 @@ function cleanHtml(html) {
   let playerPosition = null; // store info about placeholder injection
 
   // CLEAN-01 & CLEAN-02: Remove tracking/player <script> tags
+  // Collect first, then remove — avoids cheerio iteration issues during DOM mutation
+  const scriptsToRemove = [];
   $('script').each((_, el) => {
     const src = $(el).attr('src') || '';
-    const content = $(el).html() || '';
+    const content = $(el).html() || $(el).text() || '';
     const dataVturb = $(el).attr('data-vturb');
     const dataPlayerId = $(el).attr('data-player-id');
 
@@ -129,24 +131,33 @@ function cleanHtml(html) {
       );
 
     if (shouldRemove) {
-      $(el).remove();
-      scriptsRemoved++;
-      if (src.includes('vturb') || content.includes('vturb') || dataVturb !== undefined) {
-        vslDetected = true;
-      }
+      scriptsToRemove.push({ el, src, content });
     }
   });
+  for (const { el, src, content } of scriptsToRemove) {
+    $(el).remove();
+    scriptsRemoved++;
+    if (src.includes('vturb') || content.includes('vturb') || $(el).attr('data-vturb') !== undefined) {
+      vslDetected = true;
+    }
+  }
 
   // CLEAN-03: Remove <noscript> containing tracking pixels
+  // Collect first, then remove — same pattern for safe DOM mutation
+  const noscriptsToRemove = [];
   $('noscript').each((_, el) => {
-    const content = $(el).html() || '';
+    const outerHtml = $.html(el) || '';
     if (
-      /facebook|google|pixel/i.test(content) ||
-      /<img[^>]+src="https?:\/\/(?!.*(?:your-site|localhost))/i.test(content)
+      /facebook|google|pixel/i.test(outerHtml) ||
+      /facebook\.com\/tr|connect\.facebook/i.test(outerHtml) ||
+      /<img[^>]+src="https?:\/\//i.test(outerHtml)
     ) {
-      $(el).remove();
+      noscriptsToRemove.push(el);
     }
   });
+  for (const el of noscriptsToRemove) {
+    $(el).remove();
+  }
 
   // CLEAN-04: Remove <link rel="preload/prefetch"> for video or vturb domains
   $('link[rel="preload"], link[rel="prefetch"]').each((_, el) => {
@@ -366,8 +377,15 @@ app.get('/api/health', (_, res) => res.json({ ok: true }));
 
 // ── Start ────────────────────────────────────────────────────────────────────
 
-app.listen(PORT, () => {
-  console.log(`VSL Cloner running at http://localhost:${PORT}`);
-});
+// Only listen when run directly — not when required by tests
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`VSL Cloner running at http://localhost:${PORT}`);
+  });
+}
 
 module.exports = app;
+
+// Named exports for integration testing
+module.exports.cleanHtml = cleanHtml;
+module.exports.detectCheckoutLinks = detectCheckoutLinks;

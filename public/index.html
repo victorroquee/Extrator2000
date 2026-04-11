@@ -616,7 +616,7 @@
         state.checkoutLinks = (data.summary && data.summary.checkoutLinks) || [];
 
         // Phase 4: store delay state from server — DELAY-02
-        state.delaySeconds      = (data.summary && data.summary.delaySeconds)      || null;
+        state.delaySeconds      = (data.summary && data.summary.delaySeconds != null) ? data.summary.delaySeconds : null;
         state.hasDelay          = !!(data.summary && data.summary.hasDelay);
         state.delayScriptContent = (data.summary && data.summary.delayScriptContent) || null;
 

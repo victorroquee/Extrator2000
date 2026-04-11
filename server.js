@@ -509,7 +509,8 @@ function buildExportHtml({ html, headerPixel, headerPreload, vslembed, checkoutL
   // (PITFALLS.md Pitfall 7)
   if (delayScriptContent && delaySeconds !== undefined && delaySeconds !== null) {
     // PITFALLS.md Pitfall 10: clamp to non-negative integer, minimum 1
-    const safeDelay = Math.max(1, Math.round(Number(delaySeconds) || 1));
+    // Use explicit check (not || 1) so a zero-second delay value is not silently clamped to 1
+    const safeDelay = Math.max(1, Math.round((delaySeconds !== null && delaySeconds !== undefined) ? Number(delaySeconds) : 1));
     const rebuilt = delayScriptContent.replace(
       /(?:var|let|const)\s+delaySeconds\s*=\s*\d+(?:\.\d+)?/,
       `var delaySeconds = ${safeDelay}`

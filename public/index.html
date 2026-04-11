@@ -615,6 +615,11 @@
         state.fetchedUrl = url;
         state.checkoutLinks = (data.summary && data.summary.checkoutLinks) || [];
 
+        // Phase 4: store delay state from server — DELAY-02
+        state.delaySeconds      = (data.summary && data.summary.delaySeconds)      || null;
+        state.hasDelay          = !!(data.summary && data.summary.hasDelay);
+        state.delayScriptContent = (data.summary && data.summary.delayScriptContent) || null;
+
         // Atualiza resumo
         var scriptsRemoved = (data.summary && data.summary.scriptsRemoved) || 0;
         var vslDetected    = (data.summary && data.summary.vslDetected)    || false;
@@ -641,6 +646,12 @@
         showSection(sectionHeader);
         showSection(sectionPlayer);
         showSection(sectionCheckout);
+
+        // Reveal delay section only when block was detected — DELAY-02
+        if (state.hasDelay && sectionDelay && delayInput) {
+          delayInput.value = state.delaySeconds;
+          showSection(sectionDelay);
+        }
 
         // Habilita botao de export
         btnExport.disabled = false;
@@ -678,6 +689,19 @@
           checkoutLinks:  buildCheckoutPayload(),
           pageUrl:        state.fetchedUrl,
         };
+
+        // EXPORT-06 contract: html is ALWAYS state.fetchedHtml (canonical clean HTML,
+        // set once at fetch, never overwritten). Never send previously-exported HTML
+        // as the html field — the server's idempotency sentinel depends on this.
+
+        // DELAY-02/DELAY-03: include delay fields only when block was detected
+        if (state.hasDelay && delayInput) {
+          var delayVal = parseInt(delayInput.value, 10);
+          if (!isNaN(delayVal) && delayVal >= 1) {
+            payload.delaySeconds       = delayVal;
+            payload.delayScriptContent = state.delayScriptContent;
+          }
+        }
 
         var response = await fetch('/api/export-zip', {
           method: 'POST',

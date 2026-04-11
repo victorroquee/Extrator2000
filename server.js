@@ -236,6 +236,36 @@ function detectCheckoutLinks($, html) {
   return links;
 }
 
+// ── Helper: VTURB delay detection ────────────────────────────────────────────
+
+/**
+ * Extracts the VTURB delay block from rawHtml BEFORE cleanHtml() removes it.
+ * The block is identified by co-presence of delaySeconds declaration AND
+ * displayHiddenElements in the same <script> tag. Returns null if not found.
+ * DELAY-01
+ */
+function detectVturbDelay(rawHtml) {
+  // { decodeEntities: false } required — matches cleanHtml() convention (PITFALLS.md Pitfall 7)
+  const $ = cheerio.load(rawHtml, { decodeEntities: false });
+  let result = null;
+
+  $('script').each((_, el) => {
+    if (result) return; // first match only
+    // Prefer .html() over .text() for script content (PITFALLS.md Pitfall 12)
+    const content = $(el).html() || $(el).text() || '';
+    // Dual-condition anchor: both keywords must appear in the same block (PITFALLS.md Pitfall 2)
+    const delayMatch = content.match(/(?:var|let|const)\s+delaySeconds\s*=\s*(\d+(?:\.\d+)?)/);
+    if (delayMatch && /displayHiddenElements/.test(content)) {
+      result = {
+        delaySeconds: parseFloat(delayMatch[1]),
+        delayScriptContent: content, // full original body — preserved verbatim
+      };
+    }
+  });
+
+  return result; // null when not present
+}
+
 // ── Route: POST /api/fetch ───────────────────────────────────────────────────
 
 app.post('/api/fetch', async (req, res) => {
@@ -291,6 +321,9 @@ app.post('/api/fetch', async (req, res) => {
     return res.status(502).json({ error: `Erro ao buscar URL: ${msg}` });
   }
 
+  // DELAY-01: detect delay block BEFORE cleanHtml() removes the VTURB scripts
+  const delayInfo = detectVturbDelay(rawHtml);
+
   const { html: cleanedHtml, scriptsRemoved, vslDetected } = cleanHtml(rawHtml);
   const $ = cheerio.load(cleanedHtml, { decodeEntities: false });
   const checkoutLinks = detectCheckoutLinks($, cleanedHtml);
@@ -301,6 +334,9 @@ app.post('/api/fetch', async (req, res) => {
       scriptsRemoved,
       vslDetected,
       checkoutLinks,
+      delaySeconds: delayInfo ? delayInfo.delaySeconds : null,
+      hasDelay: delayInfo !== null,
+      delayScriptContent: delayInfo ? delayInfo.delayScriptContent : null,
     },
   });
 });
@@ -540,3 +576,4 @@ module.exports = app;
 // Named exports for integration testing
 module.exports.cleanHtml = cleanHtml;
 module.exports.detectCheckoutLinks = detectCheckoutLinks;
+module.exports.detectVturbDelay = detectVturbDelay;

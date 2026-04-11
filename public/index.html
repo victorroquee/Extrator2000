@@ -279,7 +279,7 @@
   <header class="app-header">
     <div class="container">
       <h1>VSL Cloner</h1>
-      <p>Clone qualquer pagina VSL e gere sua versao de afiliado em menos de 1 minuto</p>
+      <p>Clone qualquer página VSL e gere sua versão de afiliado em menos de 1 minuto</p>
     </div>
   </header>
 
@@ -287,9 +287,9 @@
 
     <!-- ── Secao A: URL Input ──────────────────────────────────────── -->
     <section class="card" id="section-fetch">
-      <p class="card-title">A — Pagina VSL para Clonar</p>
+      <p class="card-title">A — Página VSL para Clonar</p>
 
-      <label for="url-input">URL da pagina VSL</label>
+      <label for="url-input">URL da página VSL</label>
       <div class="url-row">
         <input
           type="url"
@@ -300,7 +300,7 @@
         />
         <button class="btn btn-primary" id="btn-fetch" type="button">
           <span class="spinner" aria-hidden="true"></span>
-          <span class="btn-label">Extrair Pagina</span>
+          <span class="btn-label">Extrair Página</span>
         </button>
       </div>
 
@@ -354,7 +354,7 @@
     <!-- ── Secao C: Player Embed ──────────────────────────────────── -->
     <section class="card section-hidden" id="section-player">
       <p class="card-title">C — Embed do Player VTURB</p>
-      <label for="vsl-embed">Codigo de embed do seu player</label>
+      <label for="vsl-embed">Código de embed do seu player</label>
       <textarea
         id="vsl-embed"
         class="mono"
@@ -465,7 +465,7 @@
           div.className = 'checkout-item';
           div.innerHTML =
             '<div class="checkout-meta">' +
-              '<div class="platform">Sem Deteccao</div>' +
+              '<div class="platform">Sem Detecção</div>' +
               '<div class="anchor">' + item.label + '</div>' +
             '</div>' +
             '<div>' +
@@ -548,7 +548,7 @@
     btnFetch.addEventListener('click', async function() {
       var url = urlInput.value.trim();
       if (!url) {
-        showError('Digite a URL da pagina VSL antes de extrair.');
+        showError('Digite a URL da página VSL antes de extrair.');
         return;
       }
 
@@ -565,7 +565,7 @@
         var data = await response.json();
 
         if (!response.ok) {
-          showError(data.error || 'Erro ao buscar a pagina. Verifique a URL e tente novamente.');
+          showError(data.error || 'Erro ao buscar a página. Verifique a URL e tente novamente.');
           return;
         }
 
@@ -585,7 +585,7 @@
           valVsl.textContent = 'Sim';
           summaryVslItem.className = 'summary-item detected';
         } else {
-          valVsl.textContent = 'Nao';
+          valVsl.textContent = 'Não';
           summaryVslItem.className = 'summary-item not-detected';
         }
 
@@ -604,7 +604,7 @@
         btnExport.disabled = false;
 
       } catch (err) {
-        showError('Falha de conexao com o servidor. Verifique se o servidor esta rodando.');
+        showError('Falha de conexão com o servidor. Verifique se o servidor está rodando.');
       } finally {
         setFetchLoading(false);
       }
@@ -619,13 +619,13 @@
 
     btnExport.addEventListener('click', async function() {
       if (!state.fetchedHtml) {
-        showError('Nenhuma pagina foi extraida. Extraia primeiro.');
+        showError('Nenhuma página foi extraída. Extraia primeiro.');
         return;
       }
 
       clearError();
       btnExport.disabled = true;
-      btnExport.textContent = 'Gerando pagina...';
+      btnExport.textContent = 'Gerando página...';
 
       try {
         var payload = {
@@ -644,7 +644,7 @@
 
         if (!response.ok) {
           var errData = await response.json().catch(function() { return {}; });
-          showError(errData.error || 'Erro ao gerar pagina. Tente novamente.');
+          showError(errData.error || 'Erro ao gerar página. Tente novamente.');
           return;
         }
 
@@ -660,10 +660,10 @@
         URL.revokeObjectURL(blobUrl);
 
       } catch (err) {
-        showError('Falha de conexao ao exportar. Verifique se o servidor esta rodando.');
+        showError('Falha de conexão ao exportar. Verifique se o servidor está rodando.');
       } finally {
         btnExport.disabled = false;
-        btnExport.textContent = 'Gerar Pagina Afiliado';
+        btnExport.textContent = '⬇️ Gerar Página Afiliado';
       }
     });
 

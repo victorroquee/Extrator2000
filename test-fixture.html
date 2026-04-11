@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VSL Test Page — Suplemento XYZ</title>
+
+  <!-- Bootstrap CSS (SURVIVOR — must not be removed) -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+
+  <!-- Google Fonts (SURVIVOR — must not be removed) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+
+  <!-- PATTERN 3: Meta Pixel script (must be REMOVED — contains fbq() keyword) -->
+  <script>
+    !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+    n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;
+    n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;
+    t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,
+    document,'script','https://connect.facebook.net/en_US/fbevents.js');
+    fbq('init','1234567890123456');
+    fbq('track','PageView');
+  </script>
+
+  <!-- PATTERN 3: Meta Pixel noscript (must be REMOVED — contains facebook.com/tr) -->
+  <noscript><img height="1" width="1" style="display:none"
+    src="https://www.facebook.com/tr?id=1234567890123456&ev=PageView&noscript=1"/></noscript>
+
+  <!-- PATTERN 4a: VTURB preload link (must be REMOVED — cdn.vturb.com + rel=preload) -->
+  <link rel="preload" href="https://cdn.vturb.com/player/p/6712abc1def23456789012ab.js" as="script">
+
+  <!-- PATTERN 4b: VTURB window preload script (must be REMOVED — contains vturb keyword) -->
+  <script>window.vturb_preload = { vid: "6712abc1def23456789012ab", autoplay: true, muted: false };</script>
+
+  <style>
+    body { font-family: 'Inter', sans-serif; background: #fff; color: #111; }
+    .hero { padding: 60px 20px; text-align: center; }
+    .pricing { display: flex; gap: 20px; justify-content: center; padding: 40px 20px; flex-wrap: wrap; }
+    .pricing-card { border: 2px solid #e0e0e0; border-radius: 12px; padding: 30px; max-width: 280px; text-align: center; }
+    .pricing-card.popular { border-color: #ff6b35; }
+    .btn-buy { display: block; background: #ff6b35; color: #fff; padding: 14px 24px; border-radius: 8px; text-decoration: none; font-weight: 700; margin-top: 20px; }
+  </style>
+</head>
+<body>
+
+  <section class="hero">
+    <h1>Descubra o Segredo do Suplemento XYZ</h1>
+    <p>A fórmula que milhares de pessoas estão usando para transformar sua saúde</p>
+  </section>
+
+  <!-- PATTERN 1: VTURB embed div (script must be REMOVED, placeholder injected at position) -->
+  <div class="video-container" style="max-width:800px;margin:0 auto;padding:20px;">
+    <div id="vid_6712abc1def23456789012ab">
+      <script src="https://cdn.vturb.com/player/p/6712abc1def23456789012ab.js"></script>
+    </div>
+  </div>
+
+  <section class="pricing">
+    <!-- Bundle 2 Potes (Starter) -->
+    <div class="pricing-card">
+      <h3>Starter — 2 Potes</h3>
+      <p>Ideal para começar</p>
+      <p><strong>R$ 297,00</strong></p>
+      <!-- PATTERN 2: ClickBank hop link — 6 potes bundle (must be DETECTED, platform=ClickBank, bundle=6) -->
+      <!-- Note: anchor text and parent text define bundle — this card tests bundle=2 -->
+      <a href="https://acme.hop.clickbank.net/?affiliate=myid&cbpage=sales&qty=1" class="btn-buy">
+        Comprar Agora — 2 Potes
+      </a>
+    </div>
+
+    <!-- Bundle 3 Potes (Popular) -->
+    <div class="pricing-card popular">
+      <h3>Mais Popular — 3 Potes</h3>
+      <p>Nossa escolha mais vendida</p>
+      <p><strong>R$ 397,00</strong></p>
+      <!-- PATTERN 5: Hotmart pay link (must be DETECTED, platform=Hotmart, bundle=3) -->
+      <a href="https://pay.hotmart.com/ABCD1234E?checkoutMode=10&bid=1709123456789" class="btn-buy">
+        Quero o Pacote Popular — 3 Potes
+      </a>
+    </div>
+
+    <!-- Bundle 6 Potes (Best Value) -->
+    <div class="pricing-card">
+      <h3>Kit Completo — 6 Potes</h3>
+      <p>Melhor valor — maior desconto</p>
+      <p><strong>R$ 497,00</strong></p>
+      <!-- PATTERN 2: ClickBank hop link — 6 potes (must be DETECTED, platform=ClickBank, bundle=6) -->
+      <a href="https://acme.hop.clickbank.net/?affiliate=myid&cbpage=sales6&qty=6" class="btn-buy">
+        Comprar Agora — 6 Potes
+      </a>
+    </div>
+  </section>
+
+  <!-- Safe non-checkout anchor (SURVIVOR — must not be removed or detected as checkout) -->
+  <div style="text-align:center;padding:20px;">
+    <a href="https://example.com/saiba-mais">Saiba mais sobre os ingredientes</a>
+  </div>
+
+  <!-- jQuery CDN (SURVIVOR — must not be removed) -->
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+
+</body>
+</html>

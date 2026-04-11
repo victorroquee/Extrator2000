@@ -283,6 +283,14 @@ app.post('/api/fetch', async (req, res) => {
     }
     // Block private / loopback addresses
     const hostname = parsed.hostname.toLowerCase();
+    // Block IPv6 literals (bracket-enclosed addresses)
+    if (hostname.startsWith('[')) {
+      return res.status(400).json({ error: 'IPv6 addresses are not allowed' });
+    }
+    // Block pure-numeric hostnames (decimal/octal encoded IPs like 2130706433 or 0177.0.0.1)
+    if (/^[\d.]+$/.test(hostname)) {
+      return res.status(400).json({ error: 'Numeric IP addresses are not allowed' });
+    }
     if (
       hostname === 'localhost' ||
       hostname === '127.0.0.1' ||

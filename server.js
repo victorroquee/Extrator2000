@@ -4,6 +4,7 @@ const express = require('express');
 const axios = require('axios');
 const cheerio = require('cheerio');
 const path = require('path');
+const archiver = require('archiver');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -52,6 +53,7 @@ const IFRAME_REMOVE_PATTERNS = [
  */
 const CHECKOUT_URL_PATTERNS = [
   /hop\.clickbank\.net/i,
+  /pay\.clickbank\.net/i,
   /pay\.hotmart\.com/i,
   /go\.hotmart\.com/i,
   /kiwify\.com\.br/i,
@@ -303,6 +305,131 @@ app.post('/api/fetch', async (req, res) => {
   });
 });
 
+// ── Helpers: ZIP export ──────────────────────────────────────────────────────
+
+function escapeRegExp(str) {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function resolveUrl(url, base) {
+  try { return new URL(url, base).href; } catch { return null; }
+}
+
+function assetLocalPath(absUrl, usedPaths) {
+  try {
+    const u = new URL(absUrl);
+    const ext = path.extname(u.pathname).toLowerCase();
+    const raw = path.basename(u.pathname) || 'asset';
+    const filename = raw || `asset${ext || '.bin'}`;
+
+    let folder = 'assets';
+    if (ext === '.css') folder = 'assets/css';
+    else if (ext === '.js') folder = 'assets/js';
+    else if (['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg', '.ico', '.avif'].includes(ext)) folder = 'assets/img';
+    else if (['.woff', '.woff2', '.ttf', '.eot', '.otf'].includes(ext)) folder = 'assets/fonts';
+
+    let candidate = `${folder}/${filename}`;
+    let counter = 2;
+    while (usedPaths.has(candidate)) {
+      const base2 = path.basename(filename, ext);
+      candidate = `${folder}/${base2}_${counter}${ext}`;
+      counter++;
+    }
+    usedPaths.add(candidate);
+    return candidate;
+  } catch {
+    return `assets/asset_${Date.now()}`;
+  }
+}
+
+function collectAssets($, pageUrl, usedPaths) {
+  const assets = new Map(); // absUrl → localPath
+  function add(url) {
+    if (!url || url.startsWith('data:') || url.startsWith('#')) return;
+    const abs = resolveUrl(url, pageUrl);
+    if (!abs || assets.has(abs)) return;
+    assets.set(abs, assetLocalPath(abs, usedPaths));
+  }
+  $('link[href]').each((_, el) => {
+    const rel = ($(el).attr('rel') || '').toLowerCase();
+    if (['stylesheet', 'icon', 'shortcut icon'].includes(rel)) add($(el).attr('href'));
+  });
+  $('script[src]').each((_, el) => add($(el).attr('src')));
+  $('img[src]').each((_, el) => add($(el).attr('src')));
+  $('source[src]').each((_, el) => add($(el).attr('src')));
+  return assets;
+}
+
+// ── Helpers: Checkout replacement ────────────────────────────────────────────
+
+/**
+ * Apply affiliate checkout links to HTML.
+ * - Links with a selector: replace via CSS selector (selector-based).
+ * - Links without a selector: bulk-replace all checkout-pattern URLs in the page.
+ */
+function applyCheckoutLinks(outputHtml, checkoutLinks) {
+  if (!Array.isArray(checkoutLinks) || checkoutLinks.length === 0) return outputHtml;
+
+  // Selector-based replacement
+  const withSelector = checkoutLinks.filter((l) => l.selector && (l.affiliateHref || l.affiliateUrl));
+  if (withSelector.length > 0) {
+    const $2 = cheerio.load(outputHtml, { decodeEntities: false });
+    for (const link of withSelector) {
+      const affiliateHref = link.affiliateHref || link.affiliateUrl;
+      try {
+        $2(link.selector).each((_, el) => {
+          if ($2(el).attr('href') !== undefined) $2(el).attr('href', affiliateHref);
+          if ($2(el).attr('onclick') !== undefined) {
+            $2(el).attr('onclick', ($2(el).attr('onclick') || '').replace(/https?:\/\/[^\s'"]+/g, affiliateHref));
+          }
+        });
+      } catch (_) {
+        console.warn(`[export] invalid selector skipped: ${link.selector}`);
+      }
+    }
+    outputHtml = $2.html();
+  }
+
+  // No-selector bulk replacement: replace any checkout-pattern URL in href/onclick
+  const noSelector = checkoutLinks.filter((l) => !l.selector && (l.affiliateHref || l.affiliateUrl));
+  if (noSelector.length > 0) {
+    const $3 = cheerio.load(outputHtml, { decodeEntities: false });
+    $3('a, button').each((_, el) => {
+      const href = $3(el).attr('href') || '';
+      const onclick = $3(el).attr('onclick') || '';
+      const isCheckout = CHECKOUT_URL_PATTERNS.some((p) => p.test(href) || p.test(onclick));
+      if (!isCheckout) return;
+      // Use the first non-empty affiliate link from the list
+      const affiliateHref = noSelector[0].affiliateHref || noSelector[0].affiliateUrl;
+      if (href) $3(el).attr('href', affiliateHref);
+      if (onclick) $3(el).attr('onclick', onclick.replace(/https?:\/\/[^\s'"]+/g, affiliateHref));
+    });
+    outputHtml = $3.html();
+  }
+
+  return outputHtml;
+}
+
+// ── Shared: build modified HTML from export payload ──────────────────────────
+
+function buildExportHtml({ html, headerPixel, headerPreload, vslembed, checkoutLinks }) {
+  const $ = cheerio.load(html, { decodeEntities: false });
+
+  if (headerPixel && headerPixel.trim()) $('head').append(headerPixel);
+  if (headerPreload && headerPreload.trim()) $('head').append(headerPreload);
+
+  let outputHtml = $.html();
+
+  if (vslembed && vslembed.trim()) {
+    outputHtml = outputHtml.replace(
+      /<!--\s*\[VSL_PLACEHOLDER\]\s*-->[\s\S]*?<div id="vsl(?:-cloner)?-placeholder"[\s\S]*?<\/div>/,
+      vslembed
+    );
+  }
+
+  return applyCheckoutLinks(outputHtml, checkoutLinks);
+}
+
 // ── Route: POST /api/export ──────────────────────────────────────────────────
 
 app.post('/api/export', (req, res) => {
@@ -312,63 +439,87 @@ app.post('/api/export', (req, res) => {
     return res.status(400).json({ error: 'Campo "html" é obrigatório.' });
   }
 
-  const $ = cheerio.load(html, { decodeEntities: false });
+  const outputHtml = buildExportHtml({ html, headerPixel, headerPreload, vslembed, checkoutLinks });
 
-  // EXPORT-02: Inject headerPixel + headerPreload before </head>
-  if (headerPixel && headerPixel.trim()) {
-    $('head').append(headerPixel);
-  }
-  if (headerPreload && headerPreload.trim()) {
-    $('head').append(headerPreload);
-  }
-
-  // EXPORT-03: Replace <!-- [VSL_PLACEHOLDER] --> block with vslembed.
-  // Operate on the serialised HTML string because cheerio cannot select comments.
-  let outputHtml = $.html();
-
-  if (vslembed && vslembed.trim()) {
-    // Matches comment + the placeholder div (both id="vsl-placeholder" and id="vsl-cloner-placeholder")
-    outputHtml = outputHtml.replace(
-      /<!--\s*\[VSL_PLACEHOLDER\]\s*-->[\s\S]*?<div id="vsl(?:-cloner)?-placeholder"[\s\S]*?<\/div>/,
-      vslembed
-    );
-  }
-
-  // EXPORT-04: Replace checkout link hrefs.
-  // Re-parse outputHtml (post-embed replacement) for selector-based substitution.
-  if (Array.isArray(checkoutLinks) && checkoutLinks.length > 0) {
-    const $2 = cheerio.load(outputHtml, { decodeEntities: false });
-    for (const link of checkoutLinks) {
-      // Support both affiliateHref (plan schema) and affiliateUrl (legacy)
-      const affiliateHref = link.affiliateHref || link.affiliateUrl;
-      if (!link.selector || !affiliateHref) continue;
-      try {
-        $2(link.selector).each((_, el) => {
-          if ($2(el).attr('href') !== undefined) {
-            $2(el).attr('href', affiliateHref);
-          }
-          if ($2(el).attr('onclick') !== undefined) {
-            // Replace URL inside onclick string
-            const onclick = $2(el).attr('onclick') || '';
-            const updatedOnclick = onclick.replace(
-              /https?:\/\/[^\s'"]+/g,
-              affiliateHref
-            );
-            $2(el).attr('onclick', updatedOnclick);
-          }
-        });
-      } catch (_) {
-        // T-02-03 mitigation: Invalid selector — skip silently
-        console.warn(`[export] invalid selector skipped: ${link.selector}`);
-      }
-    }
-    outputHtml = $2.html();
-  }
-
-  // EXPORT-05: Return as downloadable HTML file
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
   res.setHeader('Content-Disposition', 'attachment; filename="pagina-afiliado.html"');
   return res.send(outputHtml);
+});
+
+// ── Route: POST /api/export-zip ──────────────────────────────────────────────
+
+app.post('/api/export-zip', async (req, res) => {
+  const { html, headerPixel, headerPreload, vslembed, checkoutLinks, pageUrl } = req.body;
+
+  if (!html || typeof html !== 'string') {
+    return res.status(400).json({ error: 'Campo "html" é obrigatório.' });
+  }
+
+  let outputHtml = buildExportHtml({ html, headerPixel, headerPreload, vslembed, checkoutLinks });
+
+  // Collect and download assets if we have the original page URL
+  const usedPaths = new Set();
+  const downloaded = new Map(); // absUrl → { buffer, localPath }
+
+  if (pageUrl) {
+    const $$ = cheerio.load(outputHtml, { decodeEntities: false });
+    const assets = collectAssets($$, pageUrl, usedPaths); // absUrl → localPath
+
+    // Download in batches of 5
+    const entries = [...assets.entries()];
+    for (let i = 0; i < entries.length; i += 5) {
+      await Promise.all(
+        entries.slice(i, i + 5).map(async ([absUrl, localPath]) => {
+          try {
+            const resp = await axios.get(absUrl, {
+              responseType: 'arraybuffer',
+              timeout: 15000,
+              maxContentLength: 10 * 1024 * 1024,
+              headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
+            });
+            downloaded.set(absUrl, { buffer: Buffer.from(resp.data), localPath });
+          } catch {
+            // Skip assets that fail to download
+          }
+        })
+      );
+    }
+
+    // Rewrite URLs in HTML using cheerio (attribute-level, not string replacement)
+    const $$2 = cheerio.load(outputHtml, { decodeEntities: false });
+
+    function rewriteAttr(el, attr) {
+      const val = $$2(el).attr(attr);
+      if (!val) return;
+      const abs = resolveUrl(val, pageUrl);
+      if (abs && downloaded.has(abs)) $$2(el).attr(attr, downloaded.get(abs).localPath);
+    }
+
+    $$2('link[href]').each((_, el) => rewriteAttr(el, 'href'));
+    $$2('script[src]').each((_, el) => rewriteAttr(el, 'src'));
+    $$2('img[src]').each((_, el) => rewriteAttr(el, 'src'));
+    $$2('source[src]').each((_, el) => rewriteAttr(el, 'src'));
+
+    outputHtml = $$2.html();
+  }
+
+  // Stream ZIP to client
+  res.setHeader('Content-Type', 'application/zip');
+  res.setHeader('Content-Disposition', 'attachment; filename="pagina-afiliado.zip"');
+
+  const archive = archiver('zip', { zlib: { level: 6 } });
+  archive.on('error', (err) => {
+    console.error('[export-zip] archive error:', err);
+    if (!res.headersSent) res.status(500).end();
+  });
+  archive.pipe(res);
+
+  archive.append(outputHtml, { name: 'index.html' });
+  for (const [, { buffer, localPath }] of downloaded) {
+    archive.append(buffer, { name: localPath });
+  }
+
+  await archive.finalize();
 });
 
 // ── Health check ─────────────────────────────────────────────────────────────

@@ -8,6 +8,15 @@ Aplicação web Node.js + Express para afiliados de marketing digital. Permite c
 
 Transformar qualquer página VSL em uma cópia 100% funcional com as credenciais do afiliado, em menos de 1 minuto.
 
+## Current Milestone: v1.1 Editor Avançado
+
+**Goal:** Expandir o painel de edição com scripts extras, imagens de bundle editáveis e controle de delay VTURB.
+
+**Target features:**
+- Scripts extras: aba dedicada no editor, múltiplos scripts opcionais, injetados no `<head>` após o pixel existente
+- Imagens de bundle: detecção das imagens dos potes por seção, preview + URL editável, tolerante a seções duplicadas
+- Delay VTURB: extração e edição do `var delaySeconds = N` do código `displayHiddenElements`
+
 ## Requirements
 
 ### Validated
@@ -72,4 +81,4 @@ Este documento evolui a cada transição de fase e milestone.
 3. Out of Scope ainda válido?
 
 ---
-*Last updated: 2026-04-10 after initialization*
+*Last updated: 2026-04-11 — Milestone v1.1 started*

@@ -441,13 +441,19 @@ function applyCheckoutLinks(outputHtml, checkoutLinks) {
   // No-selector bulk replacement: replace any checkout-pattern URL in href/onclick
   const noSelector = checkoutLinks.filter((l) => !l.selector && (l.affiliateHref || l.affiliateUrl));
   if (noSelector.length > 0) {
+    // Only the first no-selector link is used; multiple no-selector entries are not supported
+    // because there is no originalHref in the payload to match against.
+    // Users with multiple distinct checkout links should use CSS selectors.
+    if (noSelector.length > 1) {
+      console.warn(`[export] ${noSelector.length} no-selector checkout links provided; only the first will be applied. Use selectors to target multiple distinct checkout buttons.`);
+    }
     const $3 = cheerio.load(outputHtml, { decodeEntities: false });
     $3('a, button').each((_, el) => {
       const href = $3(el).attr('href') || '';
       const onclick = $3(el).attr('onclick') || '';
       const isCheckout = CHECKOUT_URL_PATTERNS.some((p) => p.test(href) || p.test(onclick));
       if (!isCheckout) return;
-      // Use the first non-empty affiliate link from the list
+      // Only the first no-selector entry is supported (see warning above)
       const affiliateHref = noSelector[0].affiliateHref || noSelector[0].affiliateUrl;
       if (href) $3(el).attr('href', affiliateHref);
       if (onclick) {

@@ -798,7 +798,7 @@ app.post('/api/export-zip', async (req, res) => {
   const archive = archiver('zip', { zlib: { level: 6 } });
   archive.on('error', (err) => {
     console.error('[export-zip] archive error:', err);
-    if (!res.headersSent) res.status(500).end();
+    res.destroy(err);
   });
   archive.pipe(res);
 

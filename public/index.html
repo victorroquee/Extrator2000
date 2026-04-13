@@ -316,6 +316,68 @@
       .url-row { flex-direction: column; }
       .url-row .btn { width: 100%; justify-content: center; }
     }
+
+    /* ── Extra Scripts Section (Phase 6) ─────────────────────────── */
+    .script-item {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding: 12px 0;
+      border-bottom: 1px solid #333;
+    }
+    .script-item:last-child {
+      border-bottom: none;
+    }
+    .script-item-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .script-item-label {
+      font-size: 0.8rem;
+      font-weight: 400;
+      color: #ccc;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .script-item-controls {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      flex-shrink: 0;
+    }
+    .btn-script-control {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      background: transparent;
+      border: 1px solid #444;
+      border-radius: 4px;
+      color: #888;
+      font-size: 0.85rem;
+      cursor: pointer;
+      padding: 0;
+      font-family: inherit;
+      transition: color 0.15s, border-color 0.15s;
+    }
+    .btn-script-control:hover:not(:disabled) {
+      color: #e0e0e0;
+      border-color: #666;
+    }
+    .btn-script-control:disabled {
+      opacity: 0.25;
+      cursor: not-allowed;
+    }
+    @media (max-width: 600px) {
+      #btn-add-script {
+        width: 100%;
+        justify-content: center;
+      }
+    }
   </style>
 </head>
 <body>
@@ -396,6 +458,18 @@
       </div>
     </section>
 
+    <!-- ── Secao C.3: Scripts Extras ────────────────────────────────── -->
+    <section class="card section-hidden" id="section-extra-scripts">
+      <p class="card-title">C.3 — Scripts Extras</p>
+      <div id="scripts-list-container">
+        <!-- Preenchido dinamicamente por JS -->
+      </div>
+      <button class="btn btn-primary" id="btn-add-script" type="button"
+              style="margin-top: 12px; padding: 8px 16px; font-size: 0.85rem;">
+        + Adicionar Script
+      </button>
+    </section>
+
     <!-- ── Secao C: Player Embed ──────────────────────────────────── -->
     <section class="card section-hidden" id="section-player">
       <p class="card-title">C — Embed do Player VTURB</p>
@@ -469,6 +543,8 @@
       delayScriptContent: null,   // string | null — opaque original script body, round-tripped to server
       // Phase 5 additions — BUNDLE-02
       bundleImages: {},           // object keyed by qty: { "2": { src: "..." }, "3": { src: "..." } }
+      // Phase 6 additions — SCRIPTS-01/02/03
+      extraScripts: [],           // Array of { id: string, content: string } in display order
     };
 
     // ── Referencias ao DOM ───────────────────────────────────────────
@@ -502,6 +578,11 @@
     const sectionBundleImages   = document.getElementById('section-bundle-images');
     const bundleImagesContainer = document.getElementById('bundle-images-container');
 
+    // Phase 6: extra scripts
+    const sectionExtraScripts    = document.getElementById('section-extra-scripts');
+    const scriptsListContainer   = document.getElementById('scripts-list-container');
+    const btnAddScript           = document.getElementById('btn-add-script');
+
     // ── Helpers ──────────────────────────────────────────────────────
 
     function showSection(el) {
@@ -532,6 +613,105 @@
       if (bundle === 3) return '3 Potes';
       if (bundle === 6) return '6 Potes';
       return null;
+    }
+
+    // ── Extra Scripts helpers (Phase 6) ─────────────────────────────
+
+    function renderScriptLabels() {
+      // Re-number all visible script item labels and update ↑/↓ disabled states
+      var items = scriptsListContainer.querySelectorAll('.script-item');
+      items.forEach(function(item, idx) {
+        var label = item.querySelector('.script-item-label');
+        if (label) label.textContent = 'Script ' + (idx + 1);
+
+        var btnUp   = item.querySelector('[data-action="up"]');
+        var btnDown = item.querySelector('[data-action="down"]');
+        if (btnUp)   btnUp.disabled   = (idx === 0);
+        if (btnDown) btnDown.disabled = (idx === items.length - 1);
+
+        // Update aria-labels for accessibility
+        if (btnUp)   btnUp.setAttribute('aria-label', 'Mover script ' + (idx + 1) + ' para cima');
+        if (btnDown) btnDown.setAttribute('aria-label', 'Mover script ' + (idx + 1) + ' para baixo');
+        var btnRemove = item.querySelector('[data-action="remove"]');
+        if (btnRemove) btnRemove.setAttribute('aria-label', 'Remover script ' + (idx + 1));
+      });
+    }
+
+    function addScript() {
+      // D-06: create a new script item and append to the list
+      var id = (typeof crypto !== 'undefined' && crypto.randomUUID)
+        ? crypto.randomUUID()
+        : 'script-' + Date.now() + '-' + Math.random().toString(36).slice(2);
+
+      state.extraScripts.push({ id: id, content: '' });
+
+      var item = document.createElement('div');
+      item.className = 'script-item';
+      item.dataset.scriptId = id;
+
+      item.innerHTML =
+        '<div class="script-item-header">' +
+          '<span class="script-item-label">Script ' + state.extraScripts.length + '</span>' +
+          '<div class="script-item-controls">' +
+            '<button type="button" class="btn-script-control" data-action="up" aria-label="Mover script para cima">\u2191</button>' +
+            '<button type="button" class="btn-script-control" data-action="down" aria-label="Mover script para baixo">\u2193</button>' +
+            '<button type="button" class="btn-script-control" data-action="remove" aria-label="Remover script">\u00d7</button>' +
+          '</div>' +
+        '</div>' +
+        '<textarea class="mono" data-script-id="' + id + '" rows="4" ' +
+          'placeholder="<!-- Cole aqui seu script extra -->\n<script>\n  // seu c\u00f3digo aqui\n<\/script>" ' +
+          'style="min-height: 80px;"></textarea>';
+
+      scriptsListContainer.appendChild(item);
+      renderScriptLabels();
+
+      // D-06: focus the new textarea
+      var ta = item.querySelector('textarea');
+      if (ta) ta.focus();
+    }
+
+    function removeScript(scriptId) {
+      // D-07: remove item from DOM and state
+      state.extraScripts = state.extraScripts.filter(function(s) { return s.id !== scriptId; });
+      var scriptItem = scriptsListContainer.querySelector('.script-item[data-script-id="' + scriptId + '"]');
+      if (scriptItem) scriptItem.remove();
+      renderScriptLabels();
+    }
+
+    function moveScript(scriptId, direction) {
+      // D-10/D-12: swap item with neighbor in both state array and DOM
+      var idx = state.extraScripts.findIndex(function(s) { return s.id === scriptId; });
+      if (idx === -1) return;
+
+      var swapIdx = direction === 'up' ? idx - 1 : idx + 1;
+      if (swapIdx < 0 || swapIdx >= state.extraScripts.length) return;
+
+      // Swap in state
+      var temp = state.extraScripts[idx];
+      state.extraScripts[idx] = state.extraScripts[swapIdx];
+      state.extraScripts[swapIdx] = temp;
+
+      // Swap in DOM — get both .script-item nodes by position
+      var allItems = Array.from(scriptsListContainer.querySelectorAll('.script-item'));
+      var nodeA = allItems[idx];
+      var nodeB = allItems[swapIdx];
+      if (!nodeA || !nodeB) return;
+
+      if (direction === 'up') {
+        scriptsListContainer.insertBefore(nodeA, nodeB);
+      } else {
+        scriptsListContainer.insertBefore(nodeB, nodeA);
+      }
+
+      renderScriptLabels();
+    }
+
+    function buildExtraScriptsPayload() {
+      // Read current textarea values into state and return string array in order
+      return state.extraScripts.map(function(s) {
+        var ta = scriptsListContainer.querySelector('textarea[data-script-id="' + s.id + '"]');
+        return ta ? ta.value : s.content;
+      });
     }
 
     // ── Renderiza imagens de bundle ────────────────────────────────
@@ -693,6 +873,34 @@
       return result;
     }
 
+    // ── Extra Scripts event listeners (Phase 6) ──────────────────────
+
+    if (btnAddScript) {
+      btnAddScript.addEventListener('click', addScript);
+    }
+
+    if (scriptsListContainer) {
+      scriptsListContainer.addEventListener('click', function(e) {
+        var btn = e.target.closest('[data-action]');
+        if (!btn) return;
+
+        // Find the .script-item ancestor to get the scriptId
+        var scriptItem = btn.closest('.script-item');
+        if (!scriptItem) return;
+        var scriptId = scriptItem.dataset.scriptId;
+        if (!scriptId) return;
+
+        var action = btn.dataset.action;
+        if (action === 'remove') {
+          removeScript(scriptId);
+        } else if (action === 'up') {
+          moveScript(scriptId, 'up');
+        } else if (action === 'down') {
+          moveScript(scriptId, 'down');
+        }
+      });
+    }
+
     // ── Acao: Fetch ──────────────────────────────────────────────────
 
     btnFetch.addEventListener('click', async function() {
@@ -758,6 +966,7 @@
         showSection(sectionHeader);
         showSection(sectionPlayer);
         showSection(sectionCheckout);
+        showSection(sectionExtraScripts);   // Phase 6 — always visible after fetch (D-03)
 
         // Reveal delay section only when block was detected — DELAY-02
         if (state.hasDelay && sectionDelay && delayInput) {
@@ -806,6 +1015,7 @@
           vslembed:       vslEmbed.value,
           checkoutLinks:  buildCheckoutPayload(),
           pageUrl:        state.fetchedUrl,
+          extraScripts:   buildExtraScriptsPayload(),
         };
 
         // EXPORT-06 contract: html is ALWAYS state.fetchedHtml (canonical clean HTML,

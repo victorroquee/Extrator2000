@@ -236,6 +236,58 @@ function detectCheckoutLinks($, html) {
   return links;
 }
 
+// ── Helpers: Bundle image detection ─────────────────────────────────────────
+
+/**
+ * Detects the first representative product image for each bundle qty (2, 3, 6).
+ * For each checkout link that has a classified bundle qty, walks up the DOM to
+ * the nearest section/article/div ancestor and picks the first <img> with a
+ * non-empty, non-data: static src inside that ancestor. (D-01, D-03, D-06)
+ *
+ * Returns an object keyed by bundle qty: { 2: { src }, 3: { src }, 6: { src } }
+ * Returns {} if no bundle checkout links exist or no ancestor has an <img>. (D-04)
+ */
+function detectBundleImages($, checkoutLinks) {
+  const result = {};
+
+  const bundleLinks = (checkoutLinks || []).filter((l) => l.bundle !== null && l.bundle !== undefined);
+
+  for (const link of bundleLinks) {
+    const bundle = link.bundle;
+
+    // Per D-06: first match per bundle qty wins — skip if already found
+    if (result[bundle]) continue;
+
+    let el;
+    try {
+      el = $(link.selector);
+    } catch (_) {
+      continue;
+    }
+    if (!el || el.length === 0) continue;
+
+    // Walk up to nearest container ancestor (D-01)
+    const ancestor = el.closest('section, article, div');
+    if (!ancestor || ancestor.length === 0) continue;
+
+    // Find the first <img> with a valid static src inside that ancestor
+    let found = null;
+    ancestor.find('img[src]').each((_, imgEl) => {
+      if (found) return; // first only
+      const src = $(imgEl).attr('src');
+      // D-03: skip empty, missing, or data: URIs
+      if (!src || src.startsWith('data:') || src.trim() === '') return;
+      found = src;
+    });
+
+    if (found) {
+      result[bundle] = { src: found };
+    }
+  }
+
+  return result;
+}
+
 // ── Helper: VTURB delay detection ────────────────────────────────────────────
 
 /**
@@ -335,6 +387,7 @@ app.post('/api/fetch', async (req, res) => {
   const { html: cleanedHtml, scriptsRemoved, vslDetected } = cleanHtml(rawHtml);
   const $ = cheerio.load(cleanedHtml, { decodeEntities: false });
   const checkoutLinks = detectCheckoutLinks($, cleanedHtml);
+  const bundleImages = detectBundleImages($, checkoutLinks);
 
   return res.json({
     html: cleanedHtml,
@@ -342,6 +395,7 @@ app.post('/api/fetch', async (req, res) => {
       scriptsRemoved,
       vslDetected,
       checkoutLinks,
+      bundleImages,
       delaySeconds: delayInfo ? delayInfo.delaySeconds : null,
       hasDelay: delayInfo !== null,
       delayScriptContent: delayInfo ? delayInfo.delayScriptContent : null,
@@ -643,4 +697,5 @@ module.exports = app;
 module.exports.cleanHtml = cleanHtml;
 module.exports.detectCheckoutLinks = detectCheckoutLinks;
 module.exports.detectVturbDelay = detectVturbDelay;
+module.exports.detectBundleImages = detectBundleImages;
 module.exports.buildExportHtml = buildExportHtml;

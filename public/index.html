@@ -275,6 +275,36 @@
     }
     .error-banner.visible { display: block; }
 
+    /* ── Bundle Images ────────────────────────────────────────────── */
+    .bundle-image-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 0;
+      border-bottom: 1px solid #333;
+      flex-wrap: wrap;
+    }
+    .bundle-image-item:last-child { border-bottom: none; }
+    .bundle-image-thumb {
+      width: 60px;
+      height: 60px;
+      object-fit: contain;
+      border-radius: 6px;
+      background: #222;
+      border: 1px solid #444;
+      flex-shrink: 0;
+    }
+    .bundle-image-label {
+      font-weight: 600;
+      color: #ccc;
+      white-space: nowrap;
+      min-width: 70px;
+    }
+    .bundle-image-item input[type="url"] {
+      flex: 1;
+      min-width: 200px;
+    }
+
     /* ── Hidden sections ──────────────────────────────────────────── */
     .section-hidden { display: none; }
 
@@ -394,6 +424,14 @@
           step="1"
           placeholder="10"
         />
+      </div>
+    </section>
+
+    <!-- ── Secao C.6: Imagens de Bundle ────────────────────────────── -->
+    <section class="card section-hidden" id="section-bundle-images">
+      <p class="card-title">C.6 — Imagens de Bundle</p>
+      <div id="bundle-images-container">
+        <!-- Preenchido dinamicamente por JS -->
       </div>
     </section>
 

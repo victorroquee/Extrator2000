@@ -59,10 +59,10 @@ const CHECKOUT_URL_PATTERNS = [
   /kiwify\.com\.br/i,
   /eduzz\.com/i,
   /monetizze\.com\.br/i,
-  /\/checkout/i,
-  /\/buy/i,
-  /\/order/i,
-  /\/purchase/i,
+  /\/checkout(?:[/?#]|$)/i,
+  /\/buy(?:[/?#]|$)/i,
+  /\/order(?:[/?#]|$)/i,
+  /\/purchase(?:[/?#]|$)/i,
 ];
 
 /**

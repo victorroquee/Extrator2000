@@ -41,7 +41,10 @@ Decimal phases appear between their surrounding integers in numeric order.
   2. Cleaned HTML has no Facebook Pixel, GTM, VTURB player scripts, or tracking iframes — and jQuery/Bootstrap are preserved
   3. POST /api/export with affiliate pixel, player embed, and checkout links returns a downloadable HTML file with all substitutions applied
   4. Checkout links in the returned summary are classified by platform (ClickBank, Hotmart, Kiwify, Eduzz, Monetizze) and bundle context
-**Plans**: TBD
+**Plans**: 2 plans
+Plans:
+- [ ] 05-01-PLAN.md — server.js: detectBundleImages helper, /api/fetch extension, buildExportHtml image replacement, both export routes updated
+- [ ] 05-02-PLAN.md — public/index.html: Section C.6 bundle images UI, state extension, fetch/export handler wiring
 
 ### Phase 2: Frontend UI
 **Goal**: The UI renders correctly in a browser and all input fields, states, and sections are functional
@@ -66,7 +69,10 @@ Plans:
   2. User fills in their pixel, player embed, and checkout links, clicks the export button, and receives a valid "pagina-afiliado.html" download
   3. The downloaded HTML contains the affiliate pixel before </head>, the VTURB embed in the exact player position, and affiliate checkout URLs on all buy buttons
   4. All 5 real VSL patterns (VTURB embed, ClickBank hop link, Meta Pixel, VTURB preload, Hotmart pay link) produce correct output without errors
-**Plans**: TBD
+**Plans**: 2 plans
+Plans:
+- [ ] 05-01-PLAN.md — server.js: detectBundleImages helper, /api/fetch extension, buildExportHtml image replacement, both export routes updated
+- [ ] 05-02-PLAN.md — public/index.html: Section C.6 bundle images UI, state extension, fetch/export handler wiring
 
 ---
 
@@ -95,7 +101,10 @@ Plans:
   1. After fetching a VSL page, the editor shows a thumbnail and editable URL field for each detected bundle image (e.g. 2-pote, 3-pote, 6-pote sections)
   2. User can paste a new image URL and the exported HTML replaces every occurrence of that image — including duplicate desktop/mobile sections — with the new URL
   3. When no bundle images are detected, the section shows a graceful empty state without errors
-**Plans**: TBD
+**Plans**: 2 plans
+Plans:
+- [ ] 05-01-PLAN.md — server.js: detectBundleImages helper, /api/fetch extension, buildExportHtml image replacement, both export routes updated
+- [ ] 05-02-PLAN.md — public/index.html: Section C.6 bundle images UI, state extension, fetch/export handler wiring
 **UI hint**: yes
 
 ### Phase 6: Extra Scripts Tab
@@ -121,5 +130,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | 2. Frontend UI | 1/1 | Shipped (v1.0) | 2026-04-10 |
 | 3. Integration & Polish | —/— | Shipped (v1.0) | 2026-04-11 |
 | 4. VTURB Delay + Export Idempotency | 2/2 | Complete   | 2026-04-11 |
-| 5. Bundle Images | 0/? | Not started | - |
+| 5. Bundle Images | 0/2 | Not started | - |
 | 6. Extra Scripts Tab | 0/? | Not started | - |

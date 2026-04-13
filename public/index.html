@@ -6,252 +6,196 @@
   <title>VSL Cloner</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <style>
-    /* ── CSS Custom Properties ────────────────────────────────────── */
-    :root {
-      --bg:              #111418;
-      --card-bg:         #1a1e24;
-      --card-border:     #252a32;
-      --primary:         #42945F;
-      --accent:          #8AAC46;
-      --text-primary:    #e8eaed;
-      --text-secondary:  #9aa0a8;
-      --text-muted:      #5f6368;
-      --input-bg:        #1e2328;
-      --input-border:    #2d3340;
-      --error-bg:        #2a1010;
-      --error-border:    #7a2020;
-      --error-text:      #f87171;
-    }
-
     /* ── Reset & Base ─────────────────────────────────────────────── */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
-      background: var(--bg);
-      color: var(--text-primary);
+      background: #F0F2F5;
+      color: #111827;
       font-family: 'Inter', system-ui, -apple-system, sans-serif;
       font-size: 15px;
       line-height: 1.6;
       min-height: 100vh;
-      padding: 0 0 60px;
     }
 
     /* ── Scrollbar ────────────────────────────────────────────────── */
-    ::-webkit-scrollbar { width: 8px; height: 8px; }
-    ::-webkit-scrollbar-track { background: var(--bg); }
-    ::-webkit-scrollbar-thumb { background: #2d3340; border-radius: 4px; }
-    ::-webkit-scrollbar-thumb:hover { background: #42945F66; }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #F0F2F5; }
+    ::-webkit-scrollbar-thumb { background: #D1D5DB; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #9CA3AF; }
 
-    /* ── Layout ───────────────────────────────────────────────────── */
-    .container {
-      max-width: 900px;
+    /* ── Navbar ───────────────────────────────────────────────────── */
+    .navbar {
+      background: #FFFFFF;
+      border-bottom: 1px solid #E5E7EB;
+      height: 60px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      padding: 0 24px;
+    }
+    .navbar-inner {
+      max-width: 1280px;
       margin: 0 auto;
-      padding: 0 20px;
-    }
-
-    /* ── Header ───────────────────────────────────────────────────── */
-    .app-header {
-      background: linear-gradient(180deg, #0d1014 0%, #111418 100%);
-      border-bottom: 1px solid #42945F40;
-      padding: 20px 0;
-      margin-bottom: 28px;
-    }
-    .app-header-inner {
+      height: 100%;
       display: flex;
       align-items: center;
-      gap: 14px;
+      justify-content: space-between;
     }
-    .app-header-text h1 {
-      font-size: 1.45rem;
-      font-weight: 700;
-      background: linear-gradient(135deg, #42945F, #8AAC46);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      letter-spacing: -0.3px;
-      line-height: 1.2;
+    .navbar-brand {
       display: flex;
       align-items: center;
       gap: 10px;
     }
-    .version-badge {
-      display: inline-block;
-      background: #42945F22;
-      color: var(--accent);
-      border: 1px solid #42945F44;
-      border-radius: 10px;
-      padding: 1px 9px;
-      font-size: 0.7rem;
+    .navbar-logo {
+      height: 28px;
+      width: auto;
+    }
+    .navbar-title {
+      display: flex;
+      flex-direction: column;
+    }
+    .navbar-name {
+      font-size: 1rem;
       font-weight: 700;
-      letter-spacing: 0.5px;
-      -webkit-text-fill-color: var(--accent);
-      vertical-align: middle;
-      position: relative;
-      top: -1px;
+      color: #111827;
+      line-height: 1.2;
     }
-    .version-badge::before {
-      content: '';
-      display: inline-block;
-      width: 5px;
-      height: 5px;
-      background: var(--accent);
-      border-radius: 50%;
-      margin-right: 5px;
-      vertical-align: middle;
-      position: relative;
-      top: -1px;
+    .navbar-tagline {
+      font-size: 0.72rem;
+      color: #6B7280;
+      line-height: 1;
     }
-    .app-header-text p {
-      font-size: 0.82rem;
-      color: var(--text-secondary);
-      margin-top: 3px;
+    .navbar-badge {
+      background: #F0FDF4;
+      color: #42945F;
+      border: 1px solid #BBF7D0;
+      font-size: 0.7rem;
+      padding: 2px 8px;
+      border-radius: 20px;
+      font-weight: 600;
     }
 
-    /* ── Cards / Panels ───────────────────────────────────────────── */
-    .card {
-      background: var(--card-bg);
-      border: 1px solid var(--card-border);
-      border-radius: 10px;
-      padding: 22px 24px;
-      margin-bottom: 16px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.4);
-      transition: border-color 0.2s ease;
+    /* ── App body & two-column layout ────────────────────────────── */
+    .app-body {
+      background: #F0F2F5;
+      min-height: calc(100vh - 60px);
+      padding: 24px;
     }
-    .card:hover {
-      border-color: #42945F40;
+    .app-layout {
+      display: grid;
+      grid-template-columns: 1fr 420px;
+      gap: 20px;
+      max-width: 1280px;
+      margin: 0 auto;
+      align-items: start;
+    }
+    .form-panel {
+      min-width: 0;
+    }
+    .preview-panel {
+      position: sticky;
+      top: 84px;
+    }
+
+    /* ── Cards ────────────────────────────────────────────────────── */
+    .card {
+      background: #FFFFFF;
+      border: 1px solid #E5E7EB;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 16px;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
     }
     .card-title {
-      font-size: 0.72rem;
+      font-size: 0.7rem;
       font-weight: 600;
       text-transform: uppercase;
-      letter-spacing: 1.1px;
-      color: var(--text-muted);
-      margin-bottom: 18px;
+      letter-spacing: 0.8px;
+      color: #9CA3AF;
+      margin-bottom: 16px;
       display: flex;
       align-items: center;
-      gap: 0;
+      gap: 8px;
+    }
+    .card-desc {
+      font-size: 0.85rem;
+      color: #6B7280;
+      margin-bottom: 14px;
+      margin-top: -8px;
     }
     .step-badge {
-      display: inline-flex;
-      align-items: center;
-      background: #42945F22;
-      color: var(--accent);
-      border: 1px solid #42945F44;
-      border-radius: 4px;
-      padding: 1px 7px;
-      font-size: 0.75rem;
+      background: #F0FDF4;
+      color: #42945F;
+      border: 1px solid #BBF7D0;
+      border-radius: 6px;
+      padding: 1px 8px;
+      font-size: 0.7rem;
       font-weight: 700;
-      margin-right: 10px;
-      letter-spacing: 0.5px;
-      flex-shrink: 0;
     }
 
     /* ── Form elements ────────────────────────────────────────────── */
     label {
       display: block;
       font-size: 0.8rem;
-      color: var(--text-secondary);
-      margin-bottom: 6px;
+      font-weight: 500;
+      color: #374151;
+      margin-bottom: 5px;
     }
     input[type="text"],
     input[type="url"],
     textarea {
       width: 100%;
-      background: var(--input-bg);
-      border: 1px solid var(--input-border);
+      background: #F9FAFB;
+      border: 1px solid #D1D5DB;
       border-radius: 8px;
-      color: var(--text-primary);
+      color: #111827;
       font-family: inherit;
-      font-size: 0.9rem;
-      padding: 10px 13px;
-      transition: border-color 0.18s ease, box-shadow 0.18s ease;
+      font-size: 0.875rem;
+      padding: 9px 12px;
+      transition: border-color 0.15s, box-shadow 0.15s;
       outline: none;
     }
     input[type="text"]:focus,
     input[type="url"]:focus,
     textarea:focus {
-      border-color: var(--primary);
-      box-shadow: 0 0 0 3px #42945F22;
-    }
-    input[type="number"] {
-      width: 110px;
-      background: var(--input-bg);
-      border: 1px solid var(--input-border);
-      border-radius: 8px;
-      color: var(--text-primary);
-      font-family: inherit;
-      font-size: 0.9rem;
-      padding: 10px 13px;
-      transition: border-color 0.18s ease, box-shadow 0.18s ease;
-      outline: none;
-    }
-    input[type="number"]:focus {
-      border-color: var(--primary);
-      box-shadow: 0 0 0 3px #42945F22;
+      border-color: #42945F;
+      box-shadow: 0 0 0 3px rgba(66,148,95,0.12);
+      background: #fff;
     }
     input::placeholder,
     textarea::placeholder {
-      color: #4a5260;
+      color: #9CA3AF;
     }
     textarea {
       resize: vertical;
       min-height: 80px;
     }
     textarea.mono {
-      font-family: 'Courier New', Courier, monospace;
-      font-size: 0.82rem;
+      font-family: 'JetBrains Mono', 'Courier New', monospace;
+      font-size: 0.8rem;
     }
-
-    /* ── Buttons ──────────────────────────────────────────────────── */
-    .btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      border: none;
+    input[type="number"] {
+      width: 100px;
+      background: #F9FAFB;
+      border: 1px solid #D1D5DB;
       border-radius: 8px;
-      cursor: pointer;
+      color: #111827;
       font-family: inherit;
-      font-weight: 600;
-      padding: 11px 22px;
-      font-size: 0.9rem;
-      transition: filter 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease, opacity 0.15s ease;
+      font-size: 0.875rem;
+      padding: 9px 12px;
+      outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
     }
-    .btn:active { transform: scale(0.97); }
-    .btn:disabled {
-      opacity: 0.38;
+    input[type="number"]:focus {
+      border-color: #42945F;
+      box-shadow: 0 0 0 3px rgba(66,148,95,0.12);
+    }
+    input[type="number"]:disabled {
+      opacity: 0.4;
       cursor: not-allowed;
-      transform: none;
-    }
-    .btn-primary {
-      background: linear-gradient(135deg, var(--primary), var(--accent));
-      color: #fff;
-      border: none;
-    }
-    .btn-primary:not(:disabled):hover {
-      filter: brightness(1.1);
-      box-shadow: 0 4px 12px #42945F44;
-    }
-    .btn-export {
-      background: linear-gradient(135deg, var(--primary), var(--accent));
-      color: #fff;
-      border: none;
-      width: 100%;
-      justify-content: center;
-      padding: 16px 22px;
-      font-size: 1rem;
-      font-weight: 700;
-      box-shadow: 0 4px 20px #42945F55;
-      margin-top: 4px;
-    }
-    .btn-export:not(:disabled):hover {
-      filter: brightness(1.1);
-      box-shadow: 0 6px 28px #42945F77;
-    }
-    .btn-export:disabled {
-      opacity: 0.35;
-      box-shadow: none;
     }
 
     /* ── URL row ──────────────────────────────────────────────────── */
@@ -265,7 +209,50 @@
     }
     .url-row .btn {
       flex-shrink: 0;
-      margin-top: 0;
+    }
+
+    /* ── Buttons ──────────────────────────────────────────────────── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-family: inherit;
+      font-weight: 600;
+      padding: 10px 20px;
+      font-size: 0.875rem;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+    .btn:active { transform: scale(0.97); }
+    .btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+    .btn-primary {
+      background: #42945F;
+      color: #fff;
+    }
+    .btn-primary:not(:disabled):hover {
+      background: #377a4f;
+      box-shadow: 0 2px 8px rgba(66,148,95,0.3);
+    }
+    .btn-export {
+      background: #42945F;
+      color: #fff;
+      width: 100%;
+      justify-content: center;
+      padding: 14px;
+      font-size: 1rem;
+      border-radius: 10px;
+    }
+    .btn-export:not(:disabled):hover {
+      background: #377a4f;
+      box-shadow: 0 2px 12px rgba(66,148,95,0.3);
+    }
+    .btn-export:disabled {
+      background: #D1D5DB;
+      color: #9CA3AF;
+      box-shadow: none;
     }
 
     /* ── Spinner ──────────────────────────────────────────────────── */
@@ -282,32 +269,77 @@
     .btn.loading .btn-label { display: none; }
     @keyframes spin { to { transform: rotate(360deg); } }
 
+    /* ── Error banner ─────────────────────────────────────────────── */
+    .error-banner {
+      background: #FEF2F2;
+      border: 1px solid #FECACA;
+      border-radius: 8px;
+      color: #DC2626;
+      font-size: 0.83rem;
+      padding: 10px 14px;
+      margin-top: 12px;
+      display: none;
+    }
+    .error-banner.visible { display: block; }
+
+    /* ── Analyzing animation ──────────────────────────────────────── */
+    .analyzing-box {
+      margin-top: 16px;
+      padding: 14px 16px;
+      background: #F9FAFB;
+      border: 1px solid #E5E7EB;
+      border-radius: 8px;
+    }
+    .analyzing-step {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 4px 0;
+      font-size: 0.83rem;
+      color: #6B7280;
+      opacity: 0;
+      transform: translateY(4px);
+      transition: opacity 0.3s, transform 0.3s;
+    }
+    .analyzing-step.visible { opacity: 1; transform: none; }
+    .analyzing-step.done { color: #42945F; }
+    .analyzing-step.active { color: #111827; font-weight: 500; }
+    .step-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: currentColor;
+      flex-shrink: 0;
+    }
+    .step-dot.spinning { animation: pulse 1s ease-in-out infinite; }
+    @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.3; } }
+
     /* ── Summary card ─────────────────────────────────────────────── */
     .summary-grid {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
-      gap: 12px;
+      gap: 10px;
     }
     .summary-item {
-      background: var(--input-bg);
-      border: 1px solid var(--card-border);
+      background: #F9FAFB;
+      border: 1px solid #E5E7EB;
       border-radius: 8px;
-      padding: 16px 14px;
+      padding: 14px;
       text-align: center;
     }
     .summary-item .value {
-      font-size: 2rem;
-      font-weight: 800;
-      color: var(--accent);
+      font-size: 1.6rem;
+      font-weight: 700;
+      color: #42945F;
       display: block;
     }
     .summary-item .desc {
-      font-size: 0.75rem;
-      color: var(--text-secondary);
-      margin-top: 4px;
+      font-size: 0.72rem;
+      color: #6B7280;
+      margin-top: 2px;
     }
-    .summary-item.detected .value { color: var(--primary); }
-    .summary-item.not-detected .value { color: var(--text-muted); }
+    .summary-item.detected .value { color: #42945F; }
+    .summary-item.not-detected .value { color: #9CA3AF; }
 
     /* ── Two-col header scripts ───────────────────────────────────── */
     .two-col {
@@ -319,86 +351,46 @@
     /* ── Checkout items ───────────────────────────────────────────── */
     .checkout-item {
       display: grid;
-      grid-template-columns: 130px 1fr;
-      gap: 12px;
+      grid-template-columns: 110px 1fr;
+      gap: 10px;
       align-items: start;
-      margin-bottom: 14px;
+      margin-bottom: 12px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #F3F4F6;
     }
-    .checkout-item:last-child { margin-bottom: 0; }
+    .checkout-item:last-child {
+      border-bottom: none;
+      margin-bottom: 0;
+      padding-bottom: 0;
+    }
     .checkout-meta {
-      padding-top: 10px;
+      padding-top: 28px;
     }
     .checkout-meta .platform {
       font-size: 0.78rem;
       font-weight: 600;
-      color: var(--accent);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
+      color: #42945F;
     }
     .checkout-meta .anchor {
       font-size: 0.72rem;
-      color: var(--text-secondary);
+      color: #6B7280;
       margin-top: 2px;
-      white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+      white-space: nowrap;
     }
-    .checkout-meta .bundle-tag {
+    .bundle-tag {
       display: inline-block;
       font-size: 0.65rem;
-      background: var(--input-bg);
-      border: 1px solid #42945F33;
-      color: var(--accent);
+      background: #F0FDF4;
+      border: 1px solid #BBF7D0;
+      color: #42945F;
       border-radius: 4px;
-      padding: 1px 6px;
-      margin-top: 5px;
+      padding: 1px 5px;
+      margin-top: 3px;
     }
 
-    /* ── Error banner ─────────────────────────────────────────────── */
-    .error-banner {
-      background: var(--error-bg);
-      border: 1px solid var(--error-border);
-      border-radius: 8px;
-      color: var(--error-text);
-      font-size: 0.85rem;
-      padding: 12px 16px;
-      margin-top: 12px;
-      display: none;
-    }
-    .error-banner.visible { display: block; }
-
-    /* ── Bundle Images ────────────────────────────────────────────── */
-    .bundle-image-item {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 10px 0;
-      border-bottom: 1px solid var(--card-border);
-      flex-wrap: wrap;
-    }
-    .bundle-image-item:last-child { border-bottom: none; }
-    .bundle-image-thumb {
-      width: 60px;
-      height: 60px;
-      object-fit: contain;
-      border-radius: 8px;
-      background: var(--input-bg);
-      border: 1px solid #42945F33;
-      flex-shrink: 0;
-    }
-    .bundle-image-label {
-      font-weight: 600;
-      color: var(--accent);
-      white-space: nowrap;
-      min-width: 70px;
-    }
-    .bundle-image-item input[type="url"] {
-      flex: 1;
-      min-width: 200px;
-    }
-
-    /* ── Delay section ───────────────────────────────────────────── */
+    /* ── Delay section ────────────────────────────────────────────── */
     .delay-row {
       display: flex;
       flex-direction: column;
@@ -414,36 +406,81 @@
       width: 8px;
       height: 8px;
       border-radius: 50%;
-      background: var(--text-muted);
+      background: #D1D5DB;
       flex-shrink: 0;
     }
-    .delay-status-dot.detected { background: var(--primary); box-shadow: 0 0 6px var(--primary); }
-    .delay-status-dot.not-detected { background: var(--text-muted); }
-    .delay-status-text { color: var(--text-secondary); }
-    .delay-status-text.detected { color: var(--primary); }
-    .delay-input-row label { margin-bottom: 6px; }
-    .delay-unit { color: var(--text-secondary); font-size: 0.85rem; }
-    input[type="number"]:disabled { opacity: 0.4; cursor: not-allowed; }
+    .delay-status-dot.detected { background: #42945F; }
+    .delay-status-dot.not-detected { background: #D1D5DB; }
+    .delay-status-text { color: #6B7280; }
+    .delay-status-text.detected { color: #42945F; }
+    .delay-input-row label { margin-bottom: 5px; }
+    .delay-unit { color: #6B7280; font-size: 0.85rem; }
 
-    /* ── Hidden sections ──────────────────────────────────────────── */
-    .section-hidden { display: none; }
-
-    /* ── Responsive ───────────────────────────────────────────────── */
-    @media (max-width: 600px) {
-      .two-col { grid-template-columns: 1fr; }
-      .summary-grid { grid-template-columns: 1fr; }
-      .checkout-item { grid-template-columns: 1fr; }
-      .url-row { flex-direction: column; }
-      .url-row .btn { width: 100%; justify-content: center; }
+    /* ── Bundle image items ───────────────────────────────────────── */
+    .bundle-image-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 0;
+      border-bottom: 1px solid #F3F4F6;
+      flex-wrap: wrap;
+    }
+    .bundle-image-item:last-child { border-bottom: none; }
+    .bundle-image-thumb {
+      width: 56px;
+      height: 56px;
+      object-fit: contain;
+      border-radius: 8px;
+      background: #F9FAFB;
+      border: 1px solid #E5E7EB;
+      flex-shrink: 0;
+    }
+    .bundle-image-label {
+      font-weight: 600;
+      color: #374151;
+      font-size: 0.83rem;
+      white-space: nowrap;
+      min-width: 70px;
+    }
+    .bundle-image-item input[type="url"] {
+      flex: 1;
+      min-width: 200px;
     }
 
-    /* ── Extra Scripts Section (Phase 6) ─────────────────────────── */
+    /* ── Script control buttons ───────────────────────────────────── */
+    .btn-script-control {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      background: #F9FAFB;
+      border: 1px solid #E5E7EB;
+      border-radius: 6px;
+      color: #6B7280;
+      font-size: 0.85rem;
+      cursor: pointer;
+      padding: 0;
+      font-family: inherit;
+      transition: all 0.15s;
+    }
+    .btn-script-control:hover:not(:disabled) {
+      border-color: #42945F;
+      color: #42945F;
+      background: #F0FDF4;
+    }
+    .btn-script-control:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+    }
+
+    /* ── Extra scripts items ──────────────────────────────────────── */
     .script-item {
       display: flex;
       flex-direction: column;
       gap: 8px;
       padding: 12px 0;
-      border-bottom: 1px solid var(--card-border);
+      border-bottom: 1px solid #E5E7EB;
     }
     .script-item:last-child {
       border-bottom: none;
@@ -457,7 +494,7 @@
     .script-item-label {
       font-size: 0.8rem;
       font-weight: 400;
-      color: var(--text-primary);
+      color: #111827;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
@@ -468,201 +505,321 @@
       gap: 4px;
       flex-shrink: 0;
     }
-    .btn-script-control {
-      display: inline-flex;
+
+    /* ── Hidden sections ──────────────────────────────────────────── */
+    .section-hidden { display: none; }
+
+    /* ── Export hint ──────────────────────────────────────────────── */
+    .export-hint {
+      font-size: 0.75rem;
+      color: #9CA3AF;
+      text-align: center;
+      margin-top: 8px;
+    }
+
+    /* ── Preview panel ────────────────────────────────────────────── */
+    .preview-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+    .preview-title {
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: #374151;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+    }
+    .preview-badge {
+      font-size: 0.7rem;
+      padding: 2px 8px;
+      border-radius: 20px;
+      background: #F3F4F6;
+      color: #6B7280;
+      border: 1px solid #E5E7EB;
+    }
+    .preview-badge.ready {
+      background: #F0FDF4;
+      color: #42945F;
+      border-color: #BBF7D0;
+    }
+    .browser-mockup {
+      background: #fff;
+      border: 1px solid #E5E7EB;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    }
+    .browser-bar {
+      background: #F3F4F6;
+      border-bottom: 1px solid #E5E7EB;
+      padding: 8px 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .browser-dots {
+      display: flex;
+      gap: 5px;
+    }
+    .bdot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+    .bdot-red    { background: #FC605B; }
+    .bdot-yellow { background: #FDBC40; }
+    .bdot-green  { background: #34C84A; }
+    .browser-url {
+      flex: 1;
+      background: #fff;
+      border: 1px solid #E5E7EB;
+      border-radius: 6px;
+      padding: 3px 10px;
+      font-size: 0.75rem;
+      color: #6B7280;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .browser-content {
+      position: relative;
+      height: 520px;
+    }
+    .preview-placeholder {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
-      width: 28px;
-      height: 28px;
-      background: var(--input-bg);
-      border: 1px solid var(--input-border);
-      border-radius: 6px;
-      color: var(--text-secondary);
+      gap: 12px;
+      color: #9CA3AF;
       font-size: 0.85rem;
-      cursor: pointer;
-      padding: 0;
-      font-family: inherit;
-      transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+      text-align: center;
+      padding: 20px;
     }
-    .btn-script-control:hover:not(:disabled) {
-      border-color: var(--primary);
-      color: var(--accent);
-      background: var(--input-bg);
+    #preview-iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+      display: block;
     }
-    .btn-script-control:disabled {
-      opacity: 0.25;
-      cursor: not-allowed;
+
+    /* ── Responsive ───────────────────────────────────────────────── */
+    @media (max-width: 900px) {
+      .app-layout { grid-template-columns: 1fr; }
+      .preview-panel { display: none; }
+      .two-col { grid-template-columns: 1fr; }
+      .summary-grid { grid-template-columns: repeat(3,1fr); }
+      .checkout-item { grid-template-columns: 1fr; }
+      .url-row { flex-direction: column; }
+      .url-row .btn { width: 100%; justify-content: center; }
     }
-    @media (max-width: 600px) {
-      #btn-add-script {
-        width: 100%;
-        justify-content: center;
-      }
+    @media (max-width: 500px) {
+      .summary-grid { grid-template-columns: 1fr; }
+      #btn-add-script { width: 100%; justify-content: center; }
     }
   </style>
 </head>
 <body>
 
-  <!-- ── App Header ───────────────────────────────────────────────── -->
-  <header class="app-header">
-    <div class="container">
-      <div class="app-header-inner">
-        <div class="app-header-text">
-          <h1>
-            VSL Cloner
-            <span class="version-badge">v1.1</span>
-          </h1>
-          <p>Clone qualquer página VSL e gere sua versão de afiliado em menos de 1 minuto</p>
+  <!-- ── Navbar ───────────────────────────────────────────────────── -->
+  <nav class="navbar">
+    <div class="navbar-inner">
+      <div class="navbar-brand">
+        <img src="https://affiliview-v2.vercel.app/og-logo.png" alt="OG Group" class="navbar-logo" />
+        <div class="navbar-title">
+          <span class="navbar-name">VSL Cloner</span>
+          <span class="navbar-tagline">by OG Group</span>
         </div>
       </div>
+      <span class="navbar-badge">v1.1</span>
     </div>
-  </header>
+  </nav>
 
-  <div class="container">
+  <!-- ── App body ─────────────────────────────────────────────────── -->
+  <div class="app-body">
+    <div class="app-layout">
 
-    <!-- ── Secao A: URL Input ──────────────────────────────────────── -->
-    <section class="card" id="section-fetch">
-      <p class="card-title"><span class="step-badge">A</span> Página VSL para Clonar</p>
+      <!-- ── Form panel ─────────────────────────────────────────── -->
+      <div class="form-panel" id="form-panel">
 
-      <label for="url-input">URL da página VSL</label>
-      <div class="url-row">
-        <input
-          type="url"
-          id="url-input"
-          placeholder="https://exemplo.com/pagina-vsl"
-          autocomplete="off"
-          spellcheck="false"
-        />
-        <button class="btn btn-primary" id="btn-fetch" type="button">
-          <span class="spinner" aria-hidden="true"></span>
-          <span class="btn-label">Extrair Página</span>
-        </button>
-      </div>
-
-      <div class="error-banner" id="fetch-error" role="alert"></div>
-    </section>
-
-    <!-- ── Secao Resumo ────────────────────────────────────────────── -->
-    <section class="card section-hidden" id="section-summary">
-      <p class="card-title">Resultado da Extracao</p>
-      <div class="summary-grid">
-        <div class="summary-item" id="summary-scripts">
-          <span class="value" id="val-scripts">0</span>
-          <span class="desc">Scripts / Trackers Removidos</span>
-        </div>
-        <div class="summary-item" id="summary-vsl">
-          <span class="value" id="val-vsl">-</span>
-          <span class="desc">Player VSL Detectado</span>
-        </div>
-        <div class="summary-item">
-          <span class="value" id="val-links">0</span>
-          <span class="desc">Links de Checkout Encontrados</span>
-        </div>
-      </div>
-    </section>
-
-    <!-- ── Secao B: Header Scripts ────────────────────────────────── -->
-    <section class="card section-hidden" id="section-header">
-      <p class="card-title"><span class="step-badge">B</span> Scripts de Header do Afiliado</p>
-      <div class="two-col">
-        <div>
-          <label for="header-pixel">Pixel &amp; Scripts de Rastreamento</label>
-          <textarea
-            id="header-pixel"
-            class="mono"
-            placeholder="<!-- Cole aqui seu Meta Pixel, GTM, etc -->"
-            rows="5"
-          ></textarea>
-        </div>
-        <div>
-          <label for="header-preload">Script VTURB / Preload</label>
-          <textarea
-            id="header-preload"
-            class="mono"
-            placeholder="<!-- Cole aqui o script de preload do VTURB -->"
-            rows="5"
-          ></textarea>
-        </div>
-      </div>
-    </section>
-
-    <!-- ── Secao C.3: Scripts Extras ────────────────────────────────── -->
-    <section class="card section-hidden" id="section-extra-scripts">
-      <p class="card-title"><span class="step-badge">C.3</span> Scripts Extras</p>
-      <div id="scripts-list-container">
-        <!-- Preenchido dinamicamente por JS -->
-      </div>
-      <button class="btn btn-primary" id="btn-add-script" type="button"
-              style="margin-top: 12px; padding: 8px 16px; font-size: 0.85rem;">
-        + Adicionar Script
-      </button>
-    </section>
-
-    <!-- ── Secao C: Player Embed ──────────────────────────────────── -->
-    <section class="card section-hidden" id="section-player">
-      <p class="card-title"><span class="step-badge">C</span> Embed do Player VTURB</p>
-      <label for="vsl-embed">Código de embed do seu player</label>
-      <textarea
-        id="vsl-embed"
-        class="mono"
-        placeholder="<!-- Cole aqui o embed completo do seu player VTURB -->"
-        rows="6"
-        style="min-height: 110px;"
-      ></textarea>
-    </section>
-
-    <!-- ── Secao C.5: Delay do Player VTURB ─────────────────────────── -->
-    <section class="card section-hidden" id="section-delay">
-      <p class="card-title"><span class="step-badge">C.5</span> Delay do Player VTURB</p>
-      <div class="delay-row">
-        <div class="delay-status" id="delay-status">
-          <span class="delay-status-dot" id="delay-status-dot"></span>
-          <span class="delay-status-text" id="delay-status-text">Não detectado</span>
-        </div>
-        <div class="delay-input-row">
-          <label for="delay-seconds">Segundos antes de revelar botões</label>
-          <div style="display:flex;align-items:center;gap:10px;">
+        <!-- Secao A: URL Input -->
+        <section class="card" id="section-fetch">
+          <p class="card-title"><span class="step-badge">1</span> Página para Clonar</p>
+          <p class="card-desc">Cole a URL da VSL que deseja clonar e clique em Analisar</p>
+          <div class="url-row">
             <input
-              type="number"
-              id="delay-seconds"
-              min="1"
-              max="300"
-              step="1"
-              placeholder="—"
+              type="url"
+              id="url-input"
+              placeholder="https://exemplo.com/pagina-vsl"
+              autocomplete="off"
+              spellcheck="false"
             />
-            <span class="delay-unit">seg</span>
+            <button class="btn btn-primary" id="btn-fetch" type="button">
+              <span class="spinner" aria-hidden="true"></span>
+              <span class="btn-label">Analisar Página</span>
+            </button>
+          </div>
+          <div class="error-banner" id="fetch-error" role="alert"></div>
+          <!-- Analyzing animation — hidden by default -->
+          <div class="analyzing-box" id="analyzing-box" style="display:none;">
+            <div class="analyzing-steps" id="analyzing-steps"></div>
+          </div>
+        </section>
+
+        <!-- Secao Resumo -->
+        <section class="card section-hidden" id="section-summary">
+          <p class="card-title">Resultado da Análise</p>
+          <div class="summary-grid">
+            <div class="summary-item" id="summary-scripts">
+              <span class="value" id="val-scripts">0</span>
+              <span class="desc">Trackers Removidos</span>
+            </div>
+            <div class="summary-item" id="summary-vsl">
+              <span class="value" id="val-vsl">—</span>
+              <span class="desc">Player VTURB</span>
+            </div>
+            <div class="summary-item">
+              <span class="value" id="val-links">0</span>
+              <span class="desc">Links de Checkout</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- Secao B: Header Scripts -->
+        <section class="card section-hidden" id="section-header">
+          <p class="card-title"><span class="step-badge">B</span> Scripts de Header do Afiliado</p>
+          <div class="two-col">
+            <div>
+              <label for="header-pixel">Pixel &amp; Scripts de Rastreamento</label>
+              <textarea
+                id="header-pixel"
+                class="mono"
+                placeholder="<!-- Cole aqui seu Meta Pixel, GTM, etc -->"
+                rows="5"
+              ></textarea>
+            </div>
+            <div>
+              <label for="header-preload">Script VTURB / Preload</label>
+              <textarea
+                id="header-preload"
+                class="mono"
+                placeholder="<!-- Cole aqui o script de preload do VTURB -->"
+                rows="5"
+              ></textarea>
+            </div>
+          </div>
+        </section>
+
+        <!-- Secao C.3: Scripts Extras -->
+        <section class="card section-hidden" id="section-extra-scripts">
+          <p class="card-title"><span class="step-badge">C.3</span> Scripts Extras</p>
+          <div id="scripts-list-container">
+            <!-- Preenchido dinamicamente por JS -->
+          </div>
+          <button class="btn btn-primary" id="btn-add-script" type="button"
+                  style="margin-top: 12px; padding: 8px 16px; font-size: 0.85rem;">
+            + Adicionar Script
+          </button>
+        </section>
+
+        <!-- Secao C: Player Embed -->
+        <section class="card section-hidden" id="section-player">
+          <p class="card-title"><span class="step-badge">C</span> Embed do Player VTURB</p>
+          <label for="vsl-embed">Código de embed do seu player</label>
+          <textarea
+            id="vsl-embed"
+            class="mono"
+            placeholder="<!-- Cole aqui o embed completo do seu player VTURB -->"
+            rows="6"
+            style="min-height: 110px;"
+          ></textarea>
+        </section>
+
+        <!-- Secao C.5: Delay do Player VTURB -->
+        <section class="card section-hidden" id="section-delay">
+          <p class="card-title"><span class="step-badge">C.5</span> Delay do Player VTURB</p>
+          <div class="delay-row">
+            <div class="delay-status" id="delay-status">
+              <span class="delay-status-dot" id="delay-status-dot"></span>
+              <span class="delay-status-text" id="delay-status-text">Não detectado</span>
+            </div>
+            <div class="delay-input-row">
+              <label for="delay-seconds">Segundos antes de revelar botões</label>
+              <div style="display:flex;align-items:center;gap:10px;">
+                <input
+                  type="number"
+                  id="delay-seconds"
+                  min="1"
+                  max="300"
+                  step="1"
+                  placeholder="—"
+                />
+                <span class="delay-unit">seg</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Secao C.6: Imagens de Bundle -->
+        <section class="card section-hidden" id="section-bundle-images">
+          <p class="card-title"><span class="step-badge">C.6</span> Imagens de Bundle</p>
+          <div id="bundle-images-container">
+            <!-- Preenchido dinamicamente por JS -->
+          </div>
+        </section>
+
+        <!-- Secao D: Checkout Links -->
+        <section class="card section-hidden" id="section-checkout">
+          <p class="card-title">
+            <span class="step-badge">D</span> Links de Checkout do Afiliado
+            <span class="badge" id="checkout-count-badge">0</span>
+          </p>
+          <div id="checkout-inputs-container">
+            <!-- Preenchido dinamicamente por JS -->
+          </div>
+        </section>
+
+        <!-- Botao Export -->
+        <section class="card card-export">
+          <button class="btn btn-export" id="btn-export" type="button" disabled>
+            Gerar Página do Afiliado
+          </button>
+          <p class="export-hint">Baixa um ZIP com o HTML e todos os assets da página</p>
+        </section>
+
+      </div><!-- /.form-panel -->
+
+      <!-- ── Preview panel ──────────────────────────────────────── -->
+      <div class="preview-panel" id="preview-panel">
+        <div class="preview-header">
+          <span class="preview-title">Pré-visualização</span>
+          <span class="preview-badge" id="preview-badge">Aguardando URL</span>
+        </div>
+        <div class="browser-mockup">
+          <div class="browser-bar">
+            <div class="browser-dots">
+              <span class="bdot bdot-red"></span>
+              <span class="bdot bdot-yellow"></span>
+              <span class="bdot bdot-green"></span>
+            </div>
+            <div class="browser-url" id="browser-url-bar">—</div>
+          </div>
+          <div class="browser-content">
+            <div class="preview-placeholder" id="preview-placeholder">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#D1D5DB" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+              <p>Extraia uma página para ver a pré-visualização</p>
+            </div>
+            <iframe id="preview-iframe" style="display:none;" sandbox="allow-same-origin" title="Preview da página clonada"></iframe>
           </div>
         </div>
-      </div>
-    </section>
+      </div><!-- /.preview-panel -->
 
-    <!-- ── Secao C.6: Imagens de Bundle ────────────────────────────── -->
-    <section class="card section-hidden" id="section-bundle-images">
-      <p class="card-title"><span class="step-badge">C.6</span> Imagens de Bundle</p>
-      <div id="bundle-images-container">
-        <!-- Preenchido dinamicamente por JS -->
-      </div>
-    </section>
-
-    <!-- ── Secao D: Checkout Links ────────────────────────────────── -->
-    <section class="card section-hidden" id="section-checkout">
-      <p class="card-title">
-        <span class="step-badge">D</span> Links de Checkout do Afiliado
-        <span class="badge" id="checkout-count-badge">0</span>
-      </p>
-      <div id="checkout-inputs-container">
-        <!-- Preenchido dinamicamente por JS -->
-      </div>
-    </section>
-
-    <!-- ── Botao Export ────────────────────────────────────────────── -->
-    <section class="card">
-      <button class="btn btn-export" id="btn-export" type="button" disabled>
-        Gerar Pagina Afiliado
-      </button>
-    </section>
-
-  </div><!-- /.container -->
+    </div><!-- /.app-layout -->
+  </div><!-- /.app-body -->
 
   <script>
     'use strict';
@@ -1133,8 +1290,12 @@
         // Habilita botao de export
         btnExport.disabled = false;
 
+        stopAnalyzing(true);
+        updatePreview(state.fetchedHtml);
+
       } catch (err) {
         showError('Falha de conexão com o servidor. Verifique se o servidor está rodando.');
+        stopAnalyzing(false);
       } finally {
         setFetchLoading(false);
       }
@@ -1217,9 +1378,101 @@
         showError('Falha de conexão ao exportar. Verifique se o servidor está rodando.');
       } finally {
         btnExport.disabled = false;
-        btnExport.textContent = 'Gerar Pagina Afiliado';
+        btnExport.textContent = 'Gerar Página do Afiliado';
       }
     });
+
+    // ── Analyzing animation ──────────────────────────────────────────
+    var analyzingTimer = null;
+    var analyzingStepIdx = 0;
+    var ANALYZING_STEPS = [
+      'Conectando à página...',
+      'Baixando HTML...',
+      'Removendo trackers e pixels...',
+      'Detectando player VTURB...',
+      'Analisando links de checkout...',
+      'Finalizando extração...',
+    ];
+
+    function startAnalyzing() {
+      var box = document.getElementById('analyzing-box');
+      var stepsEl = document.getElementById('analyzing-steps');
+      if (!box || !stepsEl) return;
+      stepsEl.innerHTML = '';
+      analyzingStepIdx = 0;
+      ANALYZING_STEPS.forEach(function(text) {
+        var div = document.createElement('div');
+        div.className = 'analyzing-step';
+        div.innerHTML = '<span class="step-dot"></span><span>' + text + '</span>';
+        stepsEl.appendChild(div);
+      });
+      box.style.display = 'block';
+      advanceAnalyzing();
+    }
+
+    function advanceAnalyzing() {
+      var steps = document.querySelectorAll('.analyzing-step');
+      if (analyzingStepIdx > 0 && steps[analyzingStepIdx - 1]) {
+        var prev = steps[analyzingStepIdx - 1];
+        prev.classList.remove('active');
+        prev.classList.add('done');
+        var dot = prev.querySelector('.step-dot');
+        if (dot) { dot.classList.remove('spinning'); dot.style.background = '#42945F'; }
+        prev.querySelector('span:last-child').textContent = '✓ ' + ANALYZING_STEPS[analyzingStepIdx - 1];
+      }
+      if (analyzingStepIdx < steps.length) {
+        var cur = steps[analyzingStepIdx];
+        cur.classList.add('visible', 'active');
+        var cdot = cur.querySelector('.step-dot');
+        if (cdot) cdot.classList.add('spinning');
+        analyzingStepIdx++;
+        analyzingTimer = setTimeout(advanceAnalyzing, 600);
+      }
+    }
+
+    function stopAnalyzing(success) {
+      clearTimeout(analyzingTimer);
+      var box = document.getElementById('analyzing-box');
+      if (!box) return;
+      if (!success) { box.style.display = 'none'; return; }
+      // Mark all remaining steps as done
+      var steps = document.querySelectorAll('.analyzing-step');
+      steps.forEach(function(s, i) {
+        s.classList.remove('active');
+        s.classList.add('visible', 'done');
+        var dot = s.querySelector('.step-dot');
+        if (dot) { dot.classList.remove('spinning'); dot.style.background = '#42945F'; }
+        s.querySelector('span:last-child').textContent = '✓ ' + ANALYZING_STEPS[i];
+      });
+      // After 1.5s, hide the box
+      setTimeout(function() { if (box) box.style.display = 'none'; }, 1500);
+    }
+
+    // Wrap original setFetchLoading to also trigger analyzing animation
+    var _origSetFetchLoading = setFetchLoading;
+    setFetchLoading = function(loading) {
+      _origSetFetchLoading(loading);
+      if (loading) startAnalyzing();
+    };
+
+    // ── Preview panel ────────────────────────────────────────────────
+    function updatePreview(html) {
+      var iframe = document.getElementById('preview-iframe');
+      var placeholder = document.getElementById('preview-placeholder');
+      var badge = document.getElementById('preview-badge');
+      var urlBar = document.getElementById('browser-url-bar');
+      if (!iframe) return;
+      // Revoke previous blob URL if any
+      if (iframe._blobUrl) URL.revokeObjectURL(iframe._blobUrl);
+      var blob = new Blob([html], { type: 'text/html' });
+      var blobUrl = URL.createObjectURL(blob);
+      iframe._blobUrl = blobUrl;
+      iframe.src = blobUrl;
+      iframe.style.display = 'block';
+      if (placeholder) placeholder.style.display = 'none';
+      if (badge) { badge.textContent = 'Pronta'; badge.className = 'preview-badge ready'; }
+      if (urlBar) { urlBar.textContent = state.fetchedUrl || 'página clonada'; }
+    }
 
   </script>
 </body>

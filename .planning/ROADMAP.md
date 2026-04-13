@@ -23,8 +23,8 @@ Decimal phases appear between their surrounding integers in numeric order.
 ### Milestone v1.1 — Editor Avançado
 
 - [x] **Phase 4: VTURB Delay + Export Idempotency** - extract and expose delay control; fix double-inject export bug (completed 2026-04-11)
-- [ ] **Phase 5: Bundle Images** - detect, preview, and replace product bottle images per pricing section
-- [ ] **Phase 6: Extra Scripts Tab** - dedicated scripts tab with add/remove/reorder and head injection
+- [x] **Phase 5: Bundle Images** - detect, preview, and replace product bottle images per pricing section (completed 2026-04-13)
+- [x] **Phase 6: Extra Scripts Tab** - dedicated scripts tab with add/remove/reorder and head injection (completed 2026-04-13)
 
 ## Phase Details
 
@@ -103,8 +103,8 @@ Plans:
   3. When no bundle images are detected, the section shows a graceful empty state without errors
 **Plans**: 2 plans
 Plans:
-- [ ] 05-01-PLAN.md — server.js: detectBundleImages helper, /api/fetch extension, buildExportHtml image replacement, both export routes updated
-- [ ] 05-02-PLAN.md — public/index.html: Section C.6 bundle images UI, state extension, fetch/export handler wiring
+- [x] 05-01-PLAN.md — server.js: detectBundleImages helper, /api/fetch extension, buildExportHtml image replacement, both export routes updated
+- [x] 05-02-PLAN.md — public/index.html: Section C.6 bundle images UI, state extension, fetch/export handler wiring
 **UI hint**: yes
 
 ### Phase 6: Extra Scripts Tab
@@ -118,8 +118,8 @@ Plans:
   4. In the exported HTML, extra scripts appear in `<head>` after `headerPixel` and `headerPreload` — never duplicated on repeated exports
 **Plans**: 2 plans
 Plans:
-- [ ] 06-01-PLAN.md — server.js: extraScripts destructuring in /api/export and /api/export-zip, buildExportHtml injection with auto-wrap
-- [ ] 06-02-PLAN.md — public/index.html: section #section-extra-scripts card HTML + CSS, JS state + add/remove/reorder handlers, fetch reveal + export payload wiring
+- [x] 06-01-PLAN.md — server.js: extraScripts destructuring in /api/export and /api/export-zip, buildExportHtml injection with auto-wrap
+- [x] 06-02-PLAN.md — public/index.html: section #section-extra-scripts card HTML + CSS, JS state + add/remove/reorder handlers, fetch reveal + export payload wiring
 **UI hint**: yes
 
 ## Progress
@@ -133,5 +133,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | 2. Frontend UI | 1/1 | Shipped (v1.0) | 2026-04-10 |
 | 3. Integration & Polish | —/— | Shipped (v1.0) | 2026-04-11 |
 | 4. VTURB Delay + Export Idempotency | 2/2 | Complete   | 2026-04-11 |
-| 5. Bundle Images | 0/2 | Not started | - |
-| 6. Extra Scripts Tab | 0/2 | Not started | - |
+| 5. Bundle Images | 2/2 | Complete | 2026-04-13 |
+| 6. Extra Scripts Tab | 2/2 | Complete | 2026-04-13 |

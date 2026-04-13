@@ -753,8 +753,8 @@ app.post('/api/export-zip', async (req, res) => {
     const $$ = cheerio.load(outputHtml, { decodeEntities: false });
     const assets = collectAssets($$, pageUrl, usedPaths); // absUrl → localPath
 
-    // Download in batches of 5
-    const entries = [...assets.entries()];
+    // Download in batches of 5, capped at 100 assets to prevent DoS
+    const entries = [...assets.entries()].slice(0, 100);
     for (let i = 0; i < entries.length; i += 5) {
       await Promise.all(
         entries.slice(i, i + 5).map(async ([absUrl, localPath]) => {

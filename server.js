@@ -292,30 +292,63 @@ function detectBundleImages($, checkoutLinks) {
 
 /**
  * Extracts the VTURB delay block from rawHtml BEFORE cleanHtml() removes it.
- * The block is identified by co-presence of delaySeconds declaration AND
- * displayHiddenElements in the same <script> tag. Returns null if not found.
+ *
+ * Handles three common patterns:
+ *   1. Same script: var delaySeconds = N  +  displayHiddenElements in same <script>
+ *   2. Split scripts: delaySeconds declared in one tag, displayHiddenElements in another
+ *   3. Inline number: displayHiddenElements(N, ...) with no separate variable
+ *
+ * Returns null if no VTURB delay pattern is found.
  * DELAY-01
  */
 function detectVturbDelay(rawHtml) {
-  // { decodeEntities: false } required — matches cleanHtml() convention (PITFALLS.md Pitfall 7)
+  // { decodeEntities: false } required — matches cleanHtml() convention
   const $ = cheerio.load(rawHtml, { decodeEntities: false });
-  let result = null;
 
+  // Collect all script contents
+  const scripts = [];
   $('script').each((_, el) => {
-    if (result) return; // first match only
-    // Prefer .html() over .text() for script content (PITFALLS.md Pitfall 12)
     const content = $(el).html() || $(el).text() || '';
-    // Dual-condition anchor: both keywords must appear in the same block (PITFALLS.md Pitfall 2)
-    const delayMatch = content.match(/(?:var|let|const)\s+delaySeconds\s*=\s*(\d+(?:\.\d+)?)/);
-    if (delayMatch && /displayHiddenElements/.test(content)) {
-      result = {
-        delaySeconds: parseFloat(delayMatch[1]),
-        delayScriptContent: content, // full original body — preserved verbatim
-      };
-    }
+    if (content.trim()) scripts.push(content);
   });
 
-  return result; // null when not present
+  // Pattern 1: same-script — both delaySeconds declaration and displayHiddenElements present
+  for (const content of scripts) {
+    const delayMatch = content.match(/(?:var|let|const)\s+delaySeconds\s*=\s*(\d+(?:\.\d+)?)/);
+    if (delayMatch && /displayHiddenElements/.test(content)) {
+      return {
+        delaySeconds: parseFloat(delayMatch[1]),
+        delayScriptContent: content,
+      };
+    }
+  }
+
+  // Pattern 2: split scripts — delaySeconds in one tag, displayHiddenElements anywhere on page
+  const pageHasDisplayHidden = scripts.some((c) => /displayHiddenElements/.test(c));
+  if (pageHasDisplayHidden) {
+    for (const content of scripts) {
+      const delayMatch = content.match(/(?:var|let|const)\s+delaySeconds\s*=\s*(\d+(?:\.\d+)?)/);
+      if (delayMatch) {
+        return {
+          delaySeconds: parseFloat(delayMatch[1]),
+          delayScriptContent: content,
+        };
+      }
+    }
+  }
+
+  // Pattern 3: inline number — displayHiddenElements(N, ...) with no separate variable
+  for (const content of scripts) {
+    const inlineMatch = content.match(/displayHiddenElements\s*\(\s*(\d+(?:\.\d+)?)\s*,/);
+    if (inlineMatch) {
+      return {
+        delaySeconds: parseFloat(inlineMatch[1]),
+        delayScriptContent: content,
+      };
+    }
+  }
+
+  return null;
 }
 
 // ── Route: POST /api/fetch ───────────────────────────────────────────────────

@@ -59,11 +59,11 @@ All sizes are inherited from the existing index.html design system. No new type 
 | Body | 15px (0.9rem inputs) | 400 | 1.6 |
 | Label | 12.8px (0.8rem) | 400 | 1.6 |
 | Card title | 11.5px (0.72rem) | 700 (uppercase) | 1.0 |
-| Script item index label | 12.8px (0.8rem) | 600 | 1.0 |
+| Script item index label | 12.8px (0.8rem) | 400 | 1.0 |
 
 Card title follows `.card-title` rule: `font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #666`.
 
-Script item label ("Script 1:", "Script 2:", etc.) uses `font-size: 0.8rem; font-weight: 600; color: #ccc` — same as `.bundle-image-label`.
+Script item label ("Script 1:", "Script 2:", etc.) uses `font-size: 0.8rem; font-weight: 400; color: #ccc` — ordinal counter, no emphasis needed.
 
 ---
 
@@ -119,7 +119,7 @@ Contains: label span on left, button group on right.
 ### `.script-item-label`
 ```
 font-size: 0.8rem;
-font-weight: 600;
+font-weight: 400;
 color: #ccc;
 ```
 Text content: "Script 1", "Script 2", etc. (auto-numbered by render function).
@@ -175,6 +175,8 @@ Follows the `section-hidden` + `showSection()` pattern from phases 4 and 5.
 ```
 
 Position in DOM: after `#section-header` (B — Scripts de Header do Afiliado) and before `#section-player` (C — Embed do Player VTURB). This matches decision D-04.
+
+Primary visual anchor: `#btn-add-script` — inherits `.btn .btn-primary` accent styling (#ff6b35 background), drawing the eye as the entry point for the section.
 
 ### Per-item structure (rendered by JS)
 

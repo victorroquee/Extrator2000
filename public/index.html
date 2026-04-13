@@ -1294,6 +1294,7 @@
       if (!url) { showError('Digite a URL da página VSL antes de extrair.'); return; }
       clearError();
       setFetchLoading(true);
+      startAnalyzing();
 
       try {
         var response = await fetch('/api/fetch', {
@@ -1519,12 +1520,6 @@
       });
       setTimeout(function() { if (box) box.style.display = 'none'; }, 1500);
     }
-
-    var _origSetFetchLoading = setFetchLoading;
-    setFetchLoading = function(loading) {
-      _origSetFetchLoading(loading);
-      if (loading) startAnalyzing();
-    };
 
     // ── Checklist slots ───────────────────────────────────────────────
 

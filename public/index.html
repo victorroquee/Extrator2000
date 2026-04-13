@@ -4,117 +4,196 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>VSL Cloner</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <style>
+    /* ── CSS Custom Properties ────────────────────────────────────── */
+    :root {
+      --bg:              #111418;
+      --card-bg:         #1a1e24;
+      --card-border:     #252a32;
+      --primary:         #42945F;
+      --accent:          #8AAC46;
+      --text-primary:    #e8eaed;
+      --text-secondary:  #9aa0a8;
+      --text-muted:      #5f6368;
+      --input-bg:        #1e2328;
+      --input-border:    #2d3340;
+      --error-bg:        #2a1010;
+      --error-border:    #7a2020;
+      --error-text:      #f87171;
+    }
+
     /* ── Reset & Base ─────────────────────────────────────────────── */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
-      background: #0a0a0a;
-      color: #e0e0e0;
-      font-family: system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text-primary);
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
       font-size: 15px;
       line-height: 1.6;
       min-height: 100vh;
       padding: 0 0 60px;
     }
 
+    /* ── Scrollbar ────────────────────────────────────────────────── */
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: #2d3340; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #42945F66; }
+
     /* ── Layout ───────────────────────────────────────────────────── */
     .container {
-      max-width: 860px;
+      max-width: 900px;
       margin: 0 auto;
-      padding: 0 16px;
+      padding: 0 20px;
     }
 
     /* ── Header ───────────────────────────────────────────────────── */
     .app-header {
-      background: #111;
-      border-bottom: 1px solid #333;
-      padding: 18px 0;
-      margin-bottom: 32px;
+      background: linear-gradient(180deg, #0d1014 0%, #111418 100%);
+      border-bottom: 1px solid #42945F40;
+      padding: 20px 0;
+      margin-bottom: 28px;
     }
-    .app-header h1 {
-      font-size: 1.4rem;
+    .app-header-inner {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .app-header-text h1 {
+      font-size: 1.45rem;
       font-weight: 700;
-      color: #ff6b35;
+      background: linear-gradient(135deg, #42945F, #8AAC46);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
       letter-spacing: -0.3px;
+      line-height: 1.2;
+      display: flex;
+      align-items: center;
+      gap: 10px;
     }
-    .app-header p {
+    .version-badge {
+      display: inline-block;
+      background: #42945F22;
+      color: var(--accent);
+      border: 1px solid #42945F44;
+      border-radius: 10px;
+      padding: 1px 9px;
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      -webkit-text-fill-color: var(--accent);
+      vertical-align: middle;
+      position: relative;
+      top: -1px;
+    }
+    .version-badge::before {
+      content: '';
+      display: inline-block;
+      width: 5px;
+      height: 5px;
+      background: var(--accent);
+      border-radius: 50%;
+      margin-right: 5px;
+      vertical-align: middle;
+      position: relative;
+      top: -1px;
+    }
+    .app-header-text p {
       font-size: 0.82rem;
-      color: #888;
-      margin-top: 2px;
+      color: var(--text-secondary);
+      margin-top: 3px;
     }
 
     /* ── Cards / Panels ───────────────────────────────────────────── */
     .card {
-      background: #1a1a1a;
-      border: 1px solid #333;
-      border-radius: 8px;
-      padding: 24px;
-      margin-bottom: 20px;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      padding: 22px 24px;
+      margin-bottom: 16px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+      transition: border-color 0.2s ease;
+    }
+    .card:hover {
+      border-color: #42945F40;
     }
     .card-title {
       font-size: 0.72rem;
-      font-weight: 700;
+      font-weight: 600;
       text-transform: uppercase;
-      letter-spacing: 1px;
-      color: #666;
-      margin-bottom: 16px;
+      letter-spacing: 1.1px;
+      color: var(--text-muted);
+      margin-bottom: 18px;
+      display: flex;
+      align-items: center;
+      gap: 0;
     }
-    .card-title .badge {
-      display: inline-block;
-      background: #ff6b35;
-      color: #fff;
-      font-size: 0.65rem;
-      padding: 1px 6px;
-      border-radius: 10px;
-      margin-left: 8px;
-      vertical-align: middle;
+    .step-badge {
+      display: inline-flex;
+      align-items: center;
+      background: #42945F22;
+      color: var(--accent);
+      border: 1px solid #42945F44;
+      border-radius: 4px;
+      padding: 1px 7px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      margin-right: 10px;
+      letter-spacing: 0.5px;
+      flex-shrink: 0;
     }
 
     /* ── Form elements ────────────────────────────────────────────── */
     label {
       display: block;
       font-size: 0.8rem;
-      color: #999;
+      color: var(--text-secondary);
       margin-bottom: 6px;
     }
     input[type="text"],
     input[type="url"],
     textarea {
       width: 100%;
-      background: #2a2a2a;
-      border: 1px solid #333;
-      border-radius: 6px;
-      color: #e0e0e0;
+      background: var(--input-bg);
+      border: 1px solid var(--input-border);
+      border-radius: 8px;
+      color: var(--text-primary);
       font-family: inherit;
       font-size: 0.9rem;
-      padding: 10px 12px;
-      transition: border-color 0.15s;
+      padding: 10px 13px;
+      transition: border-color 0.18s ease, box-shadow 0.18s ease;
       outline: none;
     }
     input[type="text"]:focus,
     input[type="url"]:focus,
     textarea:focus {
-      border-color: #ff6b35;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px #42945F22;
     }
     input[type="number"] {
-      width: 100px;
-      background: #2a2a2a;
-      border: 1px solid #333;
-      border-radius: 6px;
-      color: #e0e0e0;
+      width: 110px;
+      background: var(--input-bg);
+      border: 1px solid var(--input-border);
+      border-radius: 8px;
+      color: var(--text-primary);
       font-family: inherit;
       font-size: 0.9rem;
-      padding: 10px 12px;
-      transition: border-color 0.15s;
+      padding: 10px 13px;
+      transition: border-color 0.18s ease, box-shadow 0.18s ease;
       outline: none;
     }
     input[type="number"]:focus {
-      border-color: #ff6b35;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px #42945F22;
     }
     input::placeholder,
     textarea::placeholder {
-      color: #555;
+      color: #4a5260;
     }
     textarea {
       resize: vertical;
@@ -131,35 +210,49 @@
       align-items: center;
       gap: 8px;
       border: none;
-      border-radius: 6px;
+      border-radius: 8px;
       cursor: pointer;
       font-family: inherit;
       font-weight: 600;
       padding: 11px 22px;
       font-size: 0.9rem;
-      transition: opacity 0.15s, transform 0.1s;
+      transition: filter 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease, opacity 0.15s ease;
     }
-    .btn:active { transform: scale(0.98); }
+    .btn:active { transform: scale(0.97); }
     .btn:disabled {
       opacity: 0.38;
       cursor: not-allowed;
       transform: none;
     }
     .btn-primary {
-      background: #ff6b35;
+      background: linear-gradient(135deg, var(--primary), var(--accent));
       color: #fff;
+      border: none;
     }
-    .btn-primary:not(:disabled):hover { opacity: 0.88; }
+    .btn-primary:not(:disabled):hover {
+      filter: brightness(1.1);
+      box-shadow: 0 4px 12px #42945F44;
+    }
     .btn-export {
-      background: #2a8a2a;
+      background: linear-gradient(135deg, var(--primary), var(--accent));
       color: #fff;
+      border: none;
       width: 100%;
       justify-content: center;
-      padding: 14px 22px;
+      padding: 16px 22px;
       font-size: 1rem;
+      font-weight: 700;
+      box-shadow: 0 4px 20px #42945F55;
       margin-top: 4px;
     }
-    .btn-export:not(:disabled):hover { opacity: 0.88; }
+    .btn-export:not(:disabled):hover {
+      filter: brightness(1.1);
+      box-shadow: 0 6px 28px #42945F77;
+    }
+    .btn-export:disabled {
+      opacity: 0.35;
+      box-shadow: none;
+    }
 
     /* ── URL row ──────────────────────────────────────────────────── */
     .url-row {
@@ -196,25 +289,25 @@
       gap: 12px;
     }
     .summary-item {
-      background: #222;
-      border: 1px solid #333;
-      border-radius: 6px;
-      padding: 14px;
+      background: var(--input-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      padding: 16px 14px;
       text-align: center;
     }
     .summary-item .value {
-      font-size: 1.8rem;
-      font-weight: 700;
-      color: #ff6b35;
+      font-size: 2rem;
+      font-weight: 800;
+      color: var(--accent);
       display: block;
     }
     .summary-item .desc {
       font-size: 0.75rem;
-      color: #888;
-      margin-top: 2px;
+      color: var(--text-secondary);
+      margin-top: 4px;
     }
-    .summary-item.detected .value { color: #4ade80; }
-    .summary-item.not-detected .value { color: #888; }
+    .summary-item.detected .value { color: var(--primary); }
+    .summary-item.not-detected .value { color: var(--text-muted); }
 
     /* ── Two-col header scripts ───────────────────────────────────── */
     .two-col {
@@ -226,8 +319,8 @@
     /* ── Checkout items ───────────────────────────────────────────── */
     .checkout-item {
       display: grid;
-      grid-template-columns: 120px 1fr;
-      gap: 10px;
+      grid-template-columns: 130px 1fr;
+      gap: 12px;
       align-items: start;
       margin-bottom: 14px;
     }
@@ -238,14 +331,14 @@
     .checkout-meta .platform {
       font-size: 0.78rem;
       font-weight: 600;
-      color: #ff6b35;
+      color: var(--accent);
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
     }
     .checkout-meta .anchor {
       font-size: 0.72rem;
-      color: #777;
+      color: var(--text-secondary);
       margin-top: 2px;
       white-space: nowrap;
       overflow: hidden;
@@ -254,20 +347,20 @@
     .checkout-meta .bundle-tag {
       display: inline-block;
       font-size: 0.65rem;
-      background: #2a2a2a;
-      border: 1px solid #444;
-      color: #aaa;
+      background: var(--input-bg);
+      border: 1px solid #42945F33;
+      color: var(--accent);
       border-radius: 4px;
-      padding: 1px 5px;
-      margin-top: 4px;
+      padding: 1px 6px;
+      margin-top: 5px;
     }
 
     /* ── Error banner ─────────────────────────────────────────────── */
     .error-banner {
-      background: #3a1010;
-      border: 1px solid #7a2020;
-      border-radius: 6px;
-      color: #f87171;
+      background: var(--error-bg);
+      border: 1px solid var(--error-border);
+      border-radius: 8px;
+      color: var(--error-text);
       font-size: 0.85rem;
       padding: 12px 16px;
       margin-top: 12px;
@@ -281,7 +374,7 @@
       align-items: center;
       gap: 12px;
       padding: 10px 0;
-      border-bottom: 1px solid #333;
+      border-bottom: 1px solid var(--card-border);
       flex-wrap: wrap;
     }
     .bundle-image-item:last-child { border-bottom: none; }
@@ -289,14 +382,14 @@
       width: 60px;
       height: 60px;
       object-fit: contain;
-      border-radius: 6px;
-      background: #222;
-      border: 1px solid #444;
+      border-radius: 8px;
+      background: var(--input-bg);
+      border: 1px solid #42945F33;
       flex-shrink: 0;
     }
     .bundle-image-label {
       font-weight: 600;
-      color: #ccc;
+      color: var(--accent);
       white-space: nowrap;
       min-width: 70px;
     }
@@ -323,7 +416,7 @@
       flex-direction: column;
       gap: 8px;
       padding: 12px 0;
-      border-bottom: 1px solid #333;
+      border-bottom: 1px solid var(--card-border);
     }
     .script-item:last-child {
       border-bottom: none;
@@ -337,7 +430,7 @@
     .script-item-label {
       font-size: 0.8rem;
       font-weight: 400;
-      color: #ccc;
+      color: var(--text-primary);
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
@@ -354,19 +447,20 @@
       justify-content: center;
       width: 28px;
       height: 28px;
-      background: transparent;
-      border: 1px solid #444;
-      border-radius: 4px;
-      color: #888;
+      background: var(--input-bg);
+      border: 1px solid var(--input-border);
+      border-radius: 6px;
+      color: var(--text-secondary);
       font-size: 0.85rem;
       cursor: pointer;
       padding: 0;
       font-family: inherit;
-      transition: color 0.15s, border-color 0.15s;
+      transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
     }
     .btn-script-control:hover:not(:disabled) {
-      color: #e0e0e0;
-      border-color: #666;
+      border-color: var(--primary);
+      color: var(--accent);
+      background: var(--input-bg);
     }
     .btn-script-control:disabled {
       opacity: 0.25;
@@ -385,8 +479,15 @@
   <!-- ── App Header ───────────────────────────────────────────────── -->
   <header class="app-header">
     <div class="container">
-      <h1>VSL Cloner</h1>
-      <p>Clone qualquer página VSL e gere sua versão de afiliado em menos de 1 minuto</p>
+      <div class="app-header-inner">
+        <div class="app-header-text">
+          <h1>
+            VSL Cloner
+            <span class="version-badge">v1.1</span>
+          </h1>
+          <p>Clone qualquer página VSL e gere sua versão de afiliado em menos de 1 minuto</p>
+        </div>
+      </div>
     </div>
   </header>
 
@@ -394,7 +495,7 @@
 
     <!-- ── Secao A: URL Input ──────────────────────────────────────── -->
     <section class="card" id="section-fetch">
-      <p class="card-title">A — Página VSL para Clonar</p>
+      <p class="card-title"><span class="step-badge">A</span> Página VSL para Clonar</p>
 
       <label for="url-input">URL da página VSL</label>
       <div class="url-row">
@@ -435,7 +536,7 @@
 
     <!-- ── Secao B: Header Scripts ────────────────────────────────── -->
     <section class="card section-hidden" id="section-header">
-      <p class="card-title">B — Scripts de Header do Afiliado</p>
+      <p class="card-title"><span class="step-badge">B</span> Scripts de Header do Afiliado</p>
       <div class="two-col">
         <div>
           <label for="header-pixel">Pixel &amp; Scripts de Rastreamento</label>
@@ -460,7 +561,7 @@
 
     <!-- ── Secao C.3: Scripts Extras ────────────────────────────────── -->
     <section class="card section-hidden" id="section-extra-scripts">
-      <p class="card-title">C.3 — Scripts Extras</p>
+      <p class="card-title"><span class="step-badge">C.3</span> Scripts Extras</p>
       <div id="scripts-list-container">
         <!-- Preenchido dinamicamente por JS -->
       </div>
@@ -472,7 +573,7 @@
 
     <!-- ── Secao C: Player Embed ──────────────────────────────────── -->
     <section class="card section-hidden" id="section-player">
-      <p class="card-title">C — Embed do Player VTURB</p>
+      <p class="card-title"><span class="step-badge">C</span> Embed do Player VTURB</p>
       <label for="vsl-embed">Código de embed do seu player</label>
       <textarea
         id="vsl-embed"
@@ -485,7 +586,7 @@
 
     <!-- ── Secao C.5: Delay do Player VTURB ─────────────────────────── -->
     <section class="card section-hidden" id="section-delay">
-      <p class="card-title">C.5 — Delay do Player VTURB</p>
+      <p class="card-title"><span class="step-badge">C.5</span> Delay do Player VTURB</p>
       <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
         <label for="delay-seconds" style="margin:0;white-space:nowrap;">
           Delay antes de revelar botoes (segundos)
@@ -503,7 +604,7 @@
 
     <!-- ── Secao C.6: Imagens de Bundle ────────────────────────────── -->
     <section class="card section-hidden" id="section-bundle-images">
-      <p class="card-title">C.6 — Imagens de Bundle</p>
+      <p class="card-title"><span class="step-badge">C.6</span> Imagens de Bundle</p>
       <div id="bundle-images-container">
         <!-- Preenchido dinamicamente por JS -->
       </div>
@@ -512,7 +613,7 @@
     <!-- ── Secao D: Checkout Links ────────────────────────────────── -->
     <section class="card section-hidden" id="section-checkout">
       <p class="card-title">
-        D — Links de Checkout do Afiliado
+        <span class="step-badge">D</span> Links de Checkout do Afiliado
         <span class="badge" id="checkout-count-badge">0</span>
       </p>
       <div id="checkout-inputs-container">

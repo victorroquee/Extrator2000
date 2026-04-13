@@ -534,7 +534,7 @@ function applyCheckoutLinks(outputHtml, checkoutLinks) {
  * once at fetch time, never overwritten). — PITFALLS.md Pitfall 1
  */
 function buildExportHtml({ html, headerPixel, headerPreload, vslembed, checkoutLinks,
-                           delaySeconds, delayScriptContent }) {
+                           delaySeconds, delayScriptContent, bundleImages }) {
   const $ = cheerio.load(html, { decodeEntities: false });
 
   // EXPORT-06: Defensive idempotency guard — skip all injections if already done
@@ -546,6 +546,40 @@ function buildExportHtml({ html, headerPixel, headerPreload, vslembed, checkoutL
 
   if (headerPixel && headerPixel.trim()) $('head').append(headerPixel);
   if (headerPreload && headerPreload.trim()) $('head').append(headerPreload);
+
+  // BUNDLE-03: Replace bundle image sources globally (D-12, D-13)
+  if (bundleImages && typeof bundleImages === 'object') {
+    for (const [, imgData] of Object.entries(bundleImages)) {
+      const originalSrc = imgData.originalSrc;
+      const newSrc = imgData.newSrc;
+      if (!originalSrc || !newSrc || originalSrc === newSrc) continue;
+
+      // Validate newSrc is a valid URL (T-05-01 mitigation)
+      try { new URL(newSrc); } catch { continue; }
+
+      // Replace in all <img> src attributes matching the original (D-12)
+      $('img').each((_, el) => {
+        if ($(el).attr('src') === originalSrc) {
+          $(el).attr('src', newSrc);
+        }
+      });
+      // Replace in <source> src attributes
+      $('source').each((_, el) => {
+        if ($(el).attr('src') === originalSrc) {
+          $(el).attr('src', newSrc);
+        }
+      });
+      // Replace in srcset attributes (img and source) — each entry is "url descriptor"
+      $('img[srcset], source[srcset]').each((_, el) => {
+        const srcset = $(el).attr('srcset');
+        if (srcset && srcset.includes(originalSrc)) {
+          $(el).attr('srcset', srcset.split(',').map((entry) => {
+            return entry.trim().replace(originalSrc, newSrc);
+          }).join(', '));
+        }
+      });
+    }
+  }
 
   let outputHtml = $.html();
 
@@ -586,14 +620,14 @@ function buildExportHtml({ html, headerPixel, headerPreload, vslembed, checkoutL
 
 app.post('/api/export', (req, res) => {
   const { html, headerPixel, headerPreload, vslembed, checkoutLinks,
-          delaySeconds, delayScriptContent } = req.body;
+          delaySeconds, delayScriptContent, bundleImages } = req.body;
 
   if (!html || typeof html !== 'string') {
     return res.status(400).json({ error: 'Campo "html" é obrigatório.' });
   }
 
   const outputHtml = buildExportHtml({ html, headerPixel, headerPreload, vslembed,
-                                       checkoutLinks, delaySeconds, delayScriptContent });
+                                       checkoutLinks, delaySeconds, delayScriptContent, bundleImages });
 
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
   res.setHeader('Content-Disposition', 'attachment; filename="pagina-afiliado.html"');
@@ -604,14 +638,14 @@ app.post('/api/export', (req, res) => {
 
 app.post('/api/export-zip', async (req, res) => {
   const { html, headerPixel, headerPreload, vslembed, checkoutLinks, pageUrl,
-          delaySeconds, delayScriptContent } = req.body;
+          delaySeconds, delayScriptContent, bundleImages } = req.body;
 
   if (!html || typeof html !== 'string') {
     return res.status(400).json({ error: 'Campo "html" é obrigatório.' });
   }
 
   let outputHtml = buildExportHtml({ html, headerPixel, headerPreload, vslembed,
-                                     checkoutLinks, delaySeconds, delayScriptContent });
+                                     checkoutLinks, delaySeconds, delayScriptContent, bundleImages });
 
   // Collect and download assets if we have the original page URL
   const usedPaths = new Set();

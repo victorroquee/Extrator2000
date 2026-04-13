@@ -398,6 +398,33 @@
       min-width: 200px;
     }
 
+    /* ── Delay section ───────────────────────────────────────────── */
+    .delay-row {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .delay-status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.82rem;
+    }
+    .delay-status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--text-muted);
+      flex-shrink: 0;
+    }
+    .delay-status-dot.detected { background: var(--primary); box-shadow: 0 0 6px var(--primary); }
+    .delay-status-dot.not-detected { background: var(--text-muted); }
+    .delay-status-text { color: var(--text-secondary); }
+    .delay-status-text.detected { color: var(--primary); }
+    .delay-input-row label { margin-bottom: 6px; }
+    .delay-unit { color: var(--text-secondary); font-size: 0.85rem; }
+    input[type="number"]:disabled { opacity: 0.4; cursor: not-allowed; }
+
     /* ── Hidden sections ──────────────────────────────────────────── */
     .section-hidden { display: none; }
 
@@ -587,18 +614,25 @@
     <!-- ── Secao C.5: Delay do Player VTURB ─────────────────────────── -->
     <section class="card section-hidden" id="section-delay">
       <p class="card-title"><span class="step-badge">C.5</span> Delay do Player VTURB</p>
-      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
-        <label for="delay-seconds" style="margin:0;white-space:nowrap;">
-          Delay antes de revelar botoes (segundos)
-        </label>
-        <input
-          type="number"
-          id="delay-seconds"
-          min="1"
-          max="300"
-          step="1"
-          placeholder="10"
-        />
+      <div class="delay-row">
+        <div class="delay-status" id="delay-status">
+          <span class="delay-status-dot" id="delay-status-dot"></span>
+          <span class="delay-status-text" id="delay-status-text">Não detectado</span>
+        </div>
+        <div class="delay-input-row">
+          <label for="delay-seconds">Segundos antes de revelar botões</label>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <input
+              type="number"
+              id="delay-seconds"
+              min="1"
+              max="300"
+              step="1"
+              placeholder="—"
+            />
+            <span class="delay-unit">seg</span>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -1069,9 +1103,22 @@
         showSection(sectionCheckout);
         showSection(sectionExtraScripts);   // Phase 6 — always visible after fetch (D-03)
 
-        // Reveal delay section only when block was detected — DELAY-02
-        if (state.hasDelay && sectionDelay && delayInput) {
-          delayInput.value = state.delaySeconds;
+        // Always show delay section after fetch — show detected value or "não detectado" state
+        if (sectionDelay && delayInput) {
+          var dot  = document.getElementById('delay-status-dot');
+          var txt  = document.getElementById('delay-status-text');
+          if (state.hasDelay) {
+            delayInput.value    = state.delaySeconds;
+            delayInput.disabled = false;
+            if (dot) { dot.className = 'delay-status-dot detected'; }
+            if (txt) { txt.textContent = 'Detectado: ' + state.delaySeconds + 's'; txt.className = 'delay-status-text detected'; }
+          } else {
+            delayInput.value    = '';
+            delayInput.disabled = false;
+            delayInput.placeholder = '—';
+            if (dot) { dot.className = 'delay-status-dot not-detected'; }
+            if (txt) { txt.textContent = 'Não detectado nesta página'; txt.className = 'delay-status-text'; }
+          }
           showSection(sectionDelay);
         }
 

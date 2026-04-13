@@ -467,6 +467,8 @@
       delaySeconds: null,         // number | null — extracted delay value from page
       hasDelay: false,            // bool — whether delay block was detected
       delayScriptContent: null,   // string | null — opaque original script body, round-tripped to server
+      // Phase 5 additions — BUNDLE-02
+      bundleImages: {},           // object keyed by qty: { "2": { src: "..." }, "3": { src: "..." } }
     };
 
     // ── Referencias ao DOM ───────────────────────────────────────────
@@ -495,6 +497,10 @@
 
     const sectionDelay  = document.getElementById('section-delay');
     const delayInput    = document.getElementById('delay-seconds');
+
+    // Phase 5: bundle images
+    const sectionBundleImages   = document.getElementById('section-bundle-images');
+    const bundleImagesContainer = document.getElementById('bundle-images-container');
 
     // ── Helpers ──────────────────────────────────────────────────────
 
@@ -526,6 +532,56 @@
       if (bundle === 3) return '3 Potes';
       if (bundle === 6) return '6 Potes';
       return null;
+    }
+
+    // ── Renderiza imagens de bundle ────────────────────────────────
+
+    function renderBundleImages(images) {
+      bundleImagesContainer.innerHTML = '';
+      // images is an object like { "2": { src: "..." }, "3": { src: "..." } }
+      var keys = Object.keys(images);
+      if (keys.length === 0) return;
+
+      keys.sort(function(a, b) { return Number(a) - Number(b); });
+
+      keys.forEach(function(qty) {
+        var imgData = images[qty];
+        var label = bundleLabel(Number(qty)) || ('Bundle ' + qty);
+
+        var row = document.createElement('div');
+        row.className = 'bundle-image-item';
+
+        var thumb = document.createElement('img');
+        thumb.className = 'bundle-image-thumb';
+        thumb.src = imgData.src;
+        thumb.alt = label;
+        thumb.onerror = function() { this.style.display = 'none'; };
+
+        var labelEl = document.createElement('span');
+        labelEl.className = 'bundle-image-label';
+        labelEl.textContent = label;
+
+        var input = document.createElement('input');
+        input.type = 'url';
+        input.value = imgData.src;
+        input.placeholder = 'https://nova-imagem.com/produto.png';
+        input.setAttribute('data-bundle-qty', qty);
+        input.setAttribute('data-original-src', imgData.src);
+
+        // Live-update thumbnail when user pastes new URL
+        input.addEventListener('input', function() {
+          var val = this.value.trim();
+          if (val) {
+            thumb.src = val;
+            thumb.style.display = '';
+          }
+        });
+
+        row.appendChild(thumb);
+        row.appendChild(labelEl);
+        row.appendChild(input);
+        bundleImagesContainer.appendChild(row);
+      });
     }
 
     // ── Renderiza inputs de checkout ─────────────────────────────────
@@ -622,6 +678,21 @@
       });
     }
 
+    function buildBundleImagesPayload() {
+      var result = {};
+      var inputs = bundleImagesContainer.querySelectorAll('input[data-bundle-qty]');
+      inputs.forEach(function(input) {
+        var qty = input.getAttribute('data-bundle-qty');
+        var originalSrc = input.getAttribute('data-original-src');
+        var newSrc = input.value.trim();
+        // Only include if user changed the URL
+        if (newSrc && newSrc !== originalSrc) {
+          result[qty] = { originalSrc: originalSrc, newSrc: newSrc };
+        }
+      });
+      return result;
+    }
+
     // ── Acao: Fetch ──────────────────────────────────────────────────
 
     btnFetch.addEventListener('click', async function() {
@@ -658,6 +729,9 @@
         state.hasDelay          = !!(data.summary && data.summary.hasDelay);
         state.delayScriptContent = (data.summary && data.summary.delayScriptContent) || null;
 
+        // Phase 5: store bundle images state — BUNDLE-02
+        state.bundleImages = (data.summary && data.summary.bundleImages) || {};
+
         // Atualiza resumo
         var scriptsRemoved = (data.summary && data.summary.scriptsRemoved) || 0;
         var vslDetected    = (data.summary && data.summary.vslDetected)    || false;
@@ -689,6 +763,12 @@
         if (state.hasDelay && sectionDelay && delayInput) {
           delayInput.value = state.delaySeconds;
           showSection(sectionDelay);
+        }
+
+        // Reveal bundle images section only when images were detected — BUNDLE-02, D-10
+        if (Object.keys(state.bundleImages).length > 0 && sectionBundleImages) {
+          renderBundleImages(state.bundleImages);
+          showSection(sectionBundleImages);
         }
 
         // Habilita botao de export
@@ -738,6 +818,14 @@
           if (!isNaN(delayVal) && delayVal >= 1) {
             payload.delaySeconds       = delayVal;
             payload.delayScriptContent = state.delayScriptContent;
+          }
+        }
+
+        // BUNDLE-03: include bundle images in payload only when images exist and user changed URLs
+        if (Object.keys(state.bundleImages).length > 0) {
+          var bundlePayload = buildBundleImagesPayload();
+          if (Object.keys(bundlePayload).length > 0) {
+            payload.bundleImages = bundlePayload;
           }
         }
 

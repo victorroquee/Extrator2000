@@ -195,7 +195,31 @@ function cleanHtml(html) {
     }
   });
 
-  // If no iframe was detected but we found vturb scripts, inject placeholder at body start
+  // CLEAN-07: Remove <vturb-smartplayer> custom element and replace with placeholder
+  // This handles the common embedding pattern where the element is NOT inside an iframe
+  if (!playerPosition) {
+    const vturbEl = $('vturb-smartplayer').first();
+    if (vturbEl.length) {
+      vslDetected = true;
+      const placeholder = `<!-- [VSL_PLACEHOLDER] -->\n<div id="vsl-placeholder" style="background:#f97316;color:#fff;padding:40px;text-align:center;font-size:1.2rem;border-radius:8px;">Player VSL será inserido aqui</div>`;
+      const parent = vturbEl.parent();
+      const parentClass = (parent.attr('class') || '').toLowerCase();
+      const parentId = (parent.attr('id') || '').toLowerCase();
+      const isWrapper =
+        /smartplayer|vturb-player|vsl-player|video-container/.test(parentClass) ||
+        /smartplayer|vturb-player|vsl-player|video-container/.test(parentId);
+      if (isWrapper && parent[0] && parent[0].name !== 'body') {
+        parent.replaceWith(placeholder);
+        playerPosition = 'vturb-element-wrapper-replaced';
+      } else {
+        vturbEl.replaceWith(placeholder);
+        playerPosition = 'vturb-element-replaced';
+      }
+      scriptsRemoved++;
+    }
+  }
+
+  // If no iframe or vturb-smartplayer was detected but we found vturb scripts, inject placeholder at body start
   if (vslDetected && !playerPosition) {
     const placeholder = `<!-- [VSL_PLACEHOLDER] -->\n<div id="vsl-placeholder" style="background:#f97316;color:#fff;padding:40px;text-align:center;font-size:1.2rem;border-radius:8px;">Player VSL será inserido aqui</div>`;
     $('body').prepend(placeholder);
@@ -670,7 +694,9 @@ function buildExportHtml({ html, headerPixel, headerPreload, vslembed, checkoutL
     } else if (delayScriptContent) {
       // Pattern 2/3/4: rebuild JS script block and inject before </body>
       // String ops required — cheerio would mangle </script> inside literals
-      const rebuilt = delayScriptContent.replace(
+      // Sanitize client-supplied script body to prevent </script> breakout
+      const sanitized = delayScriptContent.replace(/<\/script>/gi, '<\\/script>');
+      const rebuilt = sanitized.replace(
         /(?:var|let|const)\s+delaySeconds\s*=\s*\d+(?:\.\d+)?/,
         `var delaySeconds = ${safeDelay}`
       );

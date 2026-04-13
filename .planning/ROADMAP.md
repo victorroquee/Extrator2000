@@ -116,7 +116,10 @@ Plans:
   2. User can remove any individual script from the list
   3. User can reorder scripts in the list, and the exported HTML injects them in that exact order
   4. In the exported HTML, extra scripts appear in `<head>` after `headerPixel` and `headerPreload` — never duplicated on repeated exports
-**Plans**: TBD
+**Plans**: 2 plans
+Plans:
+- [ ] 06-01-PLAN.md — server.js: extraScripts destructuring in /api/export and /api/export-zip, buildExportHtml injection with auto-wrap
+- [ ] 06-02-PLAN.md — public/index.html: section #section-extra-scripts card HTML + CSS, JS state + add/remove/reorder handlers, fetch reveal + export payload wiring
 **UI hint**: yes
 
 ## Progress
@@ -131,4 +134,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | 3. Integration & Polish | —/— | Shipped (v1.0) | 2026-04-11 |
 | 4. VTURB Delay + Export Idempotency | 2/2 | Complete   | 2026-04-11 |
 | 5. Bundle Images | 0/2 | Not started | - |
-| 6. Extra Scripts Tab | 0/? | Not started | - |
+| 6. Extra Scripts Tab | 0/2 | Not started | - |

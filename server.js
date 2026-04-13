@@ -534,7 +534,8 @@ function applyCheckoutLinks(outputHtml, checkoutLinks) {
  * once at fetch time, never overwritten). — PITFALLS.md Pitfall 1
  */
 function buildExportHtml({ html, headerPixel, headerPreload, vslembed, checkoutLinks,
-                           delaySeconds, delayScriptContent, bundleImages }) {
+                           delaySeconds, delayScriptContent, bundleImages,
+                           extraScripts = [] }) {
   const $ = cheerio.load(html, { decodeEntities: false });
 
   // EXPORT-06: Defensive idempotency guard — skip all injections if already done
@@ -546,6 +547,19 @@ function buildExportHtml({ html, headerPixel, headerPreload, vslembed, checkoutL
 
   if (headerPixel && headerPixel.trim()) $('head').append(headerPixel);
   if (headerPreload && headerPreload.trim()) $('head').append(headerPreload);
+
+  // SCRIPTS-04: Inject extra scripts after headerPixel and headerPreload, in order
+  // D-14: Auto-wrap — if content does not start with <script (case-insensitive), wrap it
+  if (Array.isArray(extraScripts)) {
+    extraScripts.forEach(function(scriptContent) {
+      if (typeof scriptContent !== 'string' || !scriptContent.trim()) return;
+      var normalized = scriptContent.trim();
+      var tag = /^<script/i.test(normalized)
+        ? normalized
+        : '<script>\n' + normalized + '\n</script>';
+      $('head').append(tag);
+    });
+  }
 
   // BUNDLE-03: Replace bundle image sources globally (D-12, D-13)
   if (bundleImages && typeof bundleImages === 'object') {
@@ -620,14 +634,15 @@ function buildExportHtml({ html, headerPixel, headerPreload, vslembed, checkoutL
 
 app.post('/api/export', (req, res) => {
   const { html, headerPixel, headerPreload, vslembed, checkoutLinks,
-          delaySeconds, delayScriptContent, bundleImages } = req.body;
+          delaySeconds, delayScriptContent, bundleImages, extraScripts } = req.body;
 
   if (!html || typeof html !== 'string') {
     return res.status(400).json({ error: 'Campo "html" é obrigatório.' });
   }
 
   const outputHtml = buildExportHtml({ html, headerPixel, headerPreload, vslembed,
-                                       checkoutLinks, delaySeconds, delayScriptContent, bundleImages });
+                                       checkoutLinks, delaySeconds, delayScriptContent,
+                                       bundleImages, extraScripts });
 
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
   res.setHeader('Content-Disposition', 'attachment; filename="pagina-afiliado.html"');
@@ -638,14 +653,15 @@ app.post('/api/export', (req, res) => {
 
 app.post('/api/export-zip', async (req, res) => {
   const { html, headerPixel, headerPreload, vslembed, checkoutLinks, pageUrl,
-          delaySeconds, delayScriptContent, bundleImages } = req.body;
+          delaySeconds, delayScriptContent, bundleImages, extraScripts } = req.body;
 
   if (!html || typeof html !== 'string') {
     return res.status(400).json({ error: 'Campo "html" é obrigatório.' });
   }
 
   let outputHtml = buildExportHtml({ html, headerPixel, headerPreload, vslembed,
-                                     checkoutLinks, delaySeconds, delayScriptContent, bundleImages });
+                                     checkoutLinks, delaySeconds, delayScriptContent,
+                                     bundleImages, extraScripts });
 
   // Collect and download assets if we have the original page URL
   const usedPaths = new Set();

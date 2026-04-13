@@ -291,60 +291,77 @@ function detectBundleImages($, checkoutLinks) {
 // ── Helper: VTURB delay detection ────────────────────────────────────────────
 
 /**
- * Extracts the VTURB delay block from rawHtml BEFORE cleanHtml() removes it.
+ * Extracts the VTURB delay value from rawHtml BEFORE cleanHtml() removes scripts.
  *
- * Handles three common patterns:
- *   1. Same script: var delaySeconds = N  +  displayHiddenElements in same <script>
- *   2. Split scripts: delaySeconds declared in one tag, displayHiddenElements in another
- *   3. Inline number: displayHiddenElements(N, ...) with no separate variable
+ * Handles four patterns (checked in priority order):
+ *   1. data-vdelay attr: <div data-vdelay="N"> wrapping vturb-smartplayer
+ *   2. Same script: var delaySeconds = N  +  displayHiddenElements in same <script>
+ *   3. Split scripts: delaySeconds in one tag, displayHiddenElements anywhere
+ *   4. Inline number: displayHiddenElements(N, ...) with no separate variable
  *
- * Returns null if no VTURB delay pattern is found.
+ * Returns { delaySeconds, delayScriptContent, delayType } or null.
+ * delayType: 'attribute' | 'js'
  * DELAY-01
  */
 function detectVturbDelay(rawHtml) {
-  // { decodeEntities: false } required — matches cleanHtml() convention
   const $ = cheerio.load(rawHtml, { decodeEntities: false });
 
-  // Collect all script contents
+  // Pattern 1: data-vdelay attribute on any ancestor of vturb-smartplayer
+  const playerEl = $('vturb-smartplayer').first();
+  if (playerEl.length) {
+    // Walk up ancestors looking for data-vdelay
+    let found = null;
+    playerEl.parents().addBack().each((_, el) => {
+      const val = $(el).attr('data-vdelay');
+      if (val !== undefined && /^\d+$/.test(val.trim())) {
+        found = parseInt(val.trim(), 10);
+      }
+    });
+    // Also check the direct parent and siblings that might carry the attribute
+    if (found === null) {
+      $('[data-vdelay]').each((_, el) => {
+        const val = $(el).attr('data-vdelay');
+        if (val !== undefined && /^\d+$/.test(val.trim())) {
+          found = parseInt(val.trim(), 10);
+        }
+      });
+    }
+    if (found !== null) {
+      return { delaySeconds: found, delayScriptContent: null, delayType: 'attribute' };
+    }
+  }
+
+  // Collect all inline script contents for JS-based patterns
   const scripts = [];
   $('script').each((_, el) => {
     const content = $(el).html() || $(el).text() || '';
     if (content.trim()) scripts.push(content);
   });
 
-  // Pattern 1: same-script — both delaySeconds declaration and displayHiddenElements present
+  // Pattern 2: same-script — delaySeconds declaration + displayHiddenElements
   for (const content of scripts) {
     const delayMatch = content.match(/(?:var|let|const)\s+delaySeconds\s*=\s*(\d+(?:\.\d+)?)/);
     if (delayMatch && /displayHiddenElements/.test(content)) {
-      return {
-        delaySeconds: parseFloat(delayMatch[1]),
-        delayScriptContent: content,
-      };
+      return { delaySeconds: parseFloat(delayMatch[1]), delayScriptContent: content, delayType: 'js' };
     }
   }
 
-  // Pattern 2: split scripts — delaySeconds in one tag, displayHiddenElements anywhere on page
+  // Pattern 3: split scripts — delaySeconds in one tag, displayHiddenElements anywhere
   const pageHasDisplayHidden = scripts.some((c) => /displayHiddenElements/.test(c));
   if (pageHasDisplayHidden) {
     for (const content of scripts) {
       const delayMatch = content.match(/(?:var|let|const)\s+delaySeconds\s*=\s*(\d+(?:\.\d+)?)/);
       if (delayMatch) {
-        return {
-          delaySeconds: parseFloat(delayMatch[1]),
-          delayScriptContent: content,
-        };
+        return { delaySeconds: parseFloat(delayMatch[1]), delayScriptContent: content, delayType: 'js' };
       }
     }
   }
 
-  // Pattern 3: inline number — displayHiddenElements(N, ...) with no separate variable
+  // Pattern 4: inline number — displayHiddenElements(N, ...)
   for (const content of scripts) {
     const inlineMatch = content.match(/displayHiddenElements\s*\(\s*(\d+(?:\.\d+)?)\s*,/);
     if (inlineMatch) {
-      return {
-        delaySeconds: parseFloat(inlineMatch[1]),
-        delayScriptContent: content,
-      };
+      return { delaySeconds: parseFloat(inlineMatch[1]), delayScriptContent: content, delayType: 'js' };
     }
   }
 
@@ -432,6 +449,7 @@ app.post('/api/fetch', async (req, res) => {
       delaySeconds: delayInfo ? delayInfo.delaySeconds : null,
       hasDelay: delayInfo !== null,
       delayScriptContent: delayInfo ? delayInfo.delayScriptContent : null,
+      delayType: delayInfo ? delayInfo.delayType : null,
     },
   });
 });
@@ -567,7 +585,7 @@ function applyCheckoutLinks(outputHtml, checkoutLinks) {
  * once at fetch time, never overwritten). — PITFALLS.md Pitfall 1
  */
 function buildExportHtml({ html, headerPixel, headerPreload, vslembed, checkoutLinks,
-                           delaySeconds, delayScriptContent, bundleImages,
+                           delaySeconds, delayScriptContent, delayType, bundleImages,
                            extraScripts = [] }) {
   const $ = cheerio.load(html, { decodeEntities: false });
 
@@ -639,24 +657,29 @@ function buildExportHtml({ html, headerPixel, headerPreload, vslembed, checkoutL
 
   outputHtml = applyCheckoutLinks(outputHtml, checkoutLinks);
 
-  // DELAY-03: Inject rebuilt delay block near </body> using String ops (not cheerio)
-  // String ops required — cheerio serialize would mangle </script> inside string literals
-  // (PITFALLS.md Pitfall 7)
-  if (delayScriptContent && delaySeconds !== undefined && delaySeconds !== null) {
-    // PITFALLS.md Pitfall 10: clamp to non-negative integer, minimum 1
-    // Use explicit check (not || 1) so a zero-second delay value is not silently clamped to 1
-    const safeDelay = Math.max(1, Math.round((delaySeconds !== null && delaySeconds !== undefined) ? Number(delaySeconds) : 1));
-    const rebuilt = delayScriptContent.replace(
-      /(?:var|let|const)\s+delaySeconds\s*=\s*\d+(?:\.\d+)?/,
-      `var delaySeconds = ${safeDelay}`
-    );
-    const delayTag = `<script>\n${rebuilt}\n</script>`;
-    if (/<\/body>/i.test(outputHtml)) {
-      // PITFALLS.md Pitfall 5: fallback for missing </body>
-      // Case-insensitive replace handles </BODY>, </Body>, etc.
-      outputHtml = outputHtml.replace(/<\/body>/i, `${delayTag}\n</body>`);
-    } else {
-      outputHtml += delayTag; // malformed HTML fallback
+  // DELAY-03: Apply delay value to exported HTML
+  if (delaySeconds !== undefined && delaySeconds !== null) {
+    const safeDelay = Math.max(1, Math.round(Number(delaySeconds)));
+
+    if (delayType === 'attribute') {
+      // Pattern 1: replace data-vdelay attribute in-place using string replace
+      outputHtml = outputHtml.replace(
+        /data-vdelay="(\d+)"/g,
+        `data-vdelay="${safeDelay}"`
+      );
+    } else if (delayScriptContent) {
+      // Pattern 2/3/4: rebuild JS script block and inject before </body>
+      // String ops required — cheerio would mangle </script> inside literals
+      const rebuilt = delayScriptContent.replace(
+        /(?:var|let|const)\s+delaySeconds\s*=\s*\d+(?:\.\d+)?/,
+        `var delaySeconds = ${safeDelay}`
+      );
+      const delayTag = `<script>\n${rebuilt}\n</script>`;
+      if (/<\/body>/i.test(outputHtml)) {
+        outputHtml = outputHtml.replace(/<\/body>/i, `${delayTag}\n</body>`);
+      } else {
+        outputHtml += delayTag;
+      }
     }
   }
 
@@ -667,7 +690,7 @@ function buildExportHtml({ html, headerPixel, headerPreload, vslembed, checkoutL
 
 app.post('/api/export', (req, res) => {
   const { html, headerPixel, headerPreload, vslembed, checkoutLinks,
-          delaySeconds, delayScriptContent, bundleImages, extraScripts } = req.body;
+          delaySeconds, delayScriptContent, delayType, bundleImages, extraScripts } = req.body;
 
   if (!html || typeof html !== 'string') {
     return res.status(400).json({ error: 'Campo "html" é obrigatório.' });
@@ -675,7 +698,7 @@ app.post('/api/export', (req, res) => {
 
   const outputHtml = buildExportHtml({ html, headerPixel, headerPreload, vslembed,
                                        checkoutLinks, delaySeconds, delayScriptContent,
-                                       bundleImages, extraScripts });
+                                       delayType, bundleImages, extraScripts });
 
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
   res.setHeader('Content-Disposition', 'attachment; filename="pagina-afiliado.html"');
@@ -686,7 +709,7 @@ app.post('/api/export', (req, res) => {
 
 app.post('/api/export-zip', async (req, res) => {
   const { html, headerPixel, headerPreload, vslembed, checkoutLinks, pageUrl,
-          delaySeconds, delayScriptContent, bundleImages, extraScripts } = req.body;
+          delaySeconds, delayScriptContent, delayType, bundleImages, extraScripts } = req.body;
 
   if (!html || typeof html !== 'string') {
     return res.status(400).json({ error: 'Campo "html" é obrigatório.' });
@@ -694,7 +717,7 @@ app.post('/api/export-zip', async (req, res) => {
 
   let outputHtml = buildExportHtml({ html, headerPixel, headerPreload, vslembed,
                                      checkoutLinks, delaySeconds, delayScriptContent,
-                                     bundleImages, extraScripts });
+                                     delayType, bundleImages, extraScripts });
 
   // Collect and download assets if we have the original page URL
   const usedPaths = new Set();

@@ -676,6 +676,7 @@
       delaySeconds: null,         // number | null — extracted delay value from page
       hasDelay: false,            // bool — whether delay block was detected
       delayScriptContent: null,   // string | null — opaque original script body, round-tripped to server
+      delayType: null,            // 'attribute' | 'js' | null — how delay is stored in the page
       // Phase 5 additions — BUNDLE-02
       bundleImages: {},           // object keyed by qty: { "2": { src: "..." }, "3": { src: "..." } }
       // Phase 6 additions — SCRIPTS-01/02/03
@@ -1068,9 +1069,10 @@
         state.checkoutLinks = (data.summary && data.summary.checkoutLinks) || [];
 
         // Phase 4: store delay state from server — DELAY-02
-        state.delaySeconds      = (data.summary && data.summary.delaySeconds != null) ? data.summary.delaySeconds : null;
-        state.hasDelay          = !!(data.summary && data.summary.hasDelay);
+        state.delaySeconds       = (data.summary && data.summary.delaySeconds != null) ? data.summary.delaySeconds : null;
+        state.hasDelay           = !!(data.summary && data.summary.hasDelay);
         state.delayScriptContent = (data.summary && data.summary.delayScriptContent) || null;
+        state.delayType          = (data.summary && data.summary.delayType) || null;
 
         // Phase 5: store bundle images state — BUNDLE-02
         state.bundleImages = (data.summary && data.summary.bundleImages) || {};
@@ -1176,6 +1178,7 @@
           if (!isNaN(delayVal) && delayVal >= 1) {
             payload.delaySeconds       = delayVal;
             payload.delayScriptContent = state.delayScriptContent;
+            payload.delayType          = state.delayType;
           }
         }
 

@@ -20,7 +20,6 @@
       min-height: 100vh;
     }
 
-    /* ── Scrollbar ────────────────────────────────────────────────── */
     ::-webkit-scrollbar { width: 6px; height: 6px; }
     ::-webkit-scrollbar-track { background: #F0F2F5; }
     ::-webkit-scrollbar-thumb { background: #D1D5DB; border-radius: 4px; }
@@ -28,9 +27,9 @@
 
     /* ── Navbar ───────────────────────────────────────────────────── */
     .navbar {
-      background: #FFFFFF;
+      background: #fff;
       border-bottom: 1px solid #E5E7EB;
-      height: 60px;
+      height: 56px;
       position: sticky;
       top: 0;
       z-index: 100;
@@ -44,105 +43,74 @@
       align-items: center;
       justify-content: space-between;
     }
-    .navbar-brand {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-    .navbar-logo {
-      height: 28px;
-      width: auto;
-    }
-    .navbar-title {
-      display: flex;
-      flex-direction: column;
-    }
-    .navbar-name {
-      font-size: 1rem;
-      font-weight: 700;
-      color: #111827;
-      line-height: 1.2;
-    }
-    .navbar-tagline {
-      font-size: 0.72rem;
-      color: #6B7280;
-      line-height: 1;
-    }
+    .navbar-brand { display: flex; align-items: center; gap: 10px; }
+    .navbar-logo { height: 26px; width: auto; }
+    .navbar-title { display: flex; flex-direction: column; }
+    .navbar-name { font-size: 0.95rem; font-weight: 700; color: #111827; line-height: 1.2; }
+    .navbar-tagline { font-size: 0.7rem; color: #6B7280; line-height: 1; }
     .navbar-badge {
-      background: #F0FDF4;
-      color: #42945F;
+      background: #F0FDF4; color: #42945F;
       border: 1px solid #BBF7D0;
-      font-size: 0.7rem;
-      padding: 2px 8px;
-      border-radius: 20px;
-      font-weight: 600;
+      font-size: 0.68rem; padding: 2px 8px;
+      border-radius: 20px; font-weight: 600;
     }
 
-    /* ── App body & two-column layout ────────────────────────────── */
-    .app-body {
-      background: #F0F2F5;
-      min-height: calc(100vh - 60px);
-      padding: 24px;
-    }
+    /* ── App body ─────────────────────────────────────────────────── */
+    .app-body { min-height: calc(100vh - 56px); padding: 20px 24px; }
     .app-layout {
       display: grid;
-      grid-template-columns: 1fr 420px;
+      grid-template-columns: 1fr 380px;
       gap: 20px;
       max-width: 1280px;
       margin: 0 auto;
       align-items: start;
     }
-    .form-panel {
-      min-width: 0;
-    }
-    .preview-panel {
-      position: sticky;
-      top: 84px;
-    }
+    .form-panel { min-width: 0; }
 
     /* ── Cards ────────────────────────────────────────────────────── */
     .card {
-      background: #FFFFFF;
+      background: #fff;
       border: 1px solid #E5E7EB;
       border-radius: 12px;
-      padding: 20px;
-      margin-bottom: 16px;
-      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+      padding: 18px 20px;
+      margin-bottom: 12px;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.04);
     }
-    .card-title {
-      font-size: 0.7rem;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.8px;
-      color: #9CA3AF;
-      margin-bottom: 16px;
+    .card:last-child { margin-bottom: 0; }
+
+    .card-header {
       display: flex;
       align-items: center;
-      gap: 8px;
-    }
-    .card-desc {
-      font-size: 0.85rem;
-      color: #6B7280;
+      gap: 10px;
       margin-bottom: 14px;
-      margin-top: -8px;
     }
-    .step-badge {
-      background: #F0FDF4;
-      color: #42945F;
-      border: 1px solid #BBF7D0;
-      border-radius: 6px;
-      padding: 1px 8px;
-      font-size: 0.7rem;
-      font-weight: 700;
+    .step-num {
+      width: 22px; height: 22px;
+      border-radius: 50%;
+      background: #42945F; color: #fff;
+      font-size: 0.68rem; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
     }
+    .card-title {
+      font-size: 0.78rem; font-weight: 700;
+      color: #111827; text-transform: uppercase;
+      letter-spacing: 0.6px; flex: 1;
+    }
+    .card-hint {
+      font-size: 0.8rem;
+      color: #6B7280;
+      margin-top: -6px;
+      margin-bottom: 14px;
+      line-height: 1.5;
+    }
+    .card-hint strong { color: #374151; font-weight: 600; }
 
     /* ── Form elements ────────────────────────────────────────────── */
     label {
       display: block;
-      font-size: 0.8rem;
-      font-weight: 500;
-      color: #374151;
-      margin-bottom: 5px;
+      font-size: 0.78rem; font-weight: 500;
+      color: #374151; margin-bottom: 5px;
     }
     input[type="text"],
     input[type="url"],
@@ -151,8 +119,7 @@
       background: #F9FAFB;
       border: 1px solid #D1D5DB;
       border-radius: 8px;
-      color: #111827;
-      font-family: inherit;
+      color: #111827; font-family: inherit;
       font-size: 0.875rem;
       padding: 9px 12px;
       transition: border-color 0.15s, box-shadow 0.15s;
@@ -165,100 +132,75 @@
       box-shadow: 0 0 0 3px rgba(66,148,95,0.12);
       background: #fff;
     }
-    input::placeholder,
-    textarea::placeholder {
-      color: #9CA3AF;
-    }
-    textarea {
-      resize: vertical;
-      min-height: 80px;
-    }
+    input::placeholder, textarea::placeholder { color: #9CA3AF; }
+    textarea { resize: vertical; min-height: 80px; }
     textarea.mono {
       font-family: 'JetBrains Mono', 'Courier New', monospace;
-      font-size: 0.8rem;
+      font-size: 0.78rem; line-height: 1.6;
     }
     input[type="number"] {
       width: 100px;
-      background: #F9FAFB;
-      border: 1px solid #D1D5DB;
-      border-radius: 8px;
-      color: #111827;
-      font-family: inherit;
-      font-size: 0.875rem;
-      padding: 9px 12px;
-      outline: none;
+      background: #F9FAFB; border: 1px solid #D1D5DB;
+      border-radius: 8px; color: #111827;
+      font-family: inherit; font-size: 0.875rem;
+      padding: 9px 12px; outline: none;
       transition: border-color 0.15s, box-shadow 0.15s;
     }
     input[type="number"]:focus {
       border-color: #42945F;
       box-shadow: 0 0 0 3px rgba(66,148,95,0.12);
     }
-    input[type="number"]:disabled {
-      opacity: 0.4;
-      cursor: not-allowed;
-    }
+    input[type="number"]:disabled { opacity: 0.4; cursor: not-allowed; }
 
     /* ── URL row ──────────────────────────────────────────────────── */
-    .url-row {
-      display: flex;
-      gap: 10px;
-      align-items: flex-start;
-    }
-    .url-row input {
-      flex: 1;
-    }
-    .url-row .btn {
-      flex-shrink: 0;
-    }
+    .url-row { display: flex; gap: 10px; align-items: flex-start; }
+    .url-row input { flex: 1; }
+    .url-row .btn { flex-shrink: 0; }
+
+    /* ── Two-col ──────────────────────────────────────────────────── */
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .field-group { display: flex; flex-direction: column; gap: 4px; }
 
     /* ── Buttons ──────────────────────────────────────────────────── */
     .btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      font-family: inherit;
-      font-weight: 600;
-      padding: 10px 20px;
-      font-size: 0.875rem;
-      transition: all 0.15s;
-      white-space: nowrap;
+      display: inline-flex; align-items: center; gap: 8px;
+      border: none; border-radius: 8px; cursor: pointer;
+      font-family: inherit; font-weight: 600;
+      padding: 9px 18px; font-size: 0.875rem;
+      transition: all 0.15s; white-space: nowrap;
     }
     .btn:active { transform: scale(0.97); }
     .btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
-    .btn-primary {
-      background: #42945F;
-      color: #fff;
-    }
+    .btn-primary { background: #42945F; color: #fff; }
     .btn-primary:not(:disabled):hover {
       background: #377a4f;
       box-shadow: 0 2px 8px rgba(66,148,95,0.3);
     }
+    .btn-ghost {
+      background: #F3F4F6; color: #374151;
+      border: 1px solid #E5E7EB;
+    }
+    .btn-ghost:not(:disabled):hover { background: #E5E7EB; }
+
+    /* ── Export button ────────────────────────────────────────────── */
     .btn-export {
-      background: #42945F;
-      color: #fff;
-      width: 100%;
-      justify-content: center;
-      padding: 14px;
-      font-size: 1rem;
-      border-radius: 10px;
+      background: #42945F; color: #fff;
+      width: 100%; justify-content: center;
+      padding: 13px; font-size: 0.95rem;
+      border-radius: 10px; border: none;
+      cursor: pointer; font-family: inherit; font-weight: 700;
+      display: flex; align-items: center; gap: 8px;
+      transition: all 0.15s;
     }
     .btn-export:not(:disabled):hover {
       background: #377a4f;
       box-shadow: 0 2px 12px rgba(66,148,95,0.3);
     }
-    .btn-export:disabled {
-      background: #D1D5DB;
-      color: #9CA3AF;
-      box-shadow: none;
-    }
+    .btn-export:disabled { background: #D1D5DB; color: #9CA3AF; cursor: not-allowed; }
 
     /* ── Spinner ──────────────────────────────────────────────────── */
     .spinner {
-      width: 16px;
-      height: 16px;
+      width: 15px; height: 15px;
       border: 2px solid rgba(255,255,255,0.3);
       border-top-color: #fff;
       border-radius: 50%;
@@ -271,354 +213,433 @@
 
     /* ── Error banner ─────────────────────────────────────────────── */
     .error-banner {
-      background: #FEF2F2;
-      border: 1px solid #FECACA;
-      border-radius: 8px;
-      color: #DC2626;
-      font-size: 0.83rem;
-      padding: 10px 14px;
-      margin-top: 12px;
-      display: none;
+      background: #FEF2F2; border: 1px solid #FECACA;
+      border-radius: 8px; color: #DC2626;
+      font-size: 0.82rem; padding: 10px 14px;
+      margin-top: 10px; display: none;
     }
     .error-banner.visible { display: block; }
 
     /* ── Analyzing animation ──────────────────────────────────────── */
     .analyzing-box {
-      margin-top: 16px;
-      padding: 14px 16px;
-      background: #F9FAFB;
-      border: 1px solid #E5E7EB;
+      margin-top: 14px; padding: 12px 14px;
+      background: #F9FAFB; border: 1px solid #E5E7EB;
       border-radius: 8px;
     }
     .analyzing-step {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 4px 0;
-      font-size: 0.83rem;
-      color: #6B7280;
-      opacity: 0;
-      transform: translateY(4px);
+      display: flex; align-items: center; gap: 10px;
+      padding: 3px 0; font-size: 0.82rem; color: #6B7280;
+      opacity: 0; transform: translateY(4px);
       transition: opacity 0.3s, transform 0.3s;
     }
     .analyzing-step.visible { opacity: 1; transform: none; }
     .analyzing-step.done { color: #42945F; }
     .analyzing-step.active { color: #111827; font-weight: 500; }
     .step-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: currentColor;
-      flex-shrink: 0;
+      width: 7px; height: 7px; border-radius: 50%;
+      background: currentColor; flex-shrink: 0;
     }
     .step-dot.spinning { animation: pulse 1s ease-in-out infinite; }
     @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.3; } }
 
-    /* ── Summary card ─────────────────────────────────────────────── */
-    .summary-grid {
+    /* ── Summary strip ────────────────────────────────────────────── */
+    .summary-strip {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
       gap: 10px;
     }
-    .summary-item {
-      background: #F9FAFB;
-      border: 1px solid #E5E7EB;
-      border-radius: 8px;
-      padding: 14px;
-      text-align: center;
+    .summary-stat {
+      background: #F9FAFB; border: 1px solid #E5E7EB;
+      border-radius: 10px; padding: 12px; text-align: center;
     }
-    .summary-item .value {
-      font-size: 1.6rem;
-      font-weight: 700;
-      color: #42945F;
-      display: block;
+    .summary-stat .stat-value {
+      font-size: 1.5rem; font-weight: 700; color: #42945F;
+      display: block; line-height: 1.1;
     }
-    .summary-item .desc {
-      font-size: 0.72rem;
-      color: #6B7280;
-      margin-top: 2px;
-    }
-    .summary-item.detected .value { color: #42945F; }
-    .summary-item.not-detected .value { color: #9CA3AF; }
+    .summary-stat .stat-label { font-size: 0.7rem; color: #6B7280; margin-top: 3px; }
+    .summary-stat.muted .stat-value { color: #9CA3AF; }
 
-    /* ── Two-col header scripts ───────────────────────────────────── */
-    .two-col {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 16px;
+    /* ── Section hidden ───────────────────────────────────────────── */
+    .section-hidden { display: none !important; }
+
+    /* ── Delay row ────────────────────────────────────────────────── */
+    .delay-inline {
+      display: flex; align-items: center;
+      gap: 16px; flex-wrap: wrap;
     }
+    .delay-status-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: 0.8rem; padding: 4px 10px;
+      border-radius: 20px; background: #F3F4F6;
+      color: #6B7280; border: 1px solid #E5E7EB;
+    }
+    .delay-status-badge.detected {
+      background: #F0FDF4; color: #42945F; border-color: #BBF7D0;
+    }
+    .delay-status-dot {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: currentColor; flex-shrink: 0;
+    }
+    .delay-number-row { display: flex; align-items: center; gap: 8px; }
+    .delay-unit { font-size: 0.83rem; color: #6B7280; }
 
     /* ── Checkout items ───────────────────────────────────────────── */
     .checkout-item {
-      display: grid;
-      grid-template-columns: 110px 1fr;
-      gap: 10px;
-      align-items: start;
-      margin-bottom: 12px;
-      padding-bottom: 12px;
-      border-bottom: 1px solid #F3F4F6;
+      display: grid; grid-template-columns: 110px 1fr;
+      gap: 10px; align-items: start;
+      padding: 10px 0; border-bottom: 1px solid #F3F4F6;
     }
-    .checkout-item:last-child {
-      border-bottom: none;
-      margin-bottom: 0;
-      padding-bottom: 0;
-    }
-    .checkout-meta {
-      padding-top: 28px;
-    }
-    .checkout-meta .platform {
-      font-size: 0.78rem;
-      font-weight: 600;
-      color: #42945F;
-    }
+    .checkout-item:last-child { border-bottom: none; padding-bottom: 0; }
+    .checkout-meta { padding-top: 24px; }
+    .checkout-meta .platform { font-size: 0.78rem; font-weight: 600; color: #42945F; }
     .checkout-meta .anchor {
-      font-size: 0.72rem;
-      color: #6B7280;
-      margin-top: 2px;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
+      font-size: 0.7rem; color: #6B7280; margin-top: 1px;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     }
     .bundle-tag {
-      display: inline-block;
-      font-size: 0.65rem;
-      background: #F0FDF4;
-      border: 1px solid #BBF7D0;
-      color: #42945F;
-      border-radius: 4px;
-      padding: 1px 5px;
-      margin-top: 3px;
+      display: inline-block; font-size: 0.62rem;
+      background: #F0FDF4; border: 1px solid #BBF7D0;
+      color: #42945F; border-radius: 4px; padding: 1px 5px; margin-top: 3px;
     }
-
-    /* ── Delay section ────────────────────────────────────────────── */
-    .delay-row {
-      display: flex;
-      flex-direction: column;
-      gap: 14px;
-    }
-    .delay-status {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 0.82rem;
-    }
-    .delay-status-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: #D1D5DB;
-      flex-shrink: 0;
-    }
-    .delay-status-dot.detected { background: #42945F; }
-    .delay-status-dot.not-detected { background: #D1D5DB; }
-    .delay-status-text { color: #6B7280; }
-    .delay-status-text.detected { color: #42945F; }
-    .delay-input-row label { margin-bottom: 5px; }
-    .delay-unit { color: #6B7280; font-size: 0.85rem; }
 
     /* ── Bundle image items ───────────────────────────────────────── */
     .bundle-image-item {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 10px 0;
-      border-bottom: 1px solid #F3F4F6;
-      flex-wrap: wrap;
+      display: flex; align-items: center; gap: 12px;
+      padding: 10px 0; border-bottom: 1px solid #F3F4F6; flex-wrap: wrap;
     }
     .bundle-image-item:last-child { border-bottom: none; }
     .bundle-image-thumb {
-      width: 56px;
-      height: 56px;
-      object-fit: contain;
-      border-radius: 8px;
-      background: #F9FAFB;
-      border: 1px solid #E5E7EB;
-      flex-shrink: 0;
+      width: 50px; height: 50px; object-fit: contain;
+      border-radius: 8px; background: #F9FAFB;
+      border: 1px solid #E5E7EB; flex-shrink: 0;
     }
     .bundle-image-label {
-      font-weight: 600;
-      color: #374151;
-      font-size: 0.83rem;
-      white-space: nowrap;
-      min-width: 70px;
+      font-weight: 600; color: #374151;
+      font-size: 0.82rem; white-space: nowrap; min-width: 70px;
     }
-    .bundle-image-item input[type="url"] {
-      flex: 1;
-      min-width: 200px;
-    }
+    .bundle-image-item input[type="url"] { flex: 1; min-width: 180px; }
 
     /* ── Script control buttons ───────────────────────────────────── */
     .btn-script-control {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: 28px;
-      height: 28px;
-      background: #F9FAFB;
-      border: 1px solid #E5E7EB;
-      border-radius: 6px;
-      color: #6B7280;
-      font-size: 0.85rem;
-      cursor: pointer;
-      padding: 0;
-      font-family: inherit;
-      transition: all 0.15s;
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 26px; height: 26px;
+      background: #F9FAFB; border: 1px solid #E5E7EB;
+      border-radius: 6px; color: #6B7280;
+      font-size: 0.8rem; cursor: pointer; padding: 0;
+      font-family: inherit; transition: all 0.15s;
     }
     .btn-script-control:hover:not(:disabled) {
-      border-color: #42945F;
-      color: #42945F;
-      background: #F0FDF4;
+      border-color: #42945F; color: #42945F; background: #F0FDF4;
     }
-    .btn-script-control:disabled {
-      opacity: 0.3;
-      cursor: not-allowed;
-    }
+    .btn-script-control:disabled { opacity: 0.3; cursor: not-allowed; }
 
     /* ── Extra scripts items ──────────────────────────────────────── */
     .script-item {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      padding: 12px 0;
-      border-bottom: 1px solid #E5E7EB;
+      display: flex; flex-direction: column; gap: 7px;
+      padding: 10px 0; border-bottom: 1px solid #E5E7EB;
     }
-    .script-item:last-child {
-      border-bottom: none;
-    }
+    .script-item:last-child { border-bottom: none; }
     .script-item-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 8px;
+      display: flex; align-items: center;
+      justify-content: space-between; gap: 8px;
     }
     .script-item-label {
-      font-size: 0.8rem;
-      font-weight: 400;
-      color: #111827;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
+      font-size: 0.78rem; font-weight: 500; color: #374151;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     }
-    .script-item-controls {
+    .script-item-controls { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
+
+    /* ── Export card ──────────────────────────────────────────────── */
+    .card-export { text-align: center; }
+    .export-hint { font-size: 0.73rem; color: #9CA3AF; margin-top: 8px; }
+
+    /* ══════════════════════════════════════════════════════════════ */
+    /* PREVIEW / CHECKLIST PANEL                                      */
+    /* ══════════════════════════════════════════════════════════════ */
+    .preview-panel {
+      position: sticky;
+      top: 76px;
+      height: calc(100vh - 96px);
       display: flex;
-      align-items: center;
-      gap: 4px;
-      flex-shrink: 0;
-    }
-
-    /* ── Hidden sections ──────────────────────────────────────────── */
-    .section-hidden { display: none; }
-
-    /* ── Export hint ──────────────────────────────────────────────── */
-    .export-hint {
-      font-size: 0.75rem;
-      color: #9CA3AF;
-      text-align: center;
-      margin-top: 8px;
-    }
-
-    /* ── Preview panel ────────────────────────────────────────────── */
-    .preview-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 10px;
-    }
-    .preview-title {
-      font-size: 0.78rem;
-      font-weight: 600;
-      color: #374151;
-      text-transform: uppercase;
-      letter-spacing: 0.6px;
-    }
-    .preview-badge {
-      font-size: 0.7rem;
-      padding: 2px 8px;
-      border-radius: 20px;
-      background: #F3F4F6;
-      color: #6B7280;
-      border: 1px solid #E5E7EB;
-    }
-    .preview-badge.ready {
-      background: #F0FDF4;
-      color: #42945F;
-      border-color: #BBF7D0;
-    }
-    .browser-mockup {
+      flex-direction: column;
       background: #fff;
       border: 1px solid #E5E7EB;
       border-radius: 12px;
       overflow: hidden;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-    }
-    .browser-bar {
-      background: #F3F4F6;
-      border-bottom: 1px solid #E5E7EB;
-      padding: 8px 12px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-    .browser-dots {
-      display: flex;
-      gap: 5px;
-    }
-    .bdot {
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-    }
-    .bdot-red    { background: #FC605B; }
-    .bdot-yellow { background: #FDBC40; }
-    .bdot-green  { background: #34C84A; }
-    .browser-url {
-      flex: 1;
-      background: #fff;
-      border: 1px solid #E5E7EB;
-      border-radius: 6px;
-      padding: 3px 10px;
-      font-size: 0.75rem;
-      color: #6B7280;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    .browser-content {
-      position: relative;
-      height: 520px;
-    }
-    .preview-placeholder {
-      position: absolute;
-      inset: 0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 12px;
-      color: #9CA3AF;
-      font-size: 0.85rem;
-      text-align: center;
-      padding: 20px;
-    }
-    #preview-iframe {
-      width: 100%;
-      height: 100%;
-      border: none;
-      display: block;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
     }
 
+    /* Header */
+    .pvw-header {
+      flex-shrink: 0;
+      padding: 14px 18px 12px;
+      border-bottom: 1px solid #E5E7EB;
+      display: flex; align-items: center;
+      justify-content: space-between; gap: 12px;
+      background: #fff;
+    }
+    .pvw-title { font-size: 0.88rem; font-weight: 700; color: #111827; display: block; }
+    .pvw-subtitle { font-size: 0.7rem; color: #9CA3AF; display: block; margin-top: 2px; }
+    .pvw-badge {
+      font-size: 0.68rem; padding: 3px 10px;
+      border-radius: 20px; font-weight: 700;
+      background: #F3F4F6; color: #6B7280;
+      border: 1px solid #E5E7EB;
+      white-space: nowrap; flex-shrink: 0; transition: all 0.25s;
+    }
+    .pvw-badge.ready { background: #F0FDF4; color: #42945F; border-color: #BBF7D0; }
+
+    /* VSL Warning */
+    .pvw-warn {
+      flex-shrink: 0; background: #FFFBEB;
+      border-bottom: 1px solid #FDE68A;
+      padding: 10px 18px; display: none;
+      gap: 10px; align-items: flex-start;
+    }
+    .pvw-warn.visible { display: flex; }
+    .pvw-warn-icon { flex-shrink: 0; color: #D97706; margin-top: 1px; }
+    .pvw-warn strong { font-size: 0.8rem; color: #92400E; display: block; margin-bottom: 1px; }
+    .pvw-warn p { font-size: 0.73rem; color: #B45309; margin: 0; line-height: 1.4; }
+
+    /* Empty state */
+    .pvw-empty {
+      flex: 1; display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 12px; padding: 36px 24px; text-align: center; color: #9CA3AF;
+    }
+    .pvw-empty svg { color: #D1D5DB; }
+    .pvw-empty h3 { font-size: 0.95rem; color: #374151; font-weight: 600; margin: 0; }
+    .pvw-empty p { font-size: 0.8rem; line-height: 1.6; max-width: 240px; margin: 0; }
+
+    /* Slots list */
+    .pvw-slots {
+      flex: 1; overflow-y: auto; padding: 12px;
+      display: flex; flex-direction: column; gap: 7px;
+    }
+    .pvw-slots::-webkit-scrollbar { width: 4px; }
+    .pvw-slots::-webkit-scrollbar-thumb { background: #E5E7EB; border-radius: 4px; }
+
+    /* Individual slot */
+    .pvw-slot {
+      border: 1.5px solid #E5E7EB; border-radius: 10px;
+      overflow: hidden; transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .pvw-slot.active { border-color: #42945F; box-shadow: 0 2px 8px rgba(66,148,95,0.08); }
+
+    .pvw-slot-head {
+      display: flex; align-items: center; gap: 8px;
+      padding: 9px 12px; background: #FAFAFA; cursor: default;
+    }
+    .pvw-slot.active .pvw-slot-head { background: #F0FDF4; }
+
+    .pvw-slot-icon { display: flex; align-items: center; justify-content: center; width: 22px; height: 22px; flex-shrink: 0; color: #9CA3AF; }
+    .pvw-slot.active .pvw-slot-icon { color: #42945F; }
+    .pvw-slot-info { flex: 1; min-width: 0; }
+    .pvw-slot-name { font-size: 0.78rem; font-weight: 600; color: #9CA3AF; transition: color 0.2s; }
+    .pvw-slot.active .pvw-slot-name { color: #111827; }
+    .pvw-slot-hint { font-size: 0.67rem; color: #D1D5DB; margin-top: 1px; }
+    .pvw-slot.active .pvw-slot-hint { display: none; }
+
+    .pvw-slot-status {
+      font-size: 0.63rem; font-weight: 700; padding: 2px 7px;
+      border-radius: 20px; background: #E5E7EB; color: #9CA3AF;
+      flex-shrink: 0; transition: all 0.2s;
+    }
+    .pvw-slot.active .pvw-slot-status { background: #DCFCE7; color: #16A34A; }
+
+    /* Slot body (expanded when active) */
+    .pvw-slot-body {
+      padding: 8px 12px 10px;
+      border-top: 1px solid #E5E7EB;
+      background: #fff; display: none;
+    }
+    .pvw-slot.active .pvw-slot-body { display: block; }
+
+    /* Code preview inside slot */
+    .pvw-code-preview {
+      font-family: 'JetBrains Mono', 'Courier New', monospace;
+      font-size: 0.68rem; background: #F0FDF4; border: 1px solid #BBF7D0;
+      border-radius: 6px; padding: 7px 10px; color: #374151;
+      white-space: pre; overflow: hidden; max-height: 52px;
+      position: relative; line-height: 1.5;
+    }
+    .pvw-code-preview::after {
+      content: ''; position: absolute; bottom: 0; left: 0; right: 0;
+      height: 16px; background: linear-gradient(transparent, #F0FDF4);
+    }
+
+    /* Checkout link rows */
+    .pvw-link-row {
+      display: flex; align-items: center; gap: 6px;
+      padding: 4px 0; border-bottom: 1px solid #F3F4F6;
+    }
+    .pvw-link-row:last-child { border-bottom: none; }
+    .pvw-link-pill {
+      font-size: 0.62rem; font-weight: 700; padding: 2px 6px;
+      border-radius: 10px; background: #F3F4F6; color: #9CA3AF;
+      white-space: nowrap; flex-shrink: 0;
+    }
+    .pvw-link-pill.filled { background: #DCFCE7; color: #16A34A; }
+    .pvw-link-url {
+      font-size: 0.7rem; color: #9CA3AF;
+      overflow: hidden; text-overflow: ellipsis;
+      white-space: nowrap; flex: 1; font-style: italic;
+    }
+    .pvw-link-url.filled { color: #374151; font-style: normal; }
+    .pvw-link-check { font-size: 0.72rem; color: #42945F; flex-shrink: 0; }
+
+    /* Player preview box */
+    .pvw-player-box {
+      background: #F9FAFB; border: 1.5px dashed #D1D5DB;
+      border-radius: 8px; padding: 12px 14px;
+      text-align: center; color: #9CA3AF;
+      font-size: 0.78rem; transition: all 0.2s;
+    }
+    .pvw-player-box.filled {
+      background: #F0FDF4; border-color: #BBF7D0;
+      color: #42945F; font-weight: 500;
+    }
+
+    /* Delay display */
+    .pvw-delay-display { text-align: center; padding: 4px 0; }
+    .pvw-delay-num { font-size: 2rem; font-weight: 700; color: #42945F; line-height: 1; display: block; }
+    .pvw-delay-unit { font-size: 0.77rem; color: #6B7280; margin-top: 3px; display: block; }
+
+    /* Footer bar */
+    .pvw-footer {
+      flex-shrink: 0;
+      border-top: 1px solid #E5E7EB;
+      padding: 12px 16px;
+      background: #FAFAFA;
+    }
+    .btn-export-panel {
+      background: #42945F; color: #fff;
+      width: 100%; justify-content: center;
+      padding: 10px; font-size: 0.875rem;
+      border-radius: 8px; border: none;
+      cursor: pointer; font-family: inherit; font-weight: 700;
+      display: flex; align-items: center; gap: 8px;
+      transition: all 0.15s;
+    }
+    .btn-export-panel:not(:disabled):hover { background: #377a4f; }
+    .btn-export-panel:disabled { background: #D1D5DB; color: #9CA3AF; cursor: not-allowed; }
+
+    /* ══════════════════════════════════════════════════════════════ */
+    /* PREVIEW MODAL                                                  */
+    /* ══════════════════════════════════════════════════════════════ */
+    .modal-backdrop {
+      position: fixed; inset: 0; z-index: 1000;
+      background: rgba(0,0,0,0.65);
+      display: flex; align-items: center; justify-content: center;
+      padding: 24px;
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.2s;
+    }
+    .modal-backdrop.open { opacity: 1; pointer-events: all; }
+
+    .modal {
+      background: #fff; border-radius: 14px;
+      display: flex; flex-direction: column;
+      overflow: hidden;
+      width: 100%; max-width: 1140px;
+      height: 88vh;
+      box-shadow: 0 24px 60px rgba(0,0,0,0.3);
+      transform: translateY(12px) scale(0.98);
+      transition: transform 0.2s;
+    }
+    .modal-backdrop.open .modal { transform: none; }
+
+    .modal-header {
+      flex-shrink: 0;
+      display: flex; align-items: center; gap: 14px;
+      padding: 14px 18px;
+      border-bottom: 1px solid #E5E7EB;
+      background: #FAFAFA;
+    }
+    .modal-title { font-size: 0.88rem; font-weight: 700; color: #111827; flex: 1; }
+
+    .modal-viewport-toggle {
+      display: flex; gap: 4px;
+      background: #F3F4F6; border-radius: 8px; padding: 3px;
+    }
+    .btn-viewport {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 5px 12px; border-radius: 6px; border: none;
+      font-family: inherit; font-size: 0.78rem; font-weight: 600;
+      color: #6B7280; background: transparent; cursor: pointer;
+      transition: all 0.15s;
+    }
+    .btn-viewport.active { background: #fff; color: #111827; box-shadow: 0 1px 3px rgba(0,0,0,0.12); }
+    .btn-viewport svg { flex-shrink: 0; }
+
+    .btn-modal-close {
+      width: 30px; height: 30px; border-radius: 7px;
+      border: 1px solid #E5E7EB; background: #fff;
+      color: #6B7280; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.15s; flex-shrink: 0;
+    }
+    .btn-modal-close:hover { border-color: #DC2626; color: #DC2626; }
+
+    .modal-body {
+      flex: 1; overflow: hidden;
+      background: #E5E7EB;
+      display: flex; align-items: flex-start; justify-content: center;
+      padding: 0;
+      transition: background 0.2s;
+    }
+    .modal-body.mobile-mode { padding: 24px 0; background: #D1D5DB; }
+
+    .modal-iframe-wrap {
+      width: 100%; height: 100%;
+      transition: width 0.25s, height 0.25s, box-shadow 0.25s;
+      flex-shrink: 0;
+    }
+    .modal-body.mobile-mode .modal-iframe-wrap {
+      width: 375px; height: 100%;
+      max-height: 100%;
+      border-radius: 16px; overflow: hidden;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.4);
+    }
+
+    #modal-iframe {
+      width: 100%; height: 100%; border: none; display: block; background: #fff;
+    }
+
+    .modal-empty {
+      flex: 1; display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 12px; color: #9CA3AF; text-align: center; padding: 40px;
+    }
+    .modal-empty svg { color: #D1D5DB; }
+    .modal-empty p { font-size: 0.85rem; max-width: 260px; }
+
+    /* Preview button */
+    .btn-preview {
+      background: #F3F4F6; color: #374151;
+      border: 1px solid #E5E7EB;
+      width: 100%; justify-content: center;
+      padding: 9px; font-size: 0.82rem;
+      border-radius: 8px; border-style: solid;
+      cursor: pointer; font-family: inherit; font-weight: 600;
+      display: flex; align-items: center; gap: 7px;
+      transition: all 0.15s; margin-bottom: 8px;
+    }
+    .btn-preview:hover { background: #E5E7EB; }
+    .btn-preview:disabled { opacity: 0.45; cursor: not-allowed; }
+
     /* ── Responsive ───────────────────────────────────────────────── */
-    @media (max-width: 900px) {
+    @media (max-width: 960px) {
       .app-layout { grid-template-columns: 1fr; }
       .preview-panel { display: none; }
       .two-col { grid-template-columns: 1fr; }
-      .summary-grid { grid-template-columns: repeat(3,1fr); }
+      .summary-strip { grid-template-columns: repeat(3,1fr); }
       .checkout-item { grid-template-columns: 1fr; }
       .url-row { flex-direction: column; }
       .url-row .btn { width: 100%; justify-content: center; }
     }
     @media (max-width: 500px) {
-      .summary-grid { grid-template-columns: 1fr; }
+      .summary-strip { grid-template-columns: 1fr; }
       #btn-add-script { width: 100%; justify-content: center; }
     }
   </style>
@@ -639,17 +660,21 @@
     </div>
   </nav>
 
-  <!-- ── App body ─────────────────────────────────────────────────── -->
   <div class="app-body">
     <div class="app-layout">
 
-      <!-- ── Form panel ─────────────────────────────────────────── -->
+      <!-- ══════════════════════════════════════════════════════════ -->
+      <!-- FORM PANEL                                                 -->
+      <!-- ══════════════════════════════════════════════════════════ -->
       <div class="form-panel" id="form-panel">
 
-        <!-- Secao A: URL Input -->
+        <!-- 1 · URL da VSL ────────────────────────────────────────── -->
         <section class="card" id="section-fetch">
-          <p class="card-title"><span class="step-badge">1</span> Página para Clonar</p>
-          <p class="card-desc">Cole a URL da VSL que deseja clonar e clique em Analisar</p>
+          <div class="card-header">
+            <span class="step-num">1</span>
+            <span class="card-title">Página para Clonar</span>
+          </div>
+          <p class="card-hint">Cole a URL da VSL que deseja clonar e clique em <strong>Analisar</strong></p>
           <div class="url-row">
             <input
               type="url"
@@ -660,132 +685,149 @@
             />
             <button class="btn btn-primary" id="btn-fetch" type="button">
               <span class="spinner" aria-hidden="true"></span>
-              <span class="btn-label">Analisar Página</span>
+              <span class="btn-label">Analisar</span>
             </button>
           </div>
           <div class="error-banner" id="fetch-error" role="alert"></div>
-          <!-- Analyzing animation — hidden by default -->
           <div class="analyzing-box" id="analyzing-box" style="display:none;">
             <div class="analyzing-steps" id="analyzing-steps"></div>
           </div>
         </section>
 
-        <!-- Secao Resumo -->
+        <!-- Resumo da análise ────────────────────────────────────── -->
         <section class="card section-hidden" id="section-summary">
-          <p class="card-title">Resultado da Análise</p>
-          <div class="summary-grid">
-            <div class="summary-item" id="summary-scripts">
-              <span class="value" id="val-scripts">0</span>
-              <span class="desc">Trackers Removidos</span>
+          <div class="card-header" style="margin-bottom:12px;">
+            <span class="card-title" style="text-transform:none;font-size:0.8rem;color:#6B7280;font-weight:500;letter-spacing:0;">Resultado da análise</span>
+          </div>
+          <div class="summary-strip">
+            <div class="summary-stat" id="summary-scripts">
+              <span class="stat-value" id="val-scripts">0</span>
+              <span class="stat-label">Trackers removidos</span>
             </div>
-            <div class="summary-item" id="summary-vsl">
-              <span class="value" id="val-vsl">—</span>
-              <span class="desc">Player VTURB</span>
+            <div class="summary-stat" id="summary-vsl">
+              <span class="stat-value" id="val-vsl">—</span>
+              <span class="stat-label">Player VTURB</span>
             </div>
-            <div class="summary-item">
-              <span class="value" id="val-links">0</span>
-              <span class="desc">Links de Checkout</span>
+            <div class="summary-stat">
+              <span class="stat-value" id="val-links">0</span>
+              <span class="stat-label">Links de checkout</span>
             </div>
           </div>
         </section>
 
-        <!-- Secao B: Header Scripts -->
+        <!-- 2 · Scripts de Header ────────────────────────────────── -->
         <section class="card section-hidden" id="section-header">
-          <p class="card-title"><span class="step-badge">B</span> Scripts de Header do Afiliado</p>
+          <div class="card-header">
+            <span class="step-num">2</span>
+            <span class="card-title">Scripts de Header</span>
+          </div>
           <div class="two-col">
-            <div>
-              <label for="header-pixel">Pixel &amp; Scripts de Rastreamento</label>
+            <div class="field-group">
+              <label for="header-pixel">Pixel &amp; Rastreamento</label>
               <textarea
                 id="header-pixel"
                 class="mono"
-                placeholder="<!-- Cole aqui seu Meta Pixel, GTM, etc -->"
+                placeholder="<!-- Meta Pixel, Google Tag Manager, etc -->"
                 rows="5"
               ></textarea>
             </div>
-            <div>
+            <div class="field-group">
               <label for="header-preload">Script VTURB / Preload</label>
               <textarea
                 id="header-preload"
                 class="mono"
-                placeholder="<!-- Cole aqui o script de preload do VTURB -->"
+                placeholder="<!-- Script de preload do VTURB -->"
                 rows="5"
               ></textarea>
             </div>
           </div>
         </section>
 
-        <!-- Secao C.3: Scripts Extras -->
-        <section class="card section-hidden" id="section-extra-scripts">
-          <p class="card-title"><span class="step-badge">C.3</span> Scripts Extras</p>
-          <div id="scripts-list-container">
-            <!-- Preenchido dinamicamente por JS -->
+        <!-- 3 · Embed do Player ──────────────────────────────────── -->
+        <section class="card section-hidden" id="section-player">
+          <div class="card-header">
+            <span class="step-num">3</span>
+            <span class="card-title">Embed do Player VTURB</span>
           </div>
-          <button class="btn btn-primary" id="btn-add-script" type="button"
-                  style="margin-top: 12px; padding: 8px 16px; font-size: 0.85rem;">
+          <div class="field-group">
+            <label for="vsl-embed">Código de embed do seu player</label>
+            <textarea
+              id="vsl-embed"
+              class="mono"
+              placeholder="<!-- Cole aqui o embed completo do seu player VTURB -->"
+              rows="5"
+              style="min-height: 100px;"
+            ></textarea>
+          </div>
+        </section>
+
+        <!-- 4 · Scripts Extras ───────────────────────────────────── -->
+        <section class="card section-hidden" id="section-extra-scripts">
+          <div class="card-header">
+            <span class="step-num">4</span>
+            <span class="card-title">Scripts Adicionais</span>
+          </div>
+          <p class="card-hint">
+            Cole scripts de terceiros que devem ser injetados na página —
+            como <strong>ClickMagic</strong>, <strong>Tumify</strong>, <strong>ActiveCampaign</strong>, scripts de chat,
+            pop-ups, redirecionamentos ou qualquer outro código personalizado.
+          </p>
+          <div id="scripts-list-container"></div>
+          <button class="btn btn-ghost" id="btn-add-script" type="button"
+                  style="margin-top:12px; padding:7px 14px; font-size:0.82rem;">
             + Adicionar Script
           </button>
         </section>
 
-        <!-- Secao C: Player Embed -->
-        <section class="card section-hidden" id="section-player">
-          <p class="card-title"><span class="step-badge">C</span> Embed do Player VTURB</p>
-          <label for="vsl-embed">Código de embed do seu player</label>
-          <textarea
-            id="vsl-embed"
-            class="mono"
-            placeholder="<!-- Cole aqui o embed completo do seu player VTURB -->"
-            rows="6"
-            style="min-height: 110px;"
-          ></textarea>
-        </section>
-
-        <!-- Secao C.5: Delay do Player VTURB -->
+        <!-- 5 · Delay do Player ──────────────────────────────────── -->
         <section class="card section-hidden" id="section-delay">
-          <p class="card-title"><span class="step-badge">C.5</span> Delay do Player VTURB</p>
-          <div class="delay-row">
-            <div class="delay-status" id="delay-status">
+          <div class="card-header">
+            <span class="step-num">5</span>
+            <span class="card-title">Delay do Player</span>
+          </div>
+          <p class="card-hint">Tempo em segundos antes de revelar os botões de compra na página</p>
+          <div class="delay-inline">
+            <div class="delay-status-badge" id="delay-status">
               <span class="delay-status-dot" id="delay-status-dot"></span>
-              <span class="delay-status-text" id="delay-status-text">Não detectado</span>
+              <span id="delay-status-text">Não detectado</span>
             </div>
-            <div class="delay-input-row">
-              <label for="delay-seconds">Segundos antes de revelar botões</label>
-              <div style="display:flex;align-items:center;gap:10px;">
-                <input
-                  type="number"
-                  id="delay-seconds"
-                  min="1"
-                  max="300"
-                  step="1"
-                  placeholder="—"
-                />
-                <span class="delay-unit">seg</span>
-              </div>
+            <div class="delay-number-row">
+              <input
+                type="number"
+                id="delay-seconds"
+                min="1"
+                max="300"
+                step="1"
+                placeholder="—"
+              />
+              <span class="delay-unit">segundos</span>
             </div>
           </div>
         </section>
 
-        <!-- Secao C.6: Imagens de Bundle -->
-        <section class="card section-hidden" id="section-bundle-images">
-          <p class="card-title"><span class="step-badge">C.6</span> Imagens de Bundle</p>
-          <div id="bundle-images-container">
-            <!-- Preenchido dinamicamente por JS -->
-          </div>
-        </section>
-
-        <!-- Secao D: Checkout Links -->
+        <!-- 6 · Links de Checkout ────────────────────────────────── -->
         <section class="card section-hidden" id="section-checkout">
-          <p class="card-title">
-            <span class="step-badge">D</span> Links de Checkout do Afiliado
-            <span class="badge" id="checkout-count-badge">0</span>
-          </p>
-          <div id="checkout-inputs-container">
-            <!-- Preenchido dinamicamente por JS -->
+          <div class="card-header">
+            <span class="step-num">6</span>
+            <span class="card-title">Links de Checkout</span>
+            <span class="navbar-badge" id="checkout-count-badge">0</span>
           </div>
+          <div id="checkout-inputs-container"></div>
         </section>
 
-        <!-- Botao Export -->
+        <!-- 7 · Imagens de Bundle ────────────────────────────────── -->
+        <section class="card section-hidden" id="section-bundle-images">
+          <div class="card-header">
+            <span class="step-num">7</span>
+            <span class="card-title">Imagens de Bundle</span>
+          </div>
+          <p class="card-hint">Substitua as imagens dos bundles da página original pelas suas</p>
+          <div id="bundle-images-container"></div>
+        </section>
+
+        <!-- Export ─────────────────────────────────────────────────── -->
         <section class="card card-export">
-          <button class="btn btn-export" id="btn-export" type="button" disabled>
+          <button class="btn-export" id="btn-export" type="button" disabled>
             Gerar Página do Afiliado
           </button>
           <p class="export-hint">Baixa um ZIP com o HTML e todos os assets da página</p>
@@ -793,54 +835,182 @@
 
       </div><!-- /.form-panel -->
 
-      <!-- ── Preview panel ──────────────────────────────────────── -->
+      <!-- ══════════════════════════════════════════════════════════ -->
+      <!-- CHECKLIST PANEL                                            -->
+      <!-- ══════════════════════════════════════════════════════════ -->
       <div class="preview-panel" id="preview-panel">
-        <div class="preview-header">
-          <span class="preview-title">Pré-visualização</span>
-          <span class="preview-badge" id="preview-badge">Aguardando URL</span>
-        </div>
-        <div class="browser-mockup">
-          <div class="browser-bar">
-            <div class="browser-dots">
-              <span class="bdot bdot-red"></span>
-              <span class="bdot bdot-yellow"></span>
-              <span class="bdot bdot-green"></span>
-            </div>
-            <div class="browser-url" id="browser-url-bar">—</div>
+
+        <!-- Header -->
+        <div class="pvw-header">
+          <div>
+            <span class="pvw-title">Checklist da Página</span>
+            <span class="pvw-subtitle" id="pvw-subtitle">Cole uma URL para começar</span>
           </div>
-          <div class="browser-content">
-            <div class="preview-placeholder" id="preview-placeholder">
-              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#D1D5DB" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
-              <p>Extraia uma página para ver a pré-visualização</p>
-            </div>
-            <iframe id="preview-iframe" style="display:none;" sandbox="allow-same-origin" title="Preview da página clonada"></iframe>
+          <span class="pvw-badge" id="pvw-badge">Aguardando</span>
+        </div>
+
+        <!-- VSL Warning -->
+        <div class="pvw-warn" id="pvw-warn">
+          <div class="pvw-warn-icon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          </div>
+          <div>
+            <strong>Não é uma página VSL</strong>
+            <p>Player VTURB não detectado. Se o erro persistir, contate o suporte.</p>
           </div>
         </div>
+
+        <!-- Empty state -->
+        <div class="pvw-empty" id="pvw-empty">
+          <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
+            <path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+          </svg>
+          <h3>Checklist de Configuração</h3>
+          <p>Após analisar uma URL, o checklist mostra em tempo real o que está configurado e o que falta preencher</p>
+        </div>
+
+        <!-- Slots: filled after fetch -->
+        <div class="pvw-slots" id="pvw-slots" style="display:none;">
+
+          <!-- Pixel & Scripts -->
+          <div class="pvw-slot" id="pvw-slot-pixel">
+            <div class="pvw-slot-head">
+              <div class="pvw-slot-info">
+                <div class="pvw-slot-name">Pixel & Rastreamento</div>
+                <div class="pvw-slot-hint">Cole seu Meta Pixel, GTM, etc.</div>
+              </div>
+              <div class="pvw-slot-status">Aguardando</div>
+            </div>
+            <div class="pvw-slot-body">
+              <div class="pvw-code-preview" id="pvw-code-pixel"></div>
+            </div>
+          </div>
+
+          <!-- VTURB Preload -->
+          <div class="pvw-slot" id="pvw-slot-preload">
+            <div class="pvw-slot-head">
+              <div class="pvw-slot-info">
+                <div class="pvw-slot-name">Script VTURB Preload</div>
+                <div class="pvw-slot-hint">Cole o script de preload do VTURB</div>
+              </div>
+              <div class="pvw-slot-status">Aguardando</div>
+            </div>
+            <div class="pvw-slot-body">
+              <div class="pvw-code-preview" id="pvw-code-preload"></div>
+            </div>
+          </div>
+
+          <!-- Player Embed -->
+          <div class="pvw-slot" id="pvw-slot-player">
+            <div class="pvw-slot-head">
+              <div class="pvw-slot-info">
+                <div class="pvw-slot-name">Embed do Player VTURB</div>
+                <div class="pvw-slot-hint">Cole o embed completo do seu player</div>
+              </div>
+              <div class="pvw-slot-status">Aguardando</div>
+            </div>
+            <div class="pvw-slot-body">
+              <div class="pvw-player-box" id="pvw-player-box">Cole o embed do player para ativar</div>
+            </div>
+          </div>
+
+          <!-- Delay -->
+          <div class="pvw-slot" id="pvw-slot-delay" style="display:none;">
+            <div class="pvw-slot-head">
+              <div class="pvw-slot-info">
+                <div class="pvw-slot-name">Delay do Player</div>
+                <div class="pvw-slot-hint">Segundos antes de revelar botões</div>
+              </div>
+              <div class="pvw-slot-status" id="pvw-status-delay">Aguardando</div>
+            </div>
+            <div class="pvw-slot-body">
+              <div class="pvw-delay-display">
+                <span class="pvw-delay-num" id="pvw-delay-num">—</span>
+                <span class="pvw-delay-unit">segundos</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Checkout Links -->
+          <div class="pvw-slot" id="pvw-slot-checkout">
+            <div class="pvw-slot-head">
+              <div class="pvw-slot-info">
+                <div class="pvw-slot-name">Links de Checkout</div>
+                <div class="pvw-slot-hint">Preencha os links de afiliado</div>
+              </div>
+              <div class="pvw-slot-status" id="pvw-status-checkout">Aguardando</div>
+            </div>
+            <div class="pvw-slot-body">
+              <div id="pvw-links-list"></div>
+            </div>
+          </div>
+
+        </div><!-- /.pvw-slots -->
+
+        <!-- Footer: preview + export -->
+        <div class="pvw-footer">
+          <button class="btn-preview" id="btn-open-preview" type="button" disabled>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+            Pré-visualizar Página
+          </button>
+          <button class="btn-export-panel" id="btn-export-panel" type="button" disabled>
+            Gerar Página do Afiliado
+          </button>
+        </div>
+
       </div><!-- /.preview-panel -->
 
     </div><!-- /.app-layout -->
   </div><!-- /.app-body -->
 
+  <!-- ── Preview Modal ───────────────────────────────────────────── -->
+  <div class="modal-backdrop" id="modal-backdrop">
+    <div class="modal" role="dialog" aria-modal="true" aria-label="Pré-visualização da página">
+      <div class="modal-header">
+        <span class="modal-title">Pré-visualização da Página</span>
+        <div class="modal-viewport-toggle">
+          <button class="btn-viewport active" id="btn-vp-desktop" type="button">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+            Desktop
+          </button>
+          <button class="btn-viewport" id="btn-vp-mobile" type="button">
+            <svg width="11" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+            Mobile
+          </button>
+        </div>
+        <button class="btn-modal-close" id="btn-modal-close" type="button" title="Fechar">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="modal-body" id="modal-body">
+        <div class="modal-iframe-wrap" id="modal-iframe-wrap">
+          <div class="modal-empty" id="modal-empty">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+            <p>Extraia uma URL para pré-visualizar a página clonada</p>
+          </div>
+          <iframe id="modal-iframe" style="display:none;" sandbox="allow-scripts allow-same-origin allow-forms" title="Pré-visualização"></iframe>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script>
     'use strict';
 
-    // ── Estado da aplicacao ──────────────────────────────────────────
+    // ── Estado ───────────────────────────────────────────────────────
     const state = {
-      fetchedHtml: null,          // HTML limpo retornado pelo /api/fetch (apenas em memoria)
-      fetchedUrl: '',             // URL original da pagina clonada (para resolver assets no ZIP)
-      checkoutLinks: [],          // Array completo com { selector, anchorText, href, platform, bundle }
-      // Phase 4 additions — DELAY-02
-      delaySeconds: null,         // number | null — extracted delay value from page
-      hasDelay: false,            // bool — whether delay block was detected
-      delayScriptContent: null,   // string | null — opaque original script body, round-tripped to server
-      delayType: null,            // 'attribute' | 'js' | null — how delay is stored in the page
-      // Phase 5 additions — BUNDLE-02
-      bundleImages: {},           // object keyed by qty: { "2": { src: "..." }, "3": { src: "..." } }
-      // Phase 6 additions — SCRIPTS-01/02/03
-      extraScripts: [],           // Array of { id: string, content: string } in display order
+      fetchedHtml: null,
+      fetchedUrl: '',
+      checkoutLinks: [],
+      delaySeconds: null,
+      hasDelay: false,
+      delayScriptContent: null,
+      delayType: null,
+      bundleImages: {},
+      extraScripts: [],
     };
 
-    // ── Referencias ao DOM ───────────────────────────────────────────
+    // ── DOM refs ──────────────────────────────────────────────────────
     const urlInput         = document.getElementById('url-input');
     const btnFetch         = document.getElementById('btn-fetch');
     const fetchError       = document.getElementById('fetch-error');
@@ -859,28 +1029,26 @@
     const headerPreload    = document.getElementById('header-preload');
     const vslEmbed         = document.getElementById('vsl-embed');
 
-    const checkoutContainer    = document.getElementById('checkout-inputs-container');
-    const checkoutCountBadge   = document.getElementById('checkout-count-badge');
+    const checkoutContainer  = document.getElementById('checkout-inputs-container');
+    const checkoutCountBadge = document.getElementById('checkout-count-badge');
 
-    const btnExport        = document.getElementById('btn-export');
+    const btnExport      = document.getElementById('btn-export');
+    const btnExportPanel = document.getElementById('btn-export-panel');
+    const btnOpenPreview = document.getElementById('btn-open-preview');
 
     const sectionDelay  = document.getElementById('section-delay');
     const delayInput    = document.getElementById('delay-seconds');
 
-    // Phase 5: bundle images
     const sectionBundleImages   = document.getElementById('section-bundle-images');
     const bundleImagesContainer = document.getElementById('bundle-images-container');
 
-    // Phase 6: extra scripts
-    const sectionExtraScripts    = document.getElementById('section-extra-scripts');
-    const scriptsListContainer   = document.getElementById('scripts-list-container');
-    const btnAddScript           = document.getElementById('btn-add-script');
+    const sectionExtraScripts  = document.getElementById('section-extra-scripts');
+    const scriptsListContainer = document.getElementById('scripts-list-container');
+    const btnAddScript         = document.getElementById('btn-add-script');
 
-    // ── Helpers ──────────────────────────────────────────────────────
+    // ── Helpers ───────────────────────────────────────────────────────
 
-    function showSection(el) {
-      el.classList.remove('section-hidden');
-    }
+    function showSection(el) { el.classList.remove('section-hidden'); }
 
     function showError(msg) {
       fetchError.textContent = msg;
@@ -894,11 +1062,7 @@
 
     function setFetchLoading(loading) {
       btnFetch.disabled = loading;
-      if (loading) {
-        btnFetch.classList.add('loading');
-      } else {
-        btnFetch.classList.remove('loading');
-      }
+      btnFetch.classList.toggle('loading', loading);
     }
 
     function bundleLabel(bundle) {
@@ -908,21 +1072,23 @@
       return null;
     }
 
-    // ── Extra Scripts helpers (Phase 6) ─────────────────────────────
+    function setExportEnabled(enabled) {
+      if (btnExport)      btnExport.disabled      = !enabled;
+      if (btnExportPanel) btnExportPanel.disabled = !enabled;
+      if (btnOpenPreview) btnOpenPreview.disabled = !enabled;
+    }
+
+    // ── Extra Scripts ─────────────────────────────────────────────────
 
     function renderScriptLabels() {
-      // Re-number all visible script item labels and update ↑/↓ disabled states
       var items = scriptsListContainer.querySelectorAll('.script-item');
       items.forEach(function(item, idx) {
         var label = item.querySelector('.script-item-label');
         if (label) label.textContent = 'Script ' + (idx + 1);
-
         var btnUp   = item.querySelector('[data-action="up"]');
         var btnDown = item.querySelector('[data-action="down"]');
         if (btnUp)   btnUp.disabled   = (idx === 0);
         if (btnDown) btnDown.disabled = (idx === items.length - 1);
-
-        // Update aria-labels for accessibility
         if (btnUp)   btnUp.setAttribute('aria-label', 'Mover script ' + (idx + 1) + ' para cima');
         if (btnDown) btnDown.setAttribute('aria-label', 'Mover script ' + (idx + 1) + ' para baixo');
         var btnRemove = item.querySelector('[data-action="remove"]');
@@ -931,7 +1097,6 @@
     }
 
     function addScript() {
-      // D-06: create a new script item and append to the list
       var id = (typeof crypto !== 'undefined' && crypto.randomUUID)
         ? crypto.randomUUID()
         : 'script-' + Date.now() + '-' + Math.random().toString(36).slice(2);
@@ -941,115 +1106,82 @@
       var item = document.createElement('div');
       item.className = 'script-item';
       item.dataset.scriptId = id;
-
       item.innerHTML =
         '<div class="script-item-header">' +
           '<span class="script-item-label">Script ' + state.extraScripts.length + '</span>' +
           '<div class="script-item-controls">' +
-            '<button type="button" class="btn-script-control" data-action="up" aria-label="Mover script para cima">\u2191</button>' +
-            '<button type="button" class="btn-script-control" data-action="down" aria-label="Mover script para baixo">\u2193</button>' +
-            '<button type="button" class="btn-script-control" data-action="remove" aria-label="Remover script">\u00d7</button>' +
+            '<button type="button" class="btn-script-control" data-action="up" aria-label="Mover para cima">\u2191</button>' +
+            '<button type="button" class="btn-script-control" data-action="down" aria-label="Mover para baixo">\u2193</button>' +
+            '<button type="button" class="btn-script-control" data-action="remove" aria-label="Remover">\u00d7</button>' +
           '</div>' +
         '</div>' +
         '<textarea class="mono" data-script-id="' + id + '" rows="4" ' +
-          'placeholder="<!-- Cole aqui seu script extra -->\n<script>\n  // seu c\u00f3digo aqui\n<\/script>" ' +
-          'style="min-height: 80px;"></textarea>';
+          'placeholder="<!-- Cole aqui seu script extra -->\n<script>\n  // seu c\u00f3digo aqui\n<\/script>"></textarea>';
 
       scriptsListContainer.appendChild(item);
       renderScriptLabels();
-
-      // D-06: focus the new textarea
       var ta = item.querySelector('textarea');
       if (ta) ta.focus();
     }
 
     function removeScript(scriptId) {
-      // D-07: remove item from DOM and state
       state.extraScripts = state.extraScripts.filter(function(s) { return s.id !== scriptId; });
-      var scriptItem = scriptsListContainer.querySelector('.script-item[data-script-id="' + scriptId + '"]');
-      if (scriptItem) scriptItem.remove();
+      var el = scriptsListContainer.querySelector('.script-item[data-script-id="' + scriptId + '"]');
+      if (el) el.remove();
       renderScriptLabels();
     }
 
     function moveScript(scriptId, direction) {
-      // D-10/D-12: swap item with neighbor in both state array and DOM
       var idx = state.extraScripts.findIndex(function(s) { return s.id === scriptId; });
       if (idx === -1) return;
-
       var swapIdx = direction === 'up' ? idx - 1 : idx + 1;
       if (swapIdx < 0 || swapIdx >= state.extraScripts.length) return;
-
-      // Swap in state
       var temp = state.extraScripts[idx];
       state.extraScripts[idx] = state.extraScripts[swapIdx];
       state.extraScripts[swapIdx] = temp;
-
-      // Swap in DOM — get both .script-item nodes by position
       var allItems = Array.from(scriptsListContainer.querySelectorAll('.script-item'));
-      var nodeA = allItems[idx];
-      var nodeB = allItems[swapIdx];
+      var nodeA = allItems[idx], nodeB = allItems[swapIdx];
       if (!nodeA || !nodeB) return;
-
-      if (direction === 'up') {
-        scriptsListContainer.insertBefore(nodeA, nodeB);
-      } else {
-        scriptsListContainer.insertBefore(nodeB, nodeA);
-      }
-
+      if (direction === 'up') scriptsListContainer.insertBefore(nodeA, nodeB);
+      else scriptsListContainer.insertBefore(nodeB, nodeA);
       renderScriptLabels();
     }
 
     function buildExtraScriptsPayload() {
-      // Read current textarea values into state and return string array in order
       return state.extraScripts.map(function(s) {
         var ta = scriptsListContainer.querySelector('textarea[data-script-id="' + s.id + '"]');
         return ta ? ta.value : s.content;
       });
     }
 
-    // ── Renderiza imagens de bundle ────────────────────────────────
+    // ── Bundle images ─────────────────────────────────────────────────
 
     function renderBundleImages(images) {
       bundleImagesContainer.innerHTML = '';
-      // images is an object like { "2": { src: "..." }, "3": { src: "..." } }
       var keys = Object.keys(images);
-      if (keys.length === 0) return;
-
+      if (!keys.length) return;
       keys.sort(function(a, b) { return Number(a) - Number(b); });
-
       keys.forEach(function(qty) {
         var imgData = images[qty];
         var label = bundleLabel(Number(qty)) || ('Bundle ' + qty);
-
         var row = document.createElement('div');
         row.className = 'bundle-image-item';
-
         var thumb = document.createElement('img');
         thumb.className = 'bundle-image-thumb';
-        thumb.src = imgData.src;
-        thumb.alt = label;
+        thumb.src = imgData.src; thumb.alt = label;
         thumb.onerror = function() { this.style.display = 'none'; };
-
         var labelEl = document.createElement('span');
         labelEl.className = 'bundle-image-label';
         labelEl.textContent = label;
-
         var input = document.createElement('input');
-        input.type = 'url';
-        input.value = imgData.src;
+        input.type = 'url'; input.value = imgData.src;
         input.placeholder = 'https://nova-imagem.com/produto.png';
         input.setAttribute('data-bundle-qty', qty);
         input.setAttribute('data-original-src', imgData.src);
-
-        // Live-update thumbnail when user pastes new URL
         input.addEventListener('input', function() {
           var val = this.value.trim();
-          if (val) {
-            thumb.src = val;
-            thumb.style.display = '';
-          }
+          if (val) { thumb.src = val; thumb.style.display = ''; }
         });
-
         row.appendChild(thumb);
         row.appendChild(labelEl);
         row.appendChild(input);
@@ -1057,17 +1189,15 @@
       });
     }
 
-    // ── Renderiza inputs de checkout ─────────────────────────────────
+    // ── Checkout inputs ───────────────────────────────────────────────
 
     function renderCheckoutInputs(links) {
       checkoutContainer.innerHTML = '';
-
-      if (links.length === 0) {
-        // UI-06: Sem links detectados -> 3 inputs vazios (2, 3, 6 potes)
+      if (!links.length) {
         [
-          { label: 'Bundle 2 Potes', placeholder: 'https://seu-link-afiliado.com/?bundle=2' },
-          { label: 'Bundle 3 Potes', placeholder: 'https://seu-link-afiliado.com/?bundle=3' },
-          { label: 'Bundle 6 Potes', placeholder: 'https://seu-link-afiliado.com/?bundle=6' },
+          { label: 'Bundle 2 Potes', ph: 'https://seu-link-afiliado.com/?bundle=2' },
+          { label: 'Bundle 3 Potes', ph: 'https://seu-link-afiliado.com/?bundle=3' },
+          { label: 'Bundle 6 Potes', ph: 'https://seu-link-afiliado.com/?bundle=6' },
         ].forEach(function(item, i) {
           var div = document.createElement('div');
           div.className = 'checkout-item';
@@ -1076,36 +1206,28 @@
               '<div class="platform">Sem Detecção</div>' +
               '<div class="anchor">' + item.label + '</div>' +
             '</div>' +
-            '<div>' +
+            '<div class="field-group">' +
               '<label for="checkout-empty-' + i + '">Link do Afiliado</label>' +
-              '<input type="url" id="checkout-empty-' + i + '" ' +
-                'data-empty-index="' + i + '" ' +
-                'placeholder="' + item.placeholder + '" />' +
+              '<input type="url" id="checkout-empty-' + i + '" data-empty-index="' + i + '" placeholder="' + item.ph + '" />' +
             '</div>';
           checkoutContainer.appendChild(div);
         });
         return;
       }
-
-      // UI-05: Inputs pre-preenchidos com URL original
       links.forEach(function(link, i) {
         var div = document.createElement('div');
         div.className = 'checkout-item';
-        var bundleTagHtml = link.bundle
-          ? '<span class="bundle-tag">' + bundleLabel(link.bundle) + '</span>'
-          : '';
+        var bundleTagHtml = link.bundle ? '<span class="bundle-tag">' + bundleLabel(link.bundle) + '</span>' : '';
         div.innerHTML =
           '<div class="checkout-meta">' +
             '<div class="platform">' + escapeHtml(link.platform || 'Generico') + '</div>' +
             '<div class="anchor">' + escapeHtml(link.anchorText || '') + '</div>' +
             bundleTagHtml +
           '</div>' +
-          '<div>' +
+          '<div class="field-group">' +
             '<label for="checkout-link-' + i + '">Link do Afiliado</label>' +
-            '<input type="url" id="checkout-link-' + i + '" ' +
-              'data-link-index="' + i + '" ' +
-              'value="' + escapeAttr(link.href || '') + '" ' +
-              'placeholder="https://seu-link-afiliado.com/" />' +
+            '<input type="url" id="checkout-link-' + i + '" data-link-index="' + i + '" ' +
+              'value="' + escapeAttr(link.href || '') + '" placeholder="https://seu-link-afiliado.com/" />' +
           '</div>';
         checkoutContainer.appendChild(div);
       });
@@ -1113,96 +1235,63 @@
 
     function escapeHtml(str) {
       return String(str)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;');
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     }
+    function escapeAttr(str) { return String(str).replace(/"/g, '&quot;'); }
 
-    function escapeAttr(str) {
-      return String(str).replace(/"/g, '&quot;');
-    }
-
-    // ── Constroi payload de checkout para export ─────────────────────
+    // ── Checkout payload ──────────────────────────────────────────────
 
     function buildCheckoutPayload() {
-      if (state.checkoutLinks.length === 0) {
-        // Inputs de bundle vazios — so envia se preenchidos
+      if (!state.checkoutLinks.length) {
         var result = [];
-        var emptyInputs = checkoutContainer.querySelectorAll('input[data-empty-index]');
-        emptyInputs.forEach(function(input) {
+        checkoutContainer.querySelectorAll('input[data-empty-index]').forEach(function(input) {
           var val = input.value.trim();
-          if (val) {
-            // Sem selector definido — apenas envia o link (servidor vai ignorar sem selector)
-            result.push({ selector: null, affiliateHref: val });
-          }
+          if (val) result.push({ selector: null, affiliateHref: val });
         });
         return result;
       }
-
-      // Links detectados: usa selector do estado original
       return state.checkoutLinks.map(function(link, i) {
         var input = checkoutContainer.querySelector('input[data-link-index="' + i + '"]');
-        var affiliateHref = input ? input.value.trim() : (link.href || '');
-        return {
-          selector: link.selector,
-          affiliateHref: affiliateHref,
-        };
+        return { selector: link.selector, affiliateHref: input ? input.value.trim() : (link.href || '') };
       });
     }
 
     function buildBundleImagesPayload() {
       var result = {};
-      var inputs = bundleImagesContainer.querySelectorAll('input[data-bundle-qty]');
-      inputs.forEach(function(input) {
+      bundleImagesContainer.querySelectorAll('input[data-bundle-qty]').forEach(function(input) {
         var qty = input.getAttribute('data-bundle-qty');
         var originalSrc = input.getAttribute('data-original-src');
         var newSrc = input.value.trim();
-        // Only include if user changed the URL
-        if (newSrc && newSrc !== originalSrc) {
-          result[qty] = { originalSrc: originalSrc, newSrc: newSrc };
-        }
+        if (newSrc && newSrc !== originalSrc) result[qty] = { originalSrc: originalSrc, newSrc: newSrc };
       });
       return result;
     }
 
-    // ── Extra Scripts event listeners (Phase 6) ──────────────────────
+    // ── Extra Scripts events ──────────────────────────────────────────
 
-    if (btnAddScript) {
-      btnAddScript.addEventListener('click', addScript);
-    }
+    if (btnAddScript) btnAddScript.addEventListener('click', addScript);
 
     if (scriptsListContainer) {
       scriptsListContainer.addEventListener('click', function(e) {
         var btn = e.target.closest('[data-action]');
         if (!btn) return;
-
-        // Find the .script-item ancestor to get the scriptId
         var scriptItem = btn.closest('.script-item');
         if (!scriptItem) return;
         var scriptId = scriptItem.dataset.scriptId;
         if (!scriptId) return;
-
         var action = btn.dataset.action;
-        if (action === 'remove') {
-          removeScript(scriptId);
-        } else if (action === 'up') {
-          moveScript(scriptId, 'up');
-        } else if (action === 'down') {
-          moveScript(scriptId, 'down');
-        }
+        if (action === 'remove') removeScript(scriptId);
+        else if (action === 'up') moveScript(scriptId, 'up');
+        else if (action === 'down') moveScript(scriptId, 'down');
       });
     }
 
-    // ── Acao: Fetch ──────────────────────────────────────────────────
+    // ── Fetch ─────────────────────────────────────────────────────────
 
     btnFetch.addEventListener('click', async function() {
       var url = urlInput.value.trim();
-      if (!url) {
-        showError('Digite a URL da página VSL antes de extrair.');
-        return;
-      }
-
+      if (!url) { showError('Digite a URL da página VSL antes de extrair.'); return; }
       clearError();
       setFetchLoading(true);
 
@@ -1212,7 +1301,6 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ url: url }),
         });
-
         var data = await response.json();
 
         if (!response.ok) {
@@ -1220,21 +1308,15 @@
           return;
         }
 
-        // Armazena HTML e URL original apenas em memoria
-        state.fetchedHtml = data.html;
-        state.fetchedUrl = url;
-        state.checkoutLinks = (data.summary && data.summary.checkoutLinks) || [];
-
-        // Phase 4: store delay state from server — DELAY-02
+        state.fetchedHtml        = data.html;
+        state.fetchedUrl         = url;
+        state.checkoutLinks      = (data.summary && data.summary.checkoutLinks) || [];
         state.delaySeconds       = (data.summary && data.summary.delaySeconds != null) ? data.summary.delaySeconds : null;
         state.hasDelay           = !!(data.summary && data.summary.hasDelay);
         state.delayScriptContent = (data.summary && data.summary.delayScriptContent) || null;
         state.delayType          = (data.summary && data.summary.delayType) || null;
+        state.bundleImages       = (data.summary && data.summary.bundleImages) || {};
 
-        // Phase 5: store bundle images state — BUNDLE-02
-        state.bundleImages = (data.summary && data.summary.bundleImages) || {};
-
-        // Atualiza resumo
         var scriptsRemoved = (data.summary && data.summary.scriptsRemoved) || 0;
         var vslDetected    = (data.summary && data.summary.vslDetected)    || false;
         var linksFound     = state.checkoutLinks.length;
@@ -1244,54 +1326,54 @@
 
         if (vslDetected) {
           valVsl.textContent = 'Sim';
-          summaryVslItem.className = 'summary-item detected';
+          summaryVslItem.classList.remove('muted');
         } else {
           valVsl.textContent = 'Não';
-          summaryVslItem.className = 'summary-item not-detected';
+          summaryVslItem.classList.add('muted');
         }
 
         checkoutCountBadge.textContent = linksFound;
-
-        // Renderiza checkout inputs
         renderCheckoutInputs(state.checkoutLinks);
 
-        // Exibe secoes ocultas
+        // Reveal sections
         showSection(sectionSummary);
         showSection(sectionHeader);
         showSection(sectionPlayer);
+        showSection(sectionExtraScripts);
         showSection(sectionCheckout);
-        showSection(sectionExtraScripts);   // Phase 6 — always visible after fetch (D-03)
 
-        // Always show delay section after fetch — show detected value or "não detectado" state
+        // Delay section
         if (sectionDelay && delayInput) {
-          var dot  = document.getElementById('delay-status-dot');
-          var txt  = document.getElementById('delay-status-text');
+          var badge = document.getElementById('delay-status');
+          var txt   = document.getElementById('delay-status-text');
           if (state.hasDelay) {
-            delayInput.value    = state.delaySeconds;
+            delayInput.value = state.delaySeconds;
             delayInput.disabled = false;
-            if (dot) { dot.className = 'delay-status-dot detected'; }
-            if (txt) { txt.textContent = 'Detectado: ' + state.delaySeconds + 's'; txt.className = 'delay-status-text detected'; }
+            if (badge) badge.className = 'delay-status-badge detected';
+            if (txt)   txt.textContent = 'Detectado: ' + state.delaySeconds + 's';
           } else {
-            delayInput.value    = '';
+            delayInput.value = '';
             delayInput.disabled = false;
             delayInput.placeholder = '—';
-            if (dot) { dot.className = 'delay-status-dot not-detected'; }
-            if (txt) { txt.textContent = 'Não detectado nesta página'; txt.className = 'delay-status-text'; }
+            if (badge) badge.className = 'delay-status-badge';
+            if (txt)   txt.textContent = 'Não detectado';
           }
           showSection(sectionDelay);
         }
 
-        // Reveal bundle images section only when images were detected — BUNDLE-02, D-10
+        // Bundle images
         if (Object.keys(state.bundleImages).length > 0 && sectionBundleImages) {
           renderBundleImages(state.bundleImages);
           showSection(sectionBundleImages);
         }
 
-        // Habilita botao de export
-        btnExport.disabled = false;
+        setExportEnabled(true);
+
+        var pvwWarn = document.getElementById('pvw-warn');
+        if (pvwWarn) pvwWarn.classList.toggle('visible', !vslDetected);
 
         stopAnalyzing(true);
-        updatePreview(state.fetchedHtml);
+        renderSlots();
 
       } catch (err) {
         showError('Falha de conexão com o servidor. Verifique se o servidor está rodando.');
@@ -1301,39 +1383,30 @@
       }
     });
 
-    // Permite acionar fetch com Enter no campo URL
     urlInput.addEventListener('keydown', function(e) {
       if (e.key === 'Enter') btnFetch.click();
     });
 
-    // ── Acao: Export ─────────────────────────────────────────────────
+    // ── Export ────────────────────────────────────────────────────────
 
-    btnExport.addEventListener('click', async function() {
-      if (!state.fetchedHtml) {
-        showError('Nenhuma página foi extraída. Extraia primeiro.');
-        return;
-      }
-
+    async function doExport() {
+      if (!state.fetchedHtml) { showError('Nenhuma página foi extraída. Extraia primeiro.'); return; }
       clearError();
-      btnExport.disabled = true;
-      btnExport.textContent = 'Baixando assets e gerando ZIP...';
+      setExportEnabled(false);
+      if (btnExport)      btnExport.textContent      = 'Gerando ZIP...';
+      if (btnExportPanel) btnExportPanel.textContent = 'Gerando ZIP...';
 
       try {
         var payload = {
-          html:           state.fetchedHtml,
-          headerPixel:    headerPixel.value,
-          headerPreload:  headerPreload.value,
-          vslembed:       vslEmbed.value,
-          checkoutLinks:  buildCheckoutPayload(),
-          pageUrl:        state.fetchedUrl,
-          extraScripts:   buildExtraScriptsPayload(),
+          html:          state.fetchedHtml,
+          headerPixel:   headerPixel.value,
+          headerPreload: headerPreload.value,
+          vslembed:      vslEmbed.value,
+          checkoutLinks: buildCheckoutPayload(),
+          pageUrl:       state.fetchedUrl,
+          extraScripts:  buildExtraScriptsPayload(),
         };
 
-        // EXPORT-06 contract: html is ALWAYS state.fetchedHtml (canonical clean HTML,
-        // set once at fetch, never overwritten). Never send previously-exported HTML
-        // as the html field — the server's idempotency sentinel depends on this.
-
-        // DELAY-02/DELAY-03: include delay fields only when block was detected
         if (state.hasDelay && delayInput) {
           var delayVal = parseInt(delayInput.value, 10);
           if (!isNaN(delayVal) && delayVal >= 1) {
@@ -1343,12 +1416,9 @@
           }
         }
 
-        // BUNDLE-03: include bundle images in payload only when images exist and user changed URLs
         if (Object.keys(state.bundleImages).length > 0) {
           var bundlePayload = buildBundleImagesPayload();
-          if (Object.keys(bundlePayload).length > 0) {
-            payload.bundleImages = bundlePayload;
-          }
+          if (Object.keys(bundlePayload).length > 0) payload.bundleImages = bundlePayload;
         }
 
         var response = await fetch('/api/export-zip', {
@@ -1363,7 +1433,6 @@
           return;
         }
 
-        // Dispara download via Blob URL
         var blob = await response.blob();
         var blobUrl = URL.createObjectURL(blob);
         var anchor = document.createElement('a');
@@ -1377,12 +1446,17 @@
       } catch (err) {
         showError('Falha de conexão ao exportar. Verifique se o servidor está rodando.');
       } finally {
-        btnExport.disabled = false;
-        btnExport.textContent = 'Gerar Página do Afiliado';
+        setExportEnabled(true);
+        if (btnExport)      btnExport.textContent      = 'Gerar Página do Afiliado';
+        if (btnExportPanel) btnExportPanel.textContent = 'Gerar Página do Afiliado';
       }
-    });
+    }
 
-    // ── Analyzing animation ──────────────────────────────────────────
+    if (btnExport)      btnExport.addEventListener('click', doExport);
+    if (btnExportPanel) btnExportPanel.addEventListener('click', doExport);
+
+    // ── Analyzing animation ───────────────────────────────────────────
+
     var analyzingTimer = null;
     var analyzingStepIdx = 0;
     var ANALYZING_STEPS = [
@@ -1435,7 +1509,6 @@
       var box = document.getElementById('analyzing-box');
       if (!box) return;
       if (!success) { box.style.display = 'none'; return; }
-      // Mark all remaining steps as done
       var steps = document.querySelectorAll('.analyzing-step');
       steps.forEach(function(s, i) {
         s.classList.remove('active');
@@ -1444,35 +1517,268 @@
         if (dot) { dot.classList.remove('spinning'); dot.style.background = '#42945F'; }
         s.querySelector('span:last-child').textContent = '✓ ' + ANALYZING_STEPS[i];
       });
-      // After 1.5s, hide the box
       setTimeout(function() { if (box) box.style.display = 'none'; }, 1500);
     }
 
-    // Wrap original setFetchLoading to also trigger analyzing animation
     var _origSetFetchLoading = setFetchLoading;
     setFetchLoading = function(loading) {
       _origSetFetchLoading(loading);
       if (loading) startAnalyzing();
     };
 
-    // ── Preview panel ────────────────────────────────────────────────
-    function updatePreview(html) {
-      var iframe = document.getElementById('preview-iframe');
-      var placeholder = document.getElementById('preview-placeholder');
-      var badge = document.getElementById('preview-badge');
-      var urlBar = document.getElementById('browser-url-bar');
-      if (!iframe) return;
-      // Revoke previous blob URL if any
-      if (iframe._blobUrl) URL.revokeObjectURL(iframe._blobUrl);
-      var blob = new Blob([html], { type: 'text/html' });
-      var blobUrl = URL.createObjectURL(blob);
-      iframe._blobUrl = blobUrl;
-      iframe.src = blobUrl;
-      iframe.style.display = 'block';
-      if (placeholder) placeholder.style.display = 'none';
-      if (badge) { badge.textContent = 'Pronta'; badge.className = 'preview-badge ready'; }
-      if (urlBar) { urlBar.textContent = state.fetchedUrl || 'página clonada'; }
+    // ── Checklist slots ───────────────────────────────────────────────
+
+    function activateSlot(id, statusText) {
+      var slot = document.getElementById(id);
+      if (!slot) return;
+      slot.classList.add('active');
+      var s = slot.querySelector('.pvw-slot-status');
+      if (s) s.textContent = statusText || 'Ativo ✓';
     }
+
+    function deactivateSlot(id) {
+      var slot = document.getElementById(id);
+      if (!slot) return;
+      slot.classList.remove('active');
+      var s = slot.querySelector('.pvw-slot-status');
+      if (s) s.textContent = 'Aguardando';
+    }
+
+    function truncateUrl(url) {
+      if (!url) return '';
+      if (url.length <= 42) return url;
+      try {
+        var u = new URL(url);
+        var host = u.hostname.replace(/^www\./, '');
+        var p = u.pathname.length > 14 ? u.pathname.slice(0, 14) + '…' : u.pathname;
+        return host + p;
+      } catch (e) { return url.slice(0, 24) + '…' + url.slice(-14); }
+    }
+
+    function renderSlots() {
+      if (!state.fetchedHtml) return;
+
+      var pvwEmpty = document.getElementById('pvw-empty');
+      var pvwSlots = document.getElementById('pvw-slots');
+      var pvwBadge = document.getElementById('pvw-badge');
+      var pvwSub   = document.getElementById('pvw-subtitle');
+
+      if (pvwEmpty) pvwEmpty.style.display = 'none';
+      if (pvwSlots) pvwSlots.style.display = '';
+
+      var total = 0, filled = 0;
+
+      // Pixel
+      var pixelVal = headerPixel ? headerPixel.value.trim() : '';
+      total++;
+      if (pixelVal) {
+        filled++;
+        activateSlot('pvw-slot-pixel', 'Ativo ✓');
+        var codeEl = document.getElementById('pvw-code-pixel');
+        if (codeEl) {
+          var lines = pixelVal.split('\n');
+          codeEl.textContent = lines.slice(0, 3).join('\n') + (lines.length > 3 ? '\n…' : '');
+        }
+      } else { deactivateSlot('pvw-slot-pixel'); }
+
+      // Preload
+      var preloadVal = headerPreload ? headerPreload.value.trim() : '';
+      total++;
+      if (preloadVal) {
+        filled++;
+        activateSlot('pvw-slot-preload', 'Ativo ✓');
+        var codeEl2 = document.getElementById('pvw-code-preload');
+        if (codeEl2) {
+          var lines2 = preloadVal.split('\n');
+          codeEl2.textContent = lines2.slice(0, 3).join('\n') + (lines2.length > 3 ? '\n…' : '');
+        }
+      } else { deactivateSlot('pvw-slot-preload'); }
+
+      // Player embed
+      var embedVal = vslEmbed ? vslEmbed.value.trim() : '';
+      total++;
+      var playerBox = document.getElementById('pvw-player-box');
+      if (embedVal) {
+        filled++;
+        activateSlot('pvw-slot-player', 'Ativo ✓');
+        if (playerBox) { playerBox.className = 'pvw-player-box filled'; playerBox.textContent = 'Embed configurado — ' + embedVal.length + ' chars'; }
+      } else {
+        deactivateSlot('pvw-slot-player');
+        if (playerBox) { playerBox.className = 'pvw-player-box'; playerBox.textContent = 'Cole o embed do player para ativar'; }
+      }
+
+      // Delay
+      var delaySlotEl = document.getElementById('pvw-slot-delay');
+      var delayVal = delayInput ? delayInput.value.trim() : '';
+      var delayVisible = sectionDelay && !sectionDelay.classList.contains('section-hidden');
+      if (delaySlotEl) delaySlotEl.style.display = delayVisible ? '' : 'none';
+      if (delayVisible) {
+        total++;
+        var pvwDelayNum = document.getElementById('pvw-delay-num');
+        var pvwStatusDelay = document.getElementById('pvw-status-delay');
+        if (delayVal) {
+          filled++;
+          activateSlot('pvw-slot-delay', delayVal + 's ✓');
+          if (pvwDelayNum) pvwDelayNum.textContent = delayVal;
+          if (pvwStatusDelay) pvwStatusDelay.textContent = delayVal + 's ✓';
+        } else {
+          deactivateSlot('pvw-slot-delay');
+          if (pvwDelayNum) pvwDelayNum.textContent = '—';
+        }
+      }
+
+      // Checkout
+      var linksList = document.getElementById('pvw-links-list');
+      var statusCheckout = document.getElementById('pvw-status-checkout');
+      var checkoutSlot = document.getElementById('pvw-slot-checkout');
+      var linkRows = [];
+
+      if (state.checkoutLinks.length > 0) {
+        state.checkoutLinks.forEach(function(link, i) {
+          var input = checkoutContainer ? checkoutContainer.querySelector('input[data-link-index="' + i + '"]') : null;
+          var val = input ? input.value.trim() : '';
+          var lbl = (link.platform || 'Checkout') + (link.bundle ? ' ' + (bundleLabel(link.bundle) || '') : '');
+          linkRows.push({ label: lbl, val: val });
+        });
+      } else {
+        var empties = checkoutContainer ? checkoutContainer.querySelectorAll('input[data-empty-index]') : [];
+        var bNames = ['2 Potes', '3 Potes', '6 Potes'];
+        Array.prototype.forEach.call(empties, function(inp, i) {
+          linkRows.push({ label: bNames[i] || 'Bundle', val: inp.value.trim() });
+        });
+      }
+
+      var chkFilled = linkRows.filter(function(r) { return !!r.val; }).length;
+      var chkTotal = linkRows.length;
+
+      if (linksList) {
+        linksList.innerHTML = '';
+        linkRows.forEach(function(row) {
+          var div = document.createElement('div');
+          div.className = 'pvw-link-row';
+          div.innerHTML =
+            '<span class="pvw-link-pill ' + (row.val ? 'filled' : '') + '">' + escapeHtml(row.label) + '</span>' +
+            '<span class="pvw-link-url ' + (row.val ? 'filled' : '') + '">' +
+              (row.val ? escapeHtml(truncateUrl(row.val)) : 'Aguardando link') +
+            '</span>' +
+            (row.val ? '<span class="pvw-link-check">✓</span>' : '');
+          linksList.appendChild(div);
+        });
+      }
+
+      if (chkTotal > 0) {
+        total++;
+        if (chkFilled > 0) filled++;
+        if (checkoutSlot) checkoutSlot.classList.toggle('active', chkFilled > 0);
+        if (statusCheckout) {
+          if (chkFilled === 0) {
+            statusCheckout.textContent = 'Aguardando'; statusCheckout.style.cssText = '';
+          } else if (chkFilled === chkTotal) {
+            statusCheckout.textContent = chkFilled + '/' + chkTotal + ' ✓';
+            statusCheckout.style.background = '#DCFCE7'; statusCheckout.style.color = '#16A34A';
+          } else {
+            statusCheckout.textContent = chkFilled + '/' + chkTotal;
+            statusCheckout.style.background = '#FEF3C7'; statusCheckout.style.color = '#D97706';
+          }
+        }
+      }
+
+      // Badge & subtitle
+      if (pvwBadge) {
+        pvwBadge.textContent = filled + '/' + total;
+        pvwBadge.className = 'pvw-badge' + (filled === total && total > 0 ? ' ready' : '');
+      }
+      if (pvwSub) {
+        if (filled === 0) pvwSub.textContent = 'Preencha os campos para configurar';
+        else if (filled === total) pvwSub.textContent = 'Tudo configurado! Pronto para exportar.';
+        else pvwSub.textContent = filled + ' de ' + total + ' itens configurados';
+      }
+    }
+
+    // ── Bind live updates ─────────────────────────────────────────────
+    [headerPixel, headerPreload, vslEmbed, delayInput].forEach(function(el) {
+      if (el) el.addEventListener('input', renderSlots);
+    });
+    if (checkoutContainer) checkoutContainer.addEventListener('input', renderSlots);
+    if (scriptsListContainer) {
+      scriptsListContainer.addEventListener('input', renderSlots);
+      if (typeof MutationObserver !== 'undefined') {
+        new MutationObserver(renderSlots).observe(scriptsListContainer, { childList: true });
+      }
+    }
+
+    // ── Preview Modal ─────────────────────────────────────────────────
+    var modalBackdrop   = document.getElementById('modal-backdrop');
+    var modalBody       = document.getElementById('modal-body');
+    var modalIframe     = document.getElementById('modal-iframe');
+    var modalEmpty      = document.getElementById('modal-empty');
+    var btnModalClose   = document.getElementById('btn-modal-close');
+    var btnVpDesktop    = document.getElementById('btn-vp-desktop');
+    var btnVpMobile     = document.getElementById('btn-vp-mobile');
+    var isMobileView    = false;
+
+    function buildPreviewHtml() {
+      if (!state.fetchedHtml) return null;
+      var html = state.fetchedHtml;
+      if (state.fetchedUrl) {
+        html = html.replace(/<base[^>]*>/gi, '');
+        var safeUrl = state.fetchedUrl.replace(/"/g, '%22');
+        var injected = html.replace(/(<head[^>]*>)/i, '$1<base href="' + safeUrl + '">');
+        html = (injected !== html) ? injected : '<base href="' + safeUrl + '">' + html;
+      }
+      return html;
+    }
+
+    function openModal() {
+      if (!state.fetchedHtml) return;
+      var html = buildPreviewHtml();
+      if (html) {
+        if (modalIframe._blobUrl) URL.revokeObjectURL(modalIframe._blobUrl);
+        var blob = new Blob([html], { type: 'text/html' });
+        var blobUrl = URL.createObjectURL(blob);
+        modalIframe._blobUrl = blobUrl;
+        modalIframe.src = blobUrl;
+        modalIframe.style.display = 'block';
+        if (modalEmpty) modalEmpty.style.display = 'none';
+      }
+      document.body.style.overflow = 'hidden';
+      modalBackdrop.classList.add('open');
+    }
+
+    function closeModal() {
+      modalBackdrop.classList.remove('open');
+      document.body.style.overflow = '';
+    }
+
+    function setViewport(mobile) {
+      isMobileView = mobile;
+      if (mobile) {
+        modalBody.classList.add('mobile-mode');
+        btnVpMobile.classList.add('active');
+        btnVpDesktop.classList.remove('active');
+      } else {
+        modalBody.classList.remove('mobile-mode');
+        btnVpDesktop.classList.add('active');
+        btnVpMobile.classList.remove('active');
+      }
+    }
+
+    if (btnOpenPreview)  btnOpenPreview.addEventListener('click', openModal);
+    if (btnModalClose)   btnModalClose.addEventListener('click', closeModal);
+    if (btnVpDesktop)    btnVpDesktop.addEventListener('click', function() { setViewport(false); });
+    if (btnVpMobile)     btnVpMobile.addEventListener('click', function() { setViewport(true); });
+
+    // Close on backdrop click
+    if (modalBackdrop) {
+      modalBackdrop.addEventListener('click', function(e) {
+        if (e.target === modalBackdrop) closeModal();
+      });
+    }
+
+    // Close on Escape
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape' && modalBackdrop.classList.contains('open')) closeModal();
+    });
 
   </script>
 </body>

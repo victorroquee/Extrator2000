@@ -1289,9 +1289,12 @@
 
     // ── Fetch ─────────────────────────────────────────────────────────
 
+    var fetchInFlight = false;
     btnFetch.addEventListener('click', async function() {
       var url = urlInput.value.trim();
       if (!url) { showError('Digite a URL da página VSL antes de extrair.'); return; }
+      if (fetchInFlight) return;
+      fetchInFlight = true;
       clearError();
       setFetchLoading(true);
       startAnalyzing();
@@ -1381,6 +1384,7 @@
         stopAnalyzing(false);
       } finally {
         setFetchLoading(false);
+        fetchInFlight = false;
       }
     });
 

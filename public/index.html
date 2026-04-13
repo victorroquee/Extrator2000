@@ -1065,6 +1065,13 @@
       btnFetch.classList.toggle('loading', loading);
     }
 
+    function fetchWithTimeout(url, opts, ms) {
+      var controller = new AbortController();
+      var timer = setTimeout(function() { controller.abort(); }, ms);
+      return fetch(url, Object.assign({}, opts, { signal: controller.signal }))
+        .finally(function() { clearTimeout(timer); });
+    }
+
     function bundleLabel(bundle) {
       if (bundle === 2) return '2 Potes';
       if (bundle === 3) return '3 Potes';
@@ -1300,11 +1307,11 @@
       startAnalyzing();
 
       try {
-        var response = await fetch('/api/fetch', {
+        var response = await fetchWithTimeout('/api/fetch', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ url: url }),
-        });
+        }, 30000);
         var data = await response.json();
 
         if (!response.ok) {
@@ -1426,11 +1433,11 @@
           if (Object.keys(bundlePayload).length > 0) payload.bundleImages = bundlePayload;
         }
 
-        var response = await fetch('/api/export-zip', {
+        var response = await fetchWithTimeout('/api/export-zip', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
-        });
+        }, 30000);
 
         if (!response.ok) {
           var errData = await response.json().catch(function() { return {}; });

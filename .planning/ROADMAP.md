@@ -22,7 +22,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 ### Milestone v1.1 — Editor Avançado
 
-- [ ] **Phase 4: VTURB Delay + Export Idempotency** - extract and expose delay control; fix double-inject export bug
+- [x] **Phase 4: VTURB Delay + Export Idempotency** - extract and expose delay control; fix double-inject export bug (completed 2026-04-11)
 - [ ] **Phase 5: Bundle Images** - detect, preview, and replace product bottle images per pricing section
 - [ ] **Phase 6: Extra Scripts Tab** - dedicated scripts tab with add/remove/reorder and head injection
 
@@ -83,8 +83,8 @@ Plans:
   4. When no delay block is found in the page, the delay input is hidden or shows a "não detectado" state without errors
 **Plans**: 2 plans
 Plans:
-- [ ] 04-01-PLAN.md — server.js: detectVturbDelay helper, /api/fetch extension, buildExportHtml idempotency sentinel + delay inject, both export routes updated, new tests
-- [ ] 04-02-PLAN.md — public/index.html: Section C.5 delay UI, state extension, fetch/export handler wiring
+- [x] 04-01-PLAN.md — server.js: detectVturbDelay helper, /api/fetch extension, buildExportHtml idempotency sentinel + delay inject, both export routes updated, new tests
+- [x] 04-02-PLAN.md — public/index.html: Section C.5 delay UI, state extension, fetch/export handler wiring
 **UI hint**: yes
 
 ### Phase 5: Bundle Images
@@ -120,6 +120,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | 1. Backend API | —/— | Shipped (v1.0) | 2026-04-10 |
 | 2. Frontend UI | 1/1 | Shipped (v1.0) | 2026-04-10 |
 | 3. Integration & Polish | —/— | Shipped (v1.0) | 2026-04-11 |
-| 4. VTURB Delay + Export Idempotency | 0/2 | Not started | - |
+| 4. VTURB Delay + Export Idempotency | 2/2 | Complete   | 2026-04-11 |
 | 5. Bundle Images | 0/? | Not started | - |
 | 6. Extra Scripts Tab | 0/? | Not started | - |

@@ -422,7 +422,7 @@ app.post('/api/fetch', async (req, res) => {
       hostname === '127.0.0.1' ||
       hostname.startsWith('192.168.') ||
       hostname.startsWith('10.') ||
-      hostname.startsWith('172.') ||
+      /^172\.(1[6-9]|2\d|3[01])\./.test(hostname) ||
       hostname.endsWith('.local')
     ) {
       return res.status(400).json({ error: 'Private/loopback URLs are not allowed' });

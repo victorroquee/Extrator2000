@@ -96,16 +96,28 @@ function detectBundle(text) {
   return null;
 }
 
-function buildCssSelector($, el) {
+function buildCssSelector($, el, usedSelectors = new Set()) {
   const tag = el.name;
   const id = $(el).attr('id');
   if (id) return `${tag}#${id}`;
+
   const cls = $(el).attr('class');
+  let selector = tag;
   if (cls) {
     const first = cls.trim().split(/\s+/)[0];
-    return `${tag}.${first}`;
+    selector = `${tag}.${first}`;
   }
-  return tag;
+
+  // If selector is not unique, add :nth-of-type() to make it unique
+  if (usedSelectors.has(selector)) {
+    // Find index among siblings of same type
+    const siblings = $(el).parent().children(tag);
+    const index = siblings.index(el) + 1;
+    selector = `${selector}:nth-of-type(${index})`;
+  }
+
+  usedSelectors.add(selector);
+  return selector;
 }
 
 // ── Helpers: HTML cleanup ────────────────────────────────────────────────────
@@ -233,6 +245,7 @@ function cleanHtml(html) {
 
 function detectCheckoutLinks($, html) {
   const links = [];
+  const usedSelectors = new Set();
 
   $('a, button').each((_, el) => {
     const href = $(el).attr('href') || '';
@@ -242,15 +255,16 @@ function detectCheckoutLinks($, html) {
     const isCheckout = CHECKOUT_URL_PATTERNS.some((pattern) => pattern.test(url));
     if (!isCheckout) return;
 
-    // Build surrounding text context for bundle detection
+    // Build narrow context for bundle detection - use only immediate parent to avoid cross-bundle contamination
     const anchorText = $(el).text().trim();
-    const parentText = $(el).closest('section, div, p, td, li').first().text().trim();
+    const immediateParent = $(el).parent();
+    const parentText = immediateParent.text().trim();
     const contextText = `${anchorText} ${parentText}`;
     const bundle = detectBundle(contextText);
 
     links.push({
       href: href || null,
-      selector: buildCssSelector($, el),
+      selector: buildCssSelector($, el, usedSelectors),
       anchorText,
       platform: classifyPlatform(href),
       bundle,

@@ -179,23 +179,57 @@ Plans:
 
 ---
 
-## Backlog
+### [Milestone v1.3 — Extrator Interno] (branch: extrator-interno)
 
-### Phase 999.1: Potes e Cores — Editor Visual (BACKLOG)
+- [ ] **Phase 10: Nome do Produto — Detecção e Substituição** - detectar o nome do produto na página e substituir todas as ocorrências por um novo nome fornecido pelo afiliado
+- [ ] **Phase 11: Potes & Cores — Editor Visual** - editor visual de potes e paleta de cores por seção de pricing (promovido do backlog 999.1)
 
-**Goal:** Editor visual de quantidade de potes e paleta de cores dos produtos nos pricing sections (2, 3, 6 potes), permitindo trocar cor de fundo/borda de cada seção diretamente na interface sem editar HTML
-**Requirements:** TBD
+### Phase 10: Nome do Produto — Detecção e Substituição
+**Goal**: O afiliado pode ver o nome do produto detectado na página, opcionalmente substituí-lo por um nome novo, e o export troca todas as ocorrências do nome original pelo novo em todo o HTML
+**Depends on**: Phase 9
+**Branch**: extrator-interno
+**Requirements**: PRODUCT-01, PRODUCT-02, PRODUCT-03
+**Success Criteria** (what must be TRUE):
+  1. Após fetch/upload, o editor exibe o nome do produto detectado automaticamente (extraído de title, h1, meta og:title, ou padrões recorrentes de texto)
+  2. O afiliado pode editar o campo "Nome do Produto" com o novo nome desejado
+  3. Se o campo for preenchido, o export substitui TODAS as ocorrências do nome original pelo novo — em texto visível, atributos alt, title, meta tags e og tags
+  4. Se o campo ficar vazio, nenhuma substituição é feita (comportamento preservado)
+  5. A detecção funciona tanto para páginas obtidas por URL quanto por upload de pasta
 **Plans:** 0 plans
 
 Plans:
-- [ ] TBD (promote with /gsd-review-backlog when ready)
+- [ ] TBD
+
+### Phase 11: Potes & Cores — Editor Visual
+**Goal**: O afiliado pode ver e editar a quantidade de potes e as cores de fundo/borda de cada seção de pricing diretamente na interface, sem tocar no HTML
+**Depends on**: Phase 10
+**Branch**: extrator-interno
+**Requirements**: POTES-01, POTES-02, CORES-01, CORES-02
+**Success Criteria** (what must be TRUE):
+  1. Após fetch/upload, as seções de pricing (2, 3, 6 potes) são detectadas e exibidas no editor com seus rótulos atuais
+  2. O afiliado pode alterar a quantidade de potes exibida em cada seção (ex: trocar "6 Potes" por "3 Potes")
+  3. O afiliado pode escolher cor de fundo e cor de borda para cada seção via color picker
+  4. O export aplica todas as alterações de texto e cor no HTML gerado
+  5. Se nenhuma alteração for feita, o HTML de saída é idêntico ao original nessas seções
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD
+
+---
+
+## Backlog
+
+### Phase 999.1: Potes e Cores — Editor Visual (PROMOVIDO → Phase 11)
+
+**Goal:** Promovido para Phase 11 no Milestone v1.3 (branch: extrator-interno)
 
 ---
 
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9
+Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10 → 11
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
@@ -208,3 +242,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 7. Checkout & Bundle Detection Fix | 0/0 | Complete | 2026-04-14 |
 | 8. Folder Upload | 2/2 | Complete   | 2026-04-14 |
 | 9. Export Verification Flow | 0/0 | Planned | — |
+| 10. Nome do Produto — Detecção e Substituição | 0/0 | Planned (extrator-interno) | — |
+| 11. Potes & Cores — Editor Visual | 0/0 | Planned (extrator-interno) | — |

@@ -122,6 +122,19 @@ Plans:
 - [x] 06-02-PLAN.md — public/index.html: section #section-extra-scripts card HTML + CSS, JS state + add/remove/reorder handlers, fetch reveal + export payload wiring
 **UI hint**: yes
 
+## Backlog
+
+### Phase 999.1: Potes e Cores — Editor Visual (BACKLOG)
+
+**Goal:** Editor visual de quantidade de potes e paleta de cores dos produtos nos pricing sections (2, 3, 6 potes), permitindo trocar cor de fundo/borda de cada seção diretamente na interface sem editar HTML
+**Requirements:** TBD
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (promote with /gsd-review-backlog when ready)
+
+---
+
 ## Progress
 
 **Execution Order:**

@@ -29,7 +29,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 ### Milestone v1.2 — Upload Local + Detecção Aprimorada
 
 - [ ] **Phase 7: Checkout & Bundle Detection Fix** - fix CSS selector specificity and bundle keyword context so each button gets its correct pote number
-- [ ] **Phase 8: Folder Upload** - allow users to upload a local HTML project folder (index.html + assets) as an alternative to URL fetch
+- [x] **Phase 8: Folder Upload** - allow users to upload a local HTML project folder (index.html + assets) as an alternative to URL fetch (completed 2026-04-14)
 
 ## Phase Details
 
@@ -155,11 +155,11 @@ Plans:
   3. O servidor identifica o index.html, processa-o com o mesmo pipeline de limpeza/detecção do `/api/fetch`, e retorna o mesmo formato de resposta (html, summary, checkoutLinks, bundleImages, delay)
   4. O export ZIP inclui o index.html processado + todos os assets originais da pasta — estrutura de diretórios preservada
   5. O fluxo pós-upload (editor de afiliado, export) é idêntico ao fluxo pós-URL
-**Plans:** 1/2 plans executed
+**Plans:** 2/2 plans complete
 
 Plans:
 - [x] 08-01-PLAN.md — server.js: multer + sessionStore + /api/upload-folder route + /api/export-zip uploadSessionId branch
-- [ ] 08-02-PLAN.md — public/index.html: tab toggle UI (URL/Pasta), folder input, upload handler JS, export uploadSessionId integration
+- [x] 08-02-PLAN.md — public/index.html: tab toggle UI (URL/Pasta), folder input, upload handler JS, export uploadSessionId integration
 
 ### Phase 9: Export Verification Flow
 **Goal**: Ao gerar a página afiliado, o usuário vê uma tela de progresso com verificações reais — e só pode baixar quando tudo estiver OK (ou com avisos explicados)
@@ -206,5 +206,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 5. Bundle Images | 2/2 | Complete | 2026-04-13 |
 | 6. Extra Scripts Tab | 2/2 | Complete | 2026-04-13 |
 | 7. Checkout & Bundle Detection Fix | 0/0 | Complete | 2026-04-14 |
-| 8. Folder Upload | 1/2 | In Progress|  |
+| 8. Folder Upload | 2/2 | Complete   | 2026-04-14 |
 | 9. Export Verification Flow | 0/0 | Planned | — |

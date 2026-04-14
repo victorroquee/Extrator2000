@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: — Editor Avançado
-status: executing
-stopped_at: Completed 08-01-PLAN.md
-last_updated: "2026-04-14T18:01:35.658Z"
+status: verifying
+stopped_at: Completed 08-02-PLAN.md
+last_updated: "2026-04-14T18:05:03.871Z"
 last_activity: 2026-04-14
 progress:
   total_phases: 7
-  completed_phases: 3
+  completed_phases: 4
   total_plans: 8
-  completed_plans: 7
-  percent: 88
+  completed_plans: 8
+  percent: 100
 ---
 
 # Project State
@@ -27,7 +27,7 @@ See: .planning/PROJECT.md (updated 2026-04-11)
 
 Phase: 08 (folder-upload) — EXECUTING
 Plan: 2 of 2
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-04-14
 
 ```
@@ -63,6 +63,8 @@ New for v1.1:
 - Bundle image replacement uses global src-match (not selector index) to handle desktop+mobile duplicate sections
 - Extra scripts auto-wrap: bare JS input auto-wrapped in `<script>` tags on export
 - [Phase 08-folder-upload]: req.body.paths fallback: multer+express strips brackets so paths[] arrives as req.body.paths
+- [Phase 08-folder-upload]: setFetchLoading extended to cover btnUpload — single loading gate for both URL and folder flows
+- [Phase 08-folder-upload]: doExport sends uploadSessionId OR pageUrl, never both — server branches on uploadSessionId presence
 
 ### Pending Todos
 
@@ -74,6 +76,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-14T18:01:35.654Z
-Stopped at: Completed 08-01-PLAN.md
+Last session: 2026-04-14T18:04:59.794Z
+Stopped at: Completed 08-02-PLAN.md
 Resume file: None

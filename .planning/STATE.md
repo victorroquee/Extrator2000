@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: — Editor Avançado
 status: executing
-stopped_at: Phase 6 context gathered
-last_updated: "2026-04-13T19:12:04.536Z"
-last_activity: 2026-04-13 -- Phase 05 execution started
+stopped_at: Completed 08-01-PLAN.md
+last_updated: "2026-04-14T18:01:35.658Z"
+last_activity: 2026-04-14
 progress:
-  total_phases: 3
-  completed_phases: 2
-  total_plans: 4
-  completed_plans: 4
-  percent: 100
+  total_phases: 7
+  completed_phases: 3
+  total_plans: 8
+  completed_plans: 7
+  percent: 88
 ---
 
 # Project State
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-11)
 
 **Core value:** Transformar qualquer página VSL em uma cópia 100% funcional com as credenciais do afiliado, em menos de 1 minuto.
-**Current focus:** Phase 05 — bundle-images
+**Current focus:** Phase 08 — folder-upload
 
 ## Current Position
 
-Phase: 05 (bundle-images) — EXECUTING
-Plan: 1 of 2
-Status: Executing Phase 05
-Last activity: 2026-04-13 -- Phase 05 execution started
+Phase: 08 (folder-upload) — EXECUTING
+Plan: 2 of 2
+Status: Ready to execute
+Last activity: 2026-04-14
 
 ```
 v1.1 Progress: [░░░░░░░░░░] 0% (0/3 phases)
@@ -62,6 +62,7 @@ New for v1.1:
 - VTURB delay extracted before cleanHtml() removes the block — cleanHtml() return shape extended
 - Bundle image replacement uses global src-match (not selector index) to handle desktop+mobile duplicate sections
 - Extra scripts auto-wrap: bare JS input auto-wrapped in `<script>` tags on export
+- [Phase 08-folder-upload]: req.body.paths fallback: multer+express strips brackets so paths[] arrives as req.body.paths
 
 ### Pending Todos
 
@@ -73,6 +74,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-13T19:12:04.529Z
-Stopped at: Phase 6 context gathered
-Resume file: .planning/phases/06-extra-scripts-tab/06-CONTEXT.md
+Last session: 2026-04-14T18:01:35.654Z
+Stopped at: Completed 08-01-PLAN.md
+Resume file: None

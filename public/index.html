@@ -628,6 +628,57 @@
     .btn-preview:hover { background: #E5E7EB; }
     .btn-preview:disabled { opacity: 0.45; cursor: not-allowed; }
 
+    /* ── Tab toggle para input mode ──────────────────────────────── */
+    .input-tabs {
+      display: flex;
+      gap: 0;
+      margin-bottom: 12px;
+      border-bottom: 2px solid #374151;
+    }
+    .input-tab {
+      padding: 8px 20px;
+      background: transparent;
+      border: none;
+      color: #9CA3AF;
+      cursor: pointer;
+      font-size: 0.85rem;
+      font-weight: 500;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -2px;
+      transition: color 0.2s, border-color 0.2s;
+    }
+    .input-tab:hover {
+      color: #D1D5DB;
+    }
+    .input-tab.tab-active {
+      color: #A78BFA;
+      border-bottom-color: #A78BFA;
+    }
+    .folder-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .folder-row input[type="file"] {
+      display: none;
+    }
+    .folder-label {
+      flex: 1;
+      padding: 10px 14px;
+      background: #F9FAFB;
+      border: 1px solid #D1D5DB;
+      border-radius: 8px;
+      color: #9CA3AF;
+      font-size: 0.85rem;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      cursor: pointer;
+    }
+    .folder-label.has-files {
+      color: #111827;
+    }
+
     /* ── Responsive ───────────────────────────────────────────────── */
     @media (max-width: 960px) {
       .app-layout { grid-template-columns: 1fr; }
@@ -674,20 +725,44 @@
             <span class="step-num">1</span>
             <span class="card-title">Página para Clonar</span>
           </div>
-          <p class="card-hint">Cole a URL da VSL que deseja clonar e clique em <strong>Analisar</strong></p>
-          <div class="url-row">
-            <input
-              type="url"
-              id="url-input"
-              placeholder="https://exemplo.com/pagina-vsl"
-              autocomplete="off"
-              spellcheck="false"
-            />
-            <button class="btn btn-primary" id="btn-fetch" type="button">
-              <span class="spinner" aria-hidden="true"></span>
-              <span class="btn-label">Analisar</span>
-            </button>
+
+          <!-- Tab toggle -->
+          <div class="input-tabs">
+            <button class="input-tab tab-active" id="tab-url" type="button">URL</button>
+            <button class="input-tab" id="tab-folder" type="button">Pasta de Arquivos</button>
           </div>
+
+          <!-- Panel URL -->
+          <div id="panel-url">
+            <p class="card-hint">Cole a URL da VSL que deseja clonar e clique em <strong>Analisar</strong></p>
+            <div class="url-row">
+              <input
+                type="url"
+                id="url-input"
+                placeholder="https://exemplo.com/pagina-vsl"
+                autocomplete="off"
+                spellcheck="false"
+              />
+              <button class="btn btn-primary" id="btn-fetch" type="button">
+                <span class="spinner" aria-hidden="true"></span>
+                <span class="btn-label">Analisar</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Panel Pasta -->
+          <div id="panel-folder" style="display:none;">
+            <p class="card-hint">Selecione a pasta que contém o <strong>index.html</strong> e seus assets</p>
+            <div class="folder-row">
+              <input type="file" id="folder-input" webkitdirectory multiple />
+              <label class="folder-label" id="folder-label" for="folder-input">Nenhuma pasta selecionada</label>
+              <button class="btn btn-primary" id="btn-upload" type="button">
+                <span class="spinner" aria-hidden="true"></span>
+                <span class="btn-label">Processar Pasta</span>
+              </button>
+            </div>
+          </div>
+
           <div class="error-banner" id="fetch-error" role="alert"></div>
           <div class="analyzing-box" id="analyzing-box" style="display:none;">
             <div class="analyzing-steps" id="analyzing-steps"></div>
@@ -1001,6 +1076,7 @@
     const state = {
       fetchedHtml: null,
       fetchedUrl: '',
+      uploadSessionId: null,
       checkoutLinks: [],
       delaySeconds: null,
       hasDelay: false,
@@ -1014,6 +1090,14 @@
     const urlInput         = document.getElementById('url-input');
     const btnFetch         = document.getElementById('btn-fetch');
     const fetchError       = document.getElementById('fetch-error');
+
+    const tabUrl       = document.getElementById('tab-url');
+    const tabFolder    = document.getElementById('tab-folder');
+    const panelUrl     = document.getElementById('panel-url');
+    const panelFolder  = document.getElementById('panel-folder');
+    const folderInput  = document.getElementById('folder-input');
+    const folderLabel  = document.getElementById('folder-label');
+    const btnUpload    = document.getElementById('btn-upload');
 
     const sectionSummary   = document.getElementById('section-summary');
     const sectionHeader    = document.getElementById('section-header');
@@ -1063,7 +1147,40 @@
     function setFetchLoading(loading) {
       btnFetch.disabled = loading;
       btnFetch.classList.toggle('loading', loading);
+      if (btnUpload) {
+        btnUpload.disabled = loading;
+        btnUpload.classList.toggle('loading', loading);
+      }
     }
+
+    // ── Tab switching ─────────────────────────────────────────────────
+    function switchInputTab(tab) {
+      if (tab === 'url') {
+        tabUrl.classList.add('tab-active');
+        tabFolder.classList.remove('tab-active');
+        panelUrl.style.display = '';
+        panelFolder.style.display = 'none';
+      } else {
+        tabFolder.classList.add('tab-active');
+        tabUrl.classList.remove('tab-active');
+        panelUrl.style.display = 'none';
+        panelFolder.style.display = '';
+      }
+    }
+    tabUrl.addEventListener('click', function() { switchInputTab('url'); });
+    tabFolder.addEventListener('click', function() { switchInputTab('folder'); });
+
+    // ── Folder selection ──────────────────────────────────────────────
+    folderInput.addEventListener('change', function() {
+      var files = folderInput.files;
+      if (!files || !files.length) {
+        folderLabel.textContent = 'Nenhuma pasta selecionada';
+        folderLabel.classList.remove('has-files');
+        return;
+      }
+      folderLabel.textContent = files.length + ' arquivo(s) selecionado(s)';
+      folderLabel.classList.add('has-files');
+    });
 
     function fetchWithTimeout(url, opts, ms) {
       var controller = new AbortController();
@@ -1321,6 +1438,7 @@
 
         state.fetchedHtml        = data.html;
         state.fetchedUrl         = url;
+        state.uploadSessionId    = null;
         state.checkoutLinks      = (data.summary && data.summary.checkoutLinks) || [];
         state.delaySeconds       = (data.summary && data.summary.delaySeconds != null) ? data.summary.delaySeconds : null;
         state.hasDelay           = !!(data.summary && data.summary.hasDelay);
@@ -1399,6 +1517,117 @@
       if (e.key === 'Enter') btnFetch.click();
     });
 
+    // ── Folder upload ─────────────────────────────────────────────────
+    var uploadInFlight = false;
+    btnUpload.addEventListener('click', async function() {
+      var files = folderInput.files;
+      if (!files || !files.length) {
+        showError('Selecione uma pasta antes de processar.');
+        return;
+      }
+      if (uploadInFlight) return;
+      uploadInFlight = true;
+      clearError();
+      setFetchLoading(true);
+      startAnalyzing();
+
+      try {
+        var formData = new FormData();
+        for (var i = 0; i < files.length; i++) {
+          formData.append('files', files[i]);
+          formData.append('paths[]', files[i].webkitRelativePath);
+        }
+
+        var response = await fetchWithTimeout('/api/upload-folder', {
+          method: 'POST',
+          body: formData,
+          // NAO definir Content-Type — browser define automaticamente com boundary
+        }, 60000);
+
+        var data = await response.json();
+
+        if (!response.ok) {
+          showError(data.error || 'Erro ao processar pasta. Verifique se contém index.html.');
+          return;
+        }
+
+        state.fetchedHtml        = data.html;
+        state.fetchedUrl         = '';
+        state.uploadSessionId    = data.uploadSessionId;
+        state.checkoutLinks      = (data.summary && data.summary.checkoutLinks) || [];
+        state.delaySeconds       = (data.summary && data.summary.delaySeconds != null) ? data.summary.delaySeconds : null;
+        state.hasDelay           = !!(data.summary && data.summary.hasDelay);
+        state.delayScriptContent = (data.summary && data.summary.delayScriptContent) || null;
+        state.delayType          = (data.summary && data.summary.delayType) || null;
+        state.bundleImages       = (data.summary && data.summary.bundleImages) || {};
+
+        var scriptsRemoved = (data.summary && data.summary.scriptsRemoved) || 0;
+        var vslDetected    = (data.summary && data.summary.vslDetected)    || false;
+        var linksFound     = state.checkoutLinks.length;
+
+        valScripts.textContent = scriptsRemoved;
+        valLinks.textContent   = linksFound;
+
+        if (vslDetected) {
+          valVsl.textContent = 'Sim';
+          summaryVslItem.classList.remove('muted');
+        } else {
+          valVsl.textContent = 'Não';
+          summaryVslItem.classList.add('muted');
+        }
+
+        checkoutCountBadge.textContent = linksFound;
+        renderCheckoutInputs(state.checkoutLinks);
+
+        // Reveal sections (mesma lógica do URL fetch)
+        showSection(sectionSummary);
+        showSection(sectionHeader);
+        showSection(sectionPlayer);
+        showSection(sectionExtraScripts);
+        showSection(sectionCheckout);
+
+        // Delay section
+        if (sectionDelay && delayInput) {
+          var badge = document.getElementById('delay-status');
+          var txt   = document.getElementById('delay-status-text');
+          if (state.hasDelay) {
+            delayInput.value = state.delaySeconds;
+            delayInput.disabled = false;
+            if (badge) badge.className = 'delay-status-badge detected';
+            if (txt)   txt.textContent = 'Detectado: ' + state.delaySeconds + 's';
+          } else {
+            delayInput.value = '';
+            delayInput.disabled = false;
+            delayInput.placeholder = '—';
+            if (badge) badge.className = 'delay-status-badge';
+            if (txt)   txt.textContent = 'Não detectado';
+          }
+          showSection(sectionDelay);
+        }
+
+        // Bundle images
+        if (Object.keys(state.bundleImages).length > 0 && sectionBundleImages) {
+          renderBundleImages(state.bundleImages);
+          showSection(sectionBundleImages);
+        }
+
+        setExportEnabled(true);
+
+        var pvwWarn = document.getElementById('pvw-warn');
+        if (pvwWarn) pvwWarn.classList.toggle('visible', !vslDetected);
+
+        stopAnalyzing(true);
+        renderSlots();
+
+      } catch (err) {
+        showError('Falha de conexão ao processar pasta. Verifique se o servidor está rodando.');
+        stopAnalyzing(false);
+      } finally {
+        uploadInFlight = false;
+        setFetchLoading(false);
+      }
+    });
+
     // ── Export ────────────────────────────────────────────────────────
 
     async function doExport() {
@@ -1410,13 +1639,14 @@
 
       try {
         var payload = {
-          html:          state.fetchedHtml,
-          headerPixel:   headerPixel.value,
-          headerPreload: headerPreload.value,
-          vslembed:      vslEmbed.value,
-          checkoutLinks: buildCheckoutPayload(),
-          pageUrl:       state.fetchedUrl,
-          extraScripts:  buildExtraScriptsPayload(),
+          html:            state.fetchedHtml,
+          headerPixel:     headerPixel.value,
+          headerPreload:   headerPreload.value,
+          vslembed:        vslEmbed.value,
+          checkoutLinks:   buildCheckoutPayload(),
+          pageUrl:         state.uploadSessionId ? undefined : state.fetchedUrl,
+          extraScripts:    buildExtraScriptsPayload(),
+          uploadSessionId: state.uploadSessionId || undefined,
         };
 
         if (state.hasDelay && delayInput) {

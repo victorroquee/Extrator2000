@@ -146,15 +146,31 @@ Plans:
 - [ ] TBD
 
 ### Phase 8: Folder Upload
-**Goal**: Usuários podem enviar uma pasta local com projeto HTML (index.html + assets) como alternativa ao fetch por URL
+**Goal**: Usuários podem enviar uma pasta local com projeto HTML (index.html + assets) como alternativa ao fetch por URL — sem precisar de um link público
 **Depends on**: Phase 7
-**Requirements**: TBD
+**Requirements**: UPLOAD-01, UPLOAD-02, UPLOAD-03, UPLOAD-04
 **Success Criteria** (what must be TRUE):
-  1. Interface oferece toggle "URL / Pasta de Arquivos" na seção de input principal
-  2. Ao selecionar "Pasta", o usuário pode escolher uma pasta local — todos os arquivos (HTML, CSS, JS, imagens) são enviados
-  3. O servidor processa o index.html da pasta com o mesmo pipeline de limpeza e detecção do fetch por URL
-  4. Assets locais (imagens, CSS, JS) são servidos corretamente no preview e incluídos no export-zip
-  5. O fluxo de edição e export é idêntico ao do fetch por URL
+  1. Interface exibe duas abas no topo do input: "URL" e "Pasta de Arquivos" — troca o campo sem recarregar
+  2. Na aba "Pasta de Arquivos", o usuário seleciona uma pasta local; todos os arquivos (HTML, CSS, JS, imagens) são enviados via multipart para `/api/upload-folder`
+  3. O servidor identifica o index.html, processa-o com o mesmo pipeline de limpeza/detecção do `/api/fetch`, e retorna o mesmo formato de resposta (html, summary, checkoutLinks, bundleImages, delay)
+  4. O export ZIP inclui o index.html processado + todos os assets originais da pasta — estrutura de diretórios preservada
+  5. O fluxo pós-upload (editor de afiliado, export) é idêntico ao fluxo pós-URL
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD
+
+### Phase 9: Export Verification Flow
+**Goal**: Ao gerar a página afiliado, o usuário vê uma tela de progresso com verificações reais — e só pode baixar quando tudo estiver OK (ou com avisos explicados)
+**Depends on**: Phase 8
+**Requirements**: VERIFY-01, VERIFY-02, VERIFY-03
+**Success Criteria** (what must be TRUE):
+  1. Ao clicar "Gerar Página Afiliado", uma modal/overlay mostra os passos em sequência: Criando página → Verificando scripts → Confirmando botões de checkout → Confirmando delay
+  2. Cada passo faz uma verificação real no HTML gerado: scripts de tracking removidos, checkout links presentes, delay injetado se configurado
+  3. Se checkout não for encontrado no HTML exportado, o passo fica vermelho e bloqueia o download — exibe "Rever configuração" para o usuário corrigir
+  4. Scripts e delay não encontrados mostram ⚠ (aviso amarelo) mas não bloqueiam — o botão "Baixar mesmo assim" fica disponível
+  5. Quando todos os passos passam (ou apenas warnings), aparece "Sua página está pronta!" com botão de download destacado
+  6. Funciona tanto para export de página via URL quanto via pasta de arquivos
 **Plans:** 0 plans
 
 Plans:
@@ -178,7 +194,7 @@ Plans:
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8
+Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
@@ -188,5 +204,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8
 | 4. VTURB Delay + Export Idempotency | 2/2 | Complete | 2026-04-11 |
 | 5. Bundle Images | 2/2 | Complete | 2026-04-13 |
 | 6. Extra Scripts Tab | 2/2 | Complete | 2026-04-13 |
-| 7. Checkout & Bundle Detection Fix | 0/0 | Planned | — |
+| 7. Checkout & Bundle Detection Fix | 0/0 | Complete | 2026-04-14 |
 | 8. Folder Upload | 0/0 | Planned | — |
+| 9. Export Verification Flow | 0/0 | Planned | — |

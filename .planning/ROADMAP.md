@@ -26,6 +26,11 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 5: Bundle Images** - detect, preview, and replace product bottle images per pricing section (completed 2026-04-13)
 - [x] **Phase 6: Extra Scripts Tab** - dedicated scripts tab with add/remove/reorder and head injection (completed 2026-04-13)
 
+### Milestone v1.2 — Upload Local + Detecção Aprimorada
+
+- [ ] **Phase 7: Checkout & Bundle Detection Fix** - fix CSS selector specificity and bundle keyword context so each button gets its correct pote number
+- [ ] **Phase 8: Folder Upload** - allow users to upload a local HTML project folder (index.html + assets) as an alternative to URL fetch
+
 ## Phase Details
 
 ---
@@ -122,6 +127,41 @@ Plans:
 - [x] 06-02-PLAN.md — public/index.html: section #section-extra-scripts card HTML + CSS, JS state + add/remove/reorder handlers, fetch reveal + export payload wiring
 **UI hint**: yes
 
+---
+
+### [Milestone v1.2 — Upload Local + Detecção Aprimorada]
+
+### Phase 7: Checkout & Bundle Detection Fix
+**Goal**: Cada botão de checkout recebe o número de pote correto e o link afiliado é aplicado ao botão certo — sem misturar links entre bundles
+**Depends on**: Phase 6
+**Requirements**: CHECK-02, CHECK-03, CHECK-04
+**Success Criteria** (what must be TRUE):
+  1. Ao buscar uma VSL com 3 botões de checkout (2, 3 e 6 potes), cada um recebe o label correto no editor
+  2. O seletor CSS gerado é suficientemente específico para distinguir botões de classes iguais (usa nth-child ou índice quando necessário)
+  3. O export aplica o link afiliado apenas ao botão correspondente ao bundle preenchido
+  4. Quando bundle não é detectado, o campo mostra "Sem bundle detectado" em vez de ficar em branco sem contexto
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD
+
+### Phase 8: Folder Upload
+**Goal**: Usuários podem enviar uma pasta local com projeto HTML (index.html + assets) como alternativa ao fetch por URL
+**Depends on**: Phase 7
+**Requirements**: TBD
+**Success Criteria** (what must be TRUE):
+  1. Interface oferece toggle "URL / Pasta de Arquivos" na seção de input principal
+  2. Ao selecionar "Pasta", o usuário pode escolher uma pasta local — todos os arquivos (HTML, CSS, JS, imagens) são enviados
+  3. O servidor processa o index.html da pasta com o mesmo pipeline de limpeza e detecção do fetch por URL
+  4. Assets locais (imagens, CSS, JS) são servidos corretamente no preview e incluídos no export-zip
+  5. O fluxo de edição e export é idêntico ao do fetch por URL
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD
+
+---
+
 ## Backlog
 
 ### Phase 999.1: Potes e Cores — Editor Visual (BACKLOG)
@@ -138,13 +178,15 @@ Plans:
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
+Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Backend API | —/— | Shipped (v1.0) | 2026-04-10 |
 | 2. Frontend UI | 1/1 | Shipped (v1.0) | 2026-04-10 |
 | 3. Integration & Polish | —/— | Shipped (v1.0) | 2026-04-11 |
-| 4. VTURB Delay + Export Idempotency | 2/2 | Complete   | 2026-04-11 |
+| 4. VTURB Delay + Export Idempotency | 2/2 | Complete | 2026-04-11 |
 | 5. Bundle Images | 2/2 | Complete | 2026-04-13 |
 | 6. Extra Scripts Tab | 2/2 | Complete | 2026-04-13 |
+| 7. Checkout & Bundle Detection Fix | 0/0 | Planned | — |
+| 8. Folder Upload | 0/0 | Planned | — |

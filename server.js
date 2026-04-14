@@ -5,6 +5,8 @@ const axios = require('axios');
 const cheerio = require('cheerio');
 const path = require('path');
 const archiver = require('archiver');
+const multer = require('multer');
+const crypto = require('crypto');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -492,6 +494,120 @@ app.post('/api/fetch', async (req, res) => {
   });
 });
 
+// ── Upload: multer config + session store ────────────────────────────────────
+
+const ALLOWED_UPLOAD_EXTENSIONS = new Set([
+  '.html', '.htm', '.css', '.js', '.mjs', '.json',
+  '.svg', '.xml', '.png', '.jpg', '.jpeg', '.gif',
+  '.webp', '.avif', '.ico', '.woff', '.woff2',
+  '.ttf', '.eot', '.otf', '.map',
+]);
+
+const SESSION_TTL_MS = 30 * 60 * 1000; // 30 minutos
+const uploadSessions = new Map(); // sessionId -> { assets: Map<relativePath, Buffer>, expiresAt }
+
+// Limpeza periodica de sessoes expiradas
+setInterval(function() {
+  const now = Date.now();
+  for (const [id, session] of uploadSessions) {
+    if (session.expiresAt < now) uploadSessions.delete(id);
+  }
+}, 5 * 60 * 1000);
+
+const folderUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024, files: 200 },
+  fileFilter: function(req, file, cb) {
+    const ext = path.extname(file.originalname).toLowerCase();
+    cb(null, ALLOWED_UPLOAD_EXTENSIONS.has(ext));
+  },
+});
+
+function stripTopFolder(relativePath) {
+  const parts = relativePath.split('/');
+  return parts.slice(1).join('/');
+}
+
+function isSafeRelativePath(relativePath) {
+  if (!relativePath || path.isAbsolute(relativePath)) return false;
+  const normalized = path.normalize(relativePath);
+  if (normalized.startsWith('..')) return false;
+  if (relativePath.includes('\0')) return false;
+  return true;
+}
+
+// ── Route: POST /api/upload-folder ──────────────────────────────────────────
+
+app.post('/api/upload-folder', folderUpload.array('files', 200), function(req, res) {
+  const files = req.files || [];
+  // multer + express parses 'paths[]' field name as req.body.paths (brackets stripped)
+  const rawPaths = req.body.paths || req.body['paths[]'] || [];
+  const paths = Array.isArray(rawPaths) ? rawPaths : [rawPaths];
+
+  if (!files.length) {
+    return res.status(400).json({ error: 'Nenhum arquivo recebido.' });
+  }
+
+  const assets = new Map();
+  let indexHtmlBuffer = null;
+
+  for (let i = 0; i < files.length; i++) {
+    const file = files[i];
+    const rawPath = paths[i] || file.originalname;
+    const relative = stripTopFolder(rawPath);
+    if (!isSafeRelativePath(relative)) continue;
+    assets.set(relative, file.buffer);
+    if (relative === 'index.html' || relative === 'index.htm') {
+      indexHtmlBuffer = file.buffer;
+    }
+  }
+
+  if (!indexHtmlBuffer) {
+    return res.status(400).json({
+      error: 'index.html nao encontrado na raiz da pasta. Selecione a pasta que contem diretamente o index.html.',
+    });
+  }
+
+  const rawHtml = indexHtmlBuffer.toString('utf8');
+  const delayInfo = detectVturbDelay(rawHtml);
+  const { html: cleanedHtml, scriptsRemoved, vslDetected } = cleanHtml(rawHtml);
+  const $ = cheerio.load(cleanedHtml, { decodeEntities: false });
+  const checkoutLinks = detectCheckoutLinks($, cleanedHtml);
+  const bundleImages = detectBundleImages($, checkoutLinks);
+
+  const sessionId = crypto.randomUUID();
+  uploadSessions.set(sessionId, {
+    assets,
+    expiresAt: Date.now() + SESSION_TTL_MS,
+  });
+
+  return res.json({
+    html: cleanedHtml,
+    uploadSessionId: sessionId,
+    summary: {
+      scriptsRemoved,
+      vslDetected,
+      checkoutLinks,
+      bundleImages,
+      delaySeconds: delayInfo ? delayInfo.delaySeconds : null,
+      hasDelay: delayInfo !== null,
+      delayScriptContent: delayInfo ? delayInfo.delayScriptContent : null,
+      delayType: delayInfo ? delayInfo.delayType : null,
+    },
+  });
+});
+
+// Multer error handler (4-argument signature para Express tratar como error middleware)
+app.use(function(err, req, res, next) {
+  if (err && err.code === 'LIMIT_FILE_SIZE') {
+    return res.status(413).json({ error: 'Arquivo muito grande. Limite: 10MB por arquivo.' });
+  }
+  if (err && err.code === 'LIMIT_FILE_COUNT') {
+    return res.status(400).json({ error: 'Muitos arquivos. Limite: 200 arquivos por pasta.' });
+  }
+  next(err);
+});
+
 // ── Helpers: ZIP export ──────────────────────────────────────────────────────
 
 function escapeRegExp(str) {
@@ -749,7 +865,8 @@ app.post('/api/export', (req, res) => {
 
 app.post('/api/export-zip', async (req, res) => {
   const { html, headerPixel, headerPreload, vslembed, checkoutLinks, pageUrl,
-          delaySeconds, delayScriptContent, delayType, bundleImages, extraScripts } = req.body;
+          delaySeconds, delayScriptContent, delayType, bundleImages, extraScripts,
+          uploadSessionId } = req.body;
 
   if (!html || typeof html !== 'string') {
     return res.status(400).json({ error: 'Campo "html" é obrigatório.' });
@@ -758,6 +875,35 @@ app.post('/api/export-zip', async (req, res) => {
   let outputHtml = buildExportHtml({ html, headerPixel, headerPreload, vslembed,
                                      checkoutLinks, delaySeconds, delayScriptContent,
                                      delayType, bundleImages, extraScripts });
+
+  // Upload session branch — assets already in memory, no network download needed
+  if (uploadSessionId) {
+    const session = uploadSessions.get(uploadSessionId);
+    if (!session) {
+      return res.status(400).json({ error: 'Sessao de upload expirada. Refaca o upload da pasta.' });
+    }
+
+    res.setHeader('Content-Type', 'application/zip');
+    res.setHeader('Content-Disposition', 'attachment; filename="pagina-afiliado.zip"');
+
+    const archive = archiver('zip', { zlib: { level: 6 } });
+    archive.on('error', (err) => {
+      console.error('[export-zip] archive error:', err);
+      res.destroy(err);
+    });
+    archive.pipe(res);
+
+    archive.append(outputHtml, { name: 'index.html' });
+    for (const [relativePath, buffer] of session.assets) {
+      if (relativePath !== 'index.html' && relativePath !== 'index.htm') {
+        archive.append(buffer, { name: relativePath });
+      }
+    }
+
+    res.on('finish', function() { uploadSessions.delete(uploadSessionId); });
+    await archive.finalize();
+    return;
+  }
 
   // Collect and download assets if we have the original page URL
   const usedPaths = new Set();
@@ -845,3 +991,4 @@ module.exports.detectCheckoutLinks = detectCheckoutLinks;
 module.exports.detectVturbDelay = detectVturbDelay;
 module.exports.detectBundleImages = detectBundleImages;
 module.exports.buildExportHtml = buildExportHtml;
+module.exports.uploadSessions = uploadSessions;

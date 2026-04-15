@@ -144,9 +144,9 @@ const exportedDelay = _buildExportHtml({
   delaySeconds: 5,
   delayScriptContent: delayResult && delayResult.delayScriptContent,
 });
-assertContains(exportedDelay, 'var delaySeconds = 5', 'DELAY-03: new delaySeconds value injected');
-assertNotContains(exportedDelay, 'var delaySeconds = 10', 'DELAY-03: old delaySeconds value removed');
-assertContains(exportedDelay, 'displayHiddenElements', 'DELAY-03: original function body preserved');
+assertContains(exportedDelay, 'var delay = 5', 'DELAY-03: new delay value injected in standalone script');
+assertNotContains(exportedDelay, 'var delay = 10', 'DELAY-03: old delay value not present');
+assertContains(exportedDelay, '.esconder', 'DELAY-03: esconder reveal script present in export');
 
 // EXPORT-06: calling buildExportHtml twice with same input does not duplicate pixel
 const pixelHtml = '<html><head></head><body></body></html>';

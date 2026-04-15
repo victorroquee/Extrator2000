@@ -1885,7 +1885,7 @@
             + '<button class="btn-download-big" id="val-download">&#11123; Baixar ZIP</button>';
           document.getElementById('val-download').addEventListener('click', function() {
             closeValidationModal();
-            doActualDownload(payload);
+            doActualDownload();
           });
           document.getElementById('val-cancel').addEventListener('click', closeValidationModal);
         } else {
@@ -1901,7 +1901,8 @@
       document.getElementById('validation-backdrop').classList.remove('open');
     }
 
-    async function doActualDownload(payload) {
+    async function doActualDownload() {
+      var payload = buildExportPayload();
       setExportEnabled(false);
       if (btnExport)      btnExport.textContent      = 'Gerando ZIP...';
       if (btnExportPanel) btnExportPanel.textContent = 'Gerando ZIP...';

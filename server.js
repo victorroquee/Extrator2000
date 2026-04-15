@@ -684,7 +684,7 @@ function applyCheckoutLinks(outputHtml, checkoutLinks) {
           if ($2(el).attr('href') !== undefined) $2(el).attr('href', affiliateHref);
           if ($2(el).attr('onclick') !== undefined) {
             const oldOnclick = $2(el).attr('onclick') || '';
-            const checkoutUrlMatch = oldOnclick.match(/https?:\/\/[^\s'"]+/);
+            const checkoutUrlMatch = oldOnclick.match(/https?:\/\/[^'"\s);>]+/);
             if (checkoutUrlMatch) {
               $2(el).attr('onclick', oldOnclick.replace(checkoutUrlMatch[0], affiliateHref));
             }
@@ -716,7 +716,7 @@ function applyCheckoutLinks(outputHtml, checkoutLinks) {
       const affiliateHref = noSelector[0].affiliateHref || noSelector[0].affiliateUrl;
       if (href) $3(el).attr('href', affiliateHref);
       if (onclick) {
-        const checkoutUrlMatch = onclick.match(/https?:\/\/[^\s'"]+/);
+        const checkoutUrlMatch = onclick.match(/https?:\/\/[^'"\s);>]+/);
         if (checkoutUrlMatch) {
           $3(el).attr('onclick', onclick.replace(checkoutUrlMatch[0], affiliateHref));
         }

@@ -539,109 +539,100 @@
 
     /* Validation Modal */
     @keyframes val-item-in {
-      from { opacity: 0; transform: translateY(8px) scale(0.95); }
-      to   { opacity: 1; transform: translateY(0) scale(1); }
-    }
-    @keyframes val-icon-pop {
-      0%   { transform: scale(0); opacity: 0; }
-      60%  { transform: scale(1.2); opacity: 1; }
-      100% { transform: scale(1); opacity: 1; }
+      from { opacity: 0; transform: translateY(4px); }
+      to   { opacity: 1; transform: translateY(0); }
     }
     @keyframes val-spin {
       to { transform: rotate(360deg); }
     }
     .validation-backdrop {
       position: fixed; inset: 0; z-index: 1100;
-      background: rgba(0,0,0,0.72);
-      backdrop-filter: blur(4px);
+      background: rgba(12,14,19,0.45);
       display: flex; align-items: center; justify-content: center;
       padding: 24px;
       opacity: 0; pointer-events: none;
-      transition: opacity 0.25s;
+      transition: opacity 0.15s;
     }
     .validation-backdrop.open { opacity: 1; pointer-events: all; }
     .validation-card {
-      background: #fff; border-radius: 18px;
-      width: 100%; max-width: 520px;
-      box-shadow: 0 32px 80px rgba(0,0,0,0.35), 0 0 0 1px rgba(0,0,0,0.06);
+      background: #FFFFFF;
+      border: 1px solid #E5E8EE;
+      border-radius: 14px;
+      width: 100%; max-width: 480px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.09);
       overflow: hidden;
-      transform: translateY(16px) scale(0.97);
-      transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+      transform: translateY(6px);
+      transition: transform 0.18s ease;
     }
-    .validation-backdrop.open .validation-card {
-      transform: translateY(0) scale(1);
-    }
+    .validation-backdrop.open .validation-card { transform: translateY(0); }
     .validation-header {
-      padding: 24px 28px 16px;
-      border-bottom: 1px solid #E5E7EB;
-      background: linear-gradient(135deg, #F9FAFB 0%, #F3F4F6 100%);
+      padding: 20px 24px 16px;
+      border-bottom: 1px solid #E5E8EE;
     }
     .validation-header h3 {
-      margin: 0; font-size: 1.1rem; font-weight: 700; color: #111827;
-      letter-spacing: -0.01em;
+      margin: 0; font-size: 13px; font-weight: 600; color: #0C0E13;
+      letter-spacing: -0.4px;
     }
     .validation-header p {
-      margin: 4px 0 0; font-size: 0.8rem; color: #6B7280;
+      margin: 3px 0 0; font-size: 12px; color: #9299A8; font-weight: 400;
     }
-    .validation-body { padding: 20px 28px 8px; }
+    .validation-body { padding: 4px 0 0; }
     .validation-item {
-      display: flex; align-items: center; gap: 12px;
-      padding: 10px 0;
-      font-size: 0.9rem; color: #374151;
-      border-bottom: 1px solid #F3F4F6;
+      display: flex; align-items: center;
+      padding: 0 24px;
+      height: 44px;
+      border-bottom: 1px solid #F0F2F5;
       opacity: 0;
     }
     .validation-item:last-child { border-bottom: none; }
     .validation-item.visible {
-      animation: val-item-in 0.3s ease forwards;
+      animation: val-item-in 0.18s ease forwards;
     }
     .validation-icon {
-      width: 28px; height: 28px; border-radius: 50%;
+      width: 18px; height: 18px; border-radius: 4px;
       display: flex; align-items: center; justify-content: center;
-      font-size: 0.85rem; font-weight: 700; flex-shrink: 0;
-      transform: scale(0); opacity: 0;
+      font-size: 10px; font-weight: 600; flex-shrink: 0;
+      margin-right: 12px;
     }
-    .validation-item.visible .validation-icon {
-      animation: val-icon-pop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) 0.15s forwards;
-    }
-    .validation-icon.pass { background: #DCFCE7; color: #16A34A; }
-    .validation-icon.fail { background: #FEE2E2; color: #DC2626; }
     .validation-icon.checking {
-      background: #EFF6FF; color: #3B82F6;
-      transform: scale(1); opacity: 1;
+      background: #F0F2F5; color: #9299A8;
     }
     .validation-icon.checking span {
       display: inline-block;
-      width: 12px; height: 12px;
-      border: 2px solid #BFDBFE;
-      border-top-color: #3B82F6;
+      width: 9px; height: 9px;
+      border: 1.5px solid #D0D5DF;
+      border-top-color: #4A5165;
       border-radius: 50%;
-      animation: val-spin 0.6s linear infinite;
+      animation: val-spin 0.55s linear infinite;
     }
-    .validation-label { flex: 1; font-weight: 500; }
-    .validation-status { font-size: 0.78rem; color: #9CA3AF; min-width: 72px; text-align: right; }
-    .validation-status.pass { color: #16A34A; font-weight: 600; }
-    .validation-status.fail { color: #DC2626; font-weight: 600; }
+    .validation-icon.pass { background: #EDFAF3; color: #15803D; }
+    .validation-icon.fail { background: #FFF0F0; color: #C92A2A; }
+    .validation-label { flex: 1; font-size: 13px; font-weight: 500; color: #0C0E13; }
+    .validation-status {
+      font-size: 11px; font-weight: 500; min-width: 56px; text-align: right;
+      color: #9299A8;
+    }
+    .validation-status.pass { color: #15803D; }
+    .validation-status.fail { color: #C92A2A; }
     .validation-summary {
-      margin: 16px 0 8px;
-      padding: 14px 16px;
-      border-radius: 10px;
-      font-size: 0.85rem; font-weight: 600;
+      margin: 12px 24px 8px;
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-size: 12px; font-weight: 500;
       display: flex; align-items: center; gap: 8px;
-      opacity: 0;
-      transition: opacity 0.3s;
+      opacity: 0; transition: opacity 0.2s;
     }
     .validation-summary.visible { opacity: 1; }
-    .validation-summary.all-pass { background: #F0FDF4; color: #15803D; border: 1px solid #BBF7D0; }
-    .validation-summary.has-fail { background: #FFF7ED; color: #C2410C; border: 1px solid #FED7AA; }
+    .validation-summary.all-pass { background: #EDFAF3; color: #0D5C2E; border: 1px solid #C6F0D3; }
+    .validation-summary.has-fail { background: #FFFBEB; color: #B45309; border: 1px solid #FDE68A; }
     .validation-footer {
-      padding: 16px 28px 24px;
-      display: flex; gap: 10px; justify-content: flex-end;
-      opacity: 0;
-      transition: opacity 0.3s;
+      padding: 12px 24px 20px;
+      display: flex; gap: 8px; justify-content: flex-end;
+      border-top: 1px solid #E5E8EE;
+      opacity: 0; transition: opacity 0.2s;
     }
     .validation-footer.visible { opacity: 1; }
-    .validation-footer .btn { min-width: 130px; justify-content: center; }
+    .validation-footer .btn { min-width: 120px; justify-content: center; }
     .btn-download-big {
       background: #16A34A; color: #fff; border: none;
       padding: 12px 24px; border-radius: 9px;
@@ -1822,49 +1813,43 @@
 
       var labels = {
         pixel:    'Meta Pixel',
-        preload:  'Script Preload',
+        preload:  'Script de Preload',
         vturb:    'Player VTURB',
         delay:    'Delay de Revelação',
         checkout: 'Links de Checkout'
       };
 
-      // Build items as hidden; they will animate in one by one
       var html = '';
       result.checks.forEach(function(c, i) {
         html += '<div class="validation-item" id="val-item-' + i + '">';
         html += '<div class="validation-icon checking" id="val-icon-' + i + '"><span></span></div>';
-        html += '<span class="validation-label">' + (labels[c.id] || c.label) + '</span>';
-        html += '<span class="validation-status" id="val-status-' + i + '">verificando...</span>';
+        html += '<span class="validation-label">' + (labels[c.id] || c.label || c.id) + '</span>';
+        html += '<span class="validation-status" id="val-status-' + i + '">verificando</span>';
         html += '</div>';
       });
 
-      // Summary and footer start hidden
       var passCount = result.checks.filter(function(c) { return c.passed; }).length;
-      var total = result.checks.length;
-      var allPass = result.passed;
+      var total     = result.checks.length;
+      var allPass   = result.passed;
 
       html += '<div class="validation-summary ' + (allPass ? 'all-pass' : 'has-fail') + '" id="val-summary">';
-      if (allPass) {
-        html += '<span>&#10003;</span> ' + passCount + '/' + total + ' verificações passaram — tudo pronto!';
-      } else {
-        html += '<span>&#9888;</span> ' + passCount + '/' + total + ' verificações passaram — corrija os itens marcados.';
-      }
+      html += allPass
+        ? passCount + '/' + total + ' itens verificados — tudo certo para exportar.'
+        : passCount + '/' + total + ' itens verificados — corrija os itens marcados.';
       html += '</div>';
 
       body.innerHTML = html;
       footer.innerHTML = '';
       footer.classList.remove('visible');
 
-      // Reset close button handler and open modal
       backdrop.onclick = null;
       backdrop.addEventListener('click', function(e) {
         if (e.target === backdrop) closeValidationModal();
       });
       backdrop.classList.add('open');
 
-      // Animate items sequentially
-      var ITEM_DELAY = 250; // ms between each item
-      var REVEAL_DELAY = 150; // delay before revealing result within item
+      var ITEM_DELAY  = 220;
+      var RESOLVE_AT  = 160;
 
       result.checks.forEach(function(c, i) {
         setTimeout(function() {
@@ -1873,23 +1858,21 @@
           var statusEl = document.getElementById('val-status-' + i);
           if (!itemEl) return;
 
-          // Reveal the item row
           itemEl.classList.add('visible');
 
-          // After a short pause, replace spinner with result
           setTimeout(function() {
             if (!iconEl || !statusEl) return;
             iconEl.className = 'validation-icon ' + (c.passed ? 'pass' : 'fail');
             iconEl.innerHTML = c.passed ? '&#10003;' : '&#10007;';
             statusEl.className = 'validation-status ' + (c.passed ? 'pass' : 'fail');
             statusEl.textContent = c.passed ? 'OK' : 'Ausente';
-          }, REVEAL_DELAY);
+          }, RESOLVE_AT);
 
         }, i * ITEM_DELAY);
       });
 
-      // After all items revealed, show summary and footer
-      var totalDelay = result.checks.length * ITEM_DELAY + REVEAL_DELAY + 200;
+      var totalDelay = result.checks.length * ITEM_DELAY + RESOLVE_AT + 120;
+
       setTimeout(function() {
         var summaryEl = document.getElementById('val-summary');
         if (summaryEl) summaryEl.classList.add('visible');
@@ -1911,7 +1894,7 @@
           document.getElementById('val-fix').addEventListener('click', closeValidationModal);
           document.getElementById('val-cancel').addEventListener('click', closeValidationModal);
         }
-      }, totalDelay + 180);
+      }, totalDelay + 120);
     }
 
     function closeValidationModal() {
@@ -2283,8 +2266,8 @@
   <div class="validation-backdrop" id="validation-backdrop">
     <div class="validation-card">
       <div class="validation-header">
-        <h3>Relatório de Validação</h3>
-        <p>Verificando configurações antes do download</p>
+        <h3>Verificação de configuração</h3>
+        <p>Checando os itens antes de gerar o arquivo</p>
       </div>
       <div class="validation-body" id="validation-body">
         <!-- Populated by JS -->

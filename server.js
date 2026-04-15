@@ -279,6 +279,77 @@ function detectCheckoutLinks($, html) {
 // ── Helpers: Bundle image detection ─────────────────────────────────────────
 
 /**
+ * Parses image dimensions from raw binary buffer (PNG, WebP, JPEG, GIF).
+ * Returns { width, height } or null.
+ */
+function parseImageDimensions(buffer) {
+  if (!buffer || buffer.length < 30) return null;
+
+  // PNG: bytes 16-23 contain width (4 bytes) and height (4 bytes) in IHDR
+  if (buffer[0] === 0x89 && buffer[1] === 0x50 && buffer[2] === 0x4E && buffer[3] === 0x47) {
+    return { width: buffer.readUInt32BE(16), height: buffer.readUInt32BE(20) };
+  }
+
+  // WebP: RIFF header, then 'WEBP', then chunk type
+  if (buffer.slice(0, 4).toString() === 'RIFF' && buffer.slice(8, 12).toString() === 'WEBP') {
+    const chunk = buffer.slice(12, 16).toString();
+    if (chunk === 'VP8 ' && buffer.length >= 30) {
+      // Lossy WebP: width at 26, height at 28 (little-endian 16-bit)
+      return { width: buffer.readUInt16LE(26) & 0x3FFF, height: buffer.readUInt16LE(28) & 0x3FFF };
+    }
+    if (chunk === 'VP8L' && buffer.length >= 25) {
+      // Lossless WebP: bits 0-13 = width-1, bits 14-27 = height-1
+      const bits = buffer.readUInt32LE(21);
+      return { width: (bits & 0x3FFF) + 1, height: ((bits >> 14) & 0x3FFF) + 1 };
+    }
+    if (chunk === 'VP8X' && buffer.length >= 30) {
+      // Extended WebP: canvas size at 24-29 (24-bit LE each)
+      const w = (buffer[24] | (buffer[25] << 8) | (buffer[26] << 16)) + 1;
+      const h = (buffer[27] | (buffer[28] << 8) | (buffer[29] << 16)) + 1;
+      return { width: w, height: h };
+    }
+  }
+
+  // JPEG: scan for SOF0/SOF2 markers (0xFFC0/0xFFC2)
+  if (buffer[0] === 0xFF && buffer[1] === 0xD8) {
+    let offset = 2;
+    while (offset < buffer.length - 10) {
+      if (buffer[offset] !== 0xFF) break;
+      const marker = buffer[offset + 1];
+      if (marker === 0xC0 || marker === 0xC2) {
+        return { height: buffer.readUInt16BE(offset + 5), width: buffer.readUInt16BE(offset + 7) };
+      }
+      const segLen = buffer.readUInt16BE(offset + 2);
+      offset += 2 + segLen;
+    }
+  }
+
+  // GIF: width at 6, height at 8 (little-endian 16-bit)
+  if (buffer.slice(0, 3).toString() === 'GIF') {
+    return { width: buffer.readUInt16LE(6), height: buffer.readUInt16LE(8) };
+  }
+
+  return null;
+}
+
+/**
+ * Fetches an image URL and returns its dimensions { width, height } or null.
+ */
+async function fetchImageDimensions(url) {
+  try {
+    const resp = await axios.get(url, {
+      responseType: 'arraybuffer',
+      timeout: 5000,
+      maxContentLength: 5 * 1024 * 1024,
+      headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
+    });
+    return parseImageDimensions(Buffer.from(resp.data));
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Detects product bundle images using multiple strategies:
  *
  * Strategy 1 (DOM): For checkout links with bundle classification, walk up the DOM
@@ -291,7 +362,7 @@ function detectCheckoutLinks($, html) {
  *
  * Returns an object keyed by bundle qty: { 2: { src }, 3: { src }, 6: { src } }
  */
-function detectBundleImages($, checkoutLinks, pageUrl) {
+async function detectBundleImages($, checkoutLinks, pageUrl) {
   const result = {};
 
   // ── Strategy 1: DOM-based (existing logic) ──
@@ -328,10 +399,7 @@ function detectBundleImages($, checkoutLinks, pageUrl) {
   }
 
   // ── Strategy 2: data-bottles + data-image attributes (JS-rendered products) ──
-  // These are common in ClickBank pages using products.js
-  // The images are built at runtime: assetsPath + "assets/main/products/img/" + data-image
   if (Object.keys(result).length === 0) {
-    // Extract assetsPath from inline scripts
     let assetsPath = '';
     $('script').each((_, el) => {
       const txt = $(el).html() || '';
@@ -343,18 +411,27 @@ function detectBundleImages($, checkoutLinks, pageUrl) {
       const bottles = parseInt($(el).attr('data-bottles'), 10);
       const image = $(el).attr('data-image');
       if (!bottles || !image) return;
-      if (result[bottles]) return; // first per qty
+      if (result[bottles]) return;
 
-      // Build full image path: assetsPath + "assets/main/products/img/" + image
       let src = assetsPath + 'assets/main/products/img/' + image;
-
-      // If we have a pageUrl, resolve the relative path to absolute
       if (pageUrl) {
         try { src = new URL(src, pageUrl).href; } catch (_) {}
       }
 
       result[bottles] = { src, width: null, height: null, dataImage: image };
     });
+  }
+
+  // ── Resolve missing dimensions by fetching the actual images ──
+  const needsDimensions = Object.entries(result).filter(([, v]) => v.width === null && /^https?:\/\//i.test(v.src));
+  if (needsDimensions.length > 0) {
+    await Promise.all(needsDimensions.map(async ([qty, imgData]) => {
+      const dims = await fetchImageDimensions(imgData.src);
+      if (dims) {
+        result[qty].width = dims.width;
+        result[qty].height = dims.height;
+      }
+    }));
   }
 
   return result;
@@ -736,7 +813,7 @@ app.post('/api/fetch', async (req, res) => {
   const { html: cleanedHtml, scriptsRemoved, vslDetected } = cleanHtml(rawHtml);
   const $ = cheerio.load(cleanedHtml, { decodeEntities: false });
   const checkoutLinks = detectCheckoutLinks($, cleanedHtml);
-  const bundleImages = detectBundleImages($, checkoutLinks, url);
+  const bundleImages = await detectBundleImages($, checkoutLinks, url);
   const allProductImages = detectAllProductImages($);
 
   return res.json({
@@ -839,7 +916,7 @@ app.post('/api/upload-folder', folderUpload.array('files', 200), async function(
   const { html: cleanedHtml, scriptsRemoved, vslDetected } = cleanHtml(rawHtml);
   const $ = cheerio.load(cleanedHtml, { decodeEntities: false });
   const checkoutLinks = detectCheckoutLinks($, cleanedHtml);
-  const bundleImages = detectBundleImages($, checkoutLinks, null);
+  const bundleImages = await detectBundleImages($, checkoutLinks, null);
 
   const sessionId = crypto.randomUUID();
   uploadSessions.set(sessionId, {

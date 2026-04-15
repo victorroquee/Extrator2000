@@ -853,6 +853,13 @@
       font-size: 0.68rem; color: #9CA3AF;
       display: block; margin-top: 2px;
     }
+    .bundle-image-warn {
+      font-size: 0.65rem; color: #D97706;
+      display: block; margin-top: 2px;
+      background: #FFFBEB; border: 1px solid #FDE68A;
+      border-radius: 4px; padding: 2px 6px;
+      line-height: 1.4;
+    }
     .bundle-image-fields { flex: 1; min-width: 200px; display: flex; flex-direction: column; gap: 6px; }
     .bundle-image-item input[type="url"] { flex: 1; min-width: 180px; }
     .bundle-upload-row { display: flex; gap: 8px; align-items: center; }
@@ -1570,8 +1577,17 @@
         if (sizeText) {
           var sizeEl = document.createElement('span');
           sizeEl.className = 'bundle-image-size';
-          sizeEl.textContent = sizeText;
+          sizeEl.textContent = 'Tamanho original: ' + sizeText;
           labelWrap.appendChild(sizeEl);
+          var warnEl = document.createElement('span');
+          warnEl.className = 'bundle-image-warn';
+          warnEl.textContent = 'A nova imagem deve ter exatamente ' + sizeText + ' para evitar conflitos';
+          labelWrap.appendChild(warnEl);
+        } else {
+          var noSizeEl = document.createElement('span');
+          noSizeEl.className = 'bundle-image-size';
+          noSizeEl.textContent = 'Tamanho: carregando...';
+          labelWrap.appendChild(noSizeEl);
         }
 
         var fields = document.createElement('div');

@@ -14,7 +14,12 @@ const PORT = process.env.PORT || 3000;
 // ── Middleware ───────────────────────────────────────────────────────────────
 
 app.use(express.json({ limit: '10mb' }));
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, 'public'), {
+  etag: false,
+  setHeaders: function(res) {
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+  },
+}));
 
 // ── Constants: cleanup patterns ──────────────────────────────────────────────
 

@@ -8,6 +8,13 @@
   ],
   "routes": [
     {
+      "src": "/index.html",
+      "dest": "server.js",
+      "headers": {
+        "Cache-Control": "no-cache, no-store, must-revalidate"
+      }
+    },
+    {
       "src": "/(.*)",
       "dest": "server.js"
     }

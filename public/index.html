@@ -1649,7 +1649,7 @@
           uploadSessionId: state.uploadSessionId || undefined,
         };
 
-        if (state.hasDelay && delayInput) {
+        if (delayInput) {
           var delayVal = parseInt(delayInput.value, 10);
           if (!isNaN(delayVal) && delayVal >= 1) {
             payload.delaySeconds       = delayVal;

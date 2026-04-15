@@ -740,7 +740,7 @@ function applyCheckoutLinks(outputHtml, checkoutLinks) {
  */
 function buildExportHtml({ html, headerPixel, headerPreload, vslembed, checkoutLinks,
                            delaySeconds, delayScriptContent, delayType, bundleImages,
-                           extraScripts = [] }) {
+                           extraScripts = [], pageUrl }) {
   const $ = cheerio.load(html, { decodeEntities: false });
 
   // EXPORT-06: Defensive idempotency guard — skip all injections if already done
@@ -802,6 +802,23 @@ function buildExportHtml({ html, headerPixel, headerPreload, vslembed, checkoutL
 
   let outputHtml = $.html();
 
+  // ASSETS-01: Rewrite relative assetsPath values to absolute URLs
+  // Pages using products.js define const/var assetsPath = "../../" which breaks in flat exports.
+  // When pageUrl is known, resolve the relative path to an absolute base URL (FIX: bundle/floating images).
+  if (pageUrl) {
+    outputHtml = outputHtml.replace(
+      /([cC]onst|[vV]ar|[lL]et)(\s+assetsPath\s*=\s*")([^"]*\.\.[/\\][^"]*)(")/g,
+      (match, decl, eq, relPath, close) => {
+        try {
+          const abs = new URL(relPath, pageUrl).href;
+          return decl + eq + abs + close;
+        } catch {
+          return match;
+        }
+      }
+    );
+  }
+
   if (vslembed && vslembed.trim()) {
     outputHtml = outputHtml.replace(
       /<!--\s*\[VSL_PLACEHOLDER\]\s*-->[\s\S]*?<div id="vsl(?:-cloner)?-placeholder"[\s\S]*?<\/div>/,
@@ -812,30 +829,32 @@ function buildExportHtml({ html, headerPixel, headerPreload, vslembed, checkoutL
   outputHtml = applyCheckoutLinks(outputHtml, checkoutLinks);
 
   // DELAY-03: Apply delay value to exported HTML
+  // Always inject a standalone vanilla JS script that reveals .esconder elements
+  // after the delay using setTimeout. The original VTURB player.displayHiddenElements()
+  // is removed during cloning, so a self-contained replacement is required.
   if (delaySeconds !== undefined && delaySeconds !== null) {
     const safeDelay = Math.max(1, Math.round(Number(delaySeconds)));
 
-    if (delayType === 'attribute') {
-      // Pattern 1: replace data-vdelay attribute in-place using string replace
-      outputHtml = outputHtml.replace(
-        /data-vdelay="(\d+)"/g,
-        `data-vdelay="${safeDelay}"`
-      );
-    } else if (delayScriptContent) {
-      // Pattern 2/3/4: rebuild JS script block and inject before </body>
-      // String ops required — cheerio would mangle </script> inside literals
-      // Sanitize client-supplied script body to prevent </script> breakout
-      const sanitized = delayScriptContent.replace(/<\/script>/gi, '<\\/script>');
-      const rebuilt = sanitized.replace(
-        /(?:var|let|const)\s+delaySeconds\s*=\s*\d+(?:\.\d+)?/,
-        `var delaySeconds = ${safeDelay}`
-      );
-      const delayTag = `<script>\n${rebuilt}\n</script>`;
-      if (/<\/body>/i.test(outputHtml)) {
-        outputHtml = outputHtml.replace(/<\/body>/i, `${delayTag}\n</body>`);
-      } else {
-        outputHtml += delayTag;
-      }
+    // Update data-vdelay attribute if present (used by some players)
+    outputHtml = outputHtml.replace(/data-vdelay="(\d+)"/g, `data-vdelay="${safeDelay}"`);
+
+    // Inject standalone script to reveal .esconder elements after delay
+    // display=block overrides .esconder CSS class (display:none !important on some pages)
+    const esconderScript = `<script>
+(function() {
+  var delay = ${safeDelay};
+  setTimeout(function() {
+    var els = document.querySelectorAll('.esconder');
+    for (var i = 0; i < els.length; i++) {
+      els[i].style.display = 'block';
+    }
+  }, delay * 1000);
+})();
+</script>`;
+    if (/<\/body>/i.test(outputHtml)) {
+      outputHtml = outputHtml.replace(/<\/body>/i, `${esconderScript}\n</body>`);
+    } else {
+      outputHtml += esconderScript;
     }
   }
 
@@ -846,7 +865,7 @@ function buildExportHtml({ html, headerPixel, headerPreload, vslembed, checkoutL
 
 app.post('/api/export', (req, res) => {
   const { html, headerPixel, headerPreload, vslembed, checkoutLinks,
-          delaySeconds, delayScriptContent, delayType, bundleImages, extraScripts } = req.body;
+          delaySeconds, delayScriptContent, delayType, bundleImages, extraScripts, pageUrl } = req.body;
 
   if (!html || typeof html !== 'string') {
     return res.status(400).json({ error: 'Campo "html" é obrigatório.' });
@@ -854,7 +873,7 @@ app.post('/api/export', (req, res) => {
 
   const outputHtml = buildExportHtml({ html, headerPixel, headerPreload, vslembed,
                                        checkoutLinks, delaySeconds, delayScriptContent,
-                                       delayType, bundleImages, extraScripts });
+                                       delayType, bundleImages, extraScripts, pageUrl });
 
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
   res.setHeader('Content-Disposition', 'attachment; filename="pagina-afiliado.html"');
@@ -874,7 +893,7 @@ app.post('/api/export-zip', async (req, res) => {
 
   let outputHtml = buildExportHtml({ html, headerPixel, headerPreload, vslembed,
                                      checkoutLinks, delaySeconds, delayScriptContent,
-                                     delayType, bundleImages, extraScripts });
+                                     delayType, bundleImages, extraScripts, pageUrl });
 
   // Upload session branch — assets already in memory, no network download needed
   if (uploadSessionId) {

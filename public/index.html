@@ -537,6 +537,54 @@
     }
     .modal-backdrop.open { opacity: 1; pointer-events: all; }
 
+    /* Validation Modal */
+    .validation-backdrop {
+      position: fixed; inset: 0; z-index: 1100;
+      background: rgba(0,0,0,0.65);
+      display: flex; align-items: center; justify-content: center;
+      padding: 24px;
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.2s;
+    }
+    .validation-backdrop.open { opacity: 1; pointer-events: all; }
+    .validation-card {
+      background: #fff; border-radius: 14px;
+      width: 100%; max-width: 420px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+      overflow: hidden;
+    }
+    .validation-header {
+      padding: 20px 24px 12px;
+      border-bottom: 1px solid #E5E7EB;
+    }
+    .validation-header h3 {
+      margin: 0; font-size: 1.05rem; color: #111827;
+    }
+    .validation-body { padding: 16px 24px; }
+    .validation-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 8px 0;
+      font-size: 0.88rem; color: #374151;
+    }
+    .validation-icon {
+      width: 22px; height: 22px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.75rem; font-weight: 700; flex-shrink: 0;
+    }
+    .validation-icon.pass { background: #DCFCE7; color: #16A34A; }
+    .validation-icon.fail { background: #FEE2E2; color: #DC2626; }
+    .validation-msg {
+      padding: 12px 16px; margin: 8px 0 0;
+      border-radius: 8px; font-size: 0.82rem; font-weight: 500;
+    }
+    .validation-msg.success { background: #F0FDF4; color: #16A34A; border: 1px solid #BBF7D0; }
+    .validation-msg.error { background: #FEF2F2; color: #DC2626; border: 1px solid #FECACA; }
+    .validation-footer {
+      padding: 12px 24px 20px;
+      display: flex; gap: 10px; justify-content: flex-end;
+    }
+    .validation-footer .btn { min-width: 120px; justify-content: center; }
+
     .modal {
       background: #fff; border-radius: 14px;
       display: flex; flex-direction: column;
@@ -1630,39 +1678,130 @@
 
     // ── Export ────────────────────────────────────────────────────────
 
+    function buildExportPayload() {
+      var payload = {
+        html:            state.fetchedHtml,
+        headerPixel:     headerPixel.value,
+        headerPreload:   headerPreload.value,
+        vslembed:        vslEmbed.value,
+        checkoutLinks:   buildCheckoutPayload(),
+        pageUrl:         state.uploadSessionId ? undefined : state.fetchedUrl,
+        extraScripts:    buildExtraScriptsPayload(),
+        uploadSessionId: state.uploadSessionId || undefined,
+      };
+
+      if (delayInput) {
+        var delayVal = parseInt(delayInput.value, 10);
+        if (!isNaN(delayVal) && delayVal >= 1) {
+          payload.delaySeconds       = delayVal;
+          payload.delayScriptContent = state.delayScriptContent;
+          payload.delayType          = state.delayType;
+        }
+      }
+
+      if (Object.keys(state.bundleImages).length > 0) {
+        var bundlePayload = buildBundleImagesPayload();
+        if (Object.keys(bundlePayload).length > 0) payload.bundleImages = bundlePayload;
+      }
+
+      return payload;
+    }
+
     async function doExport() {
       if (!state.fetchedHtml) { showError('Nenhuma página foi extraída. Extraia primeiro.'); return; }
       clearError();
+      setExportEnabled(false);
+      if (btnExport)      btnExport.textContent      = 'Validando...';
+      if (btnExportPanel) btnExportPanel.textContent = 'Validando...';
+
+      try {
+        var payload = buildExportPayload();
+
+        var valResponse = await fetchWithTimeout('/api/export-validate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        }, 15000);
+
+        if (!valResponse.ok) {
+          var errData = await valResponse.json().catch(function() { return {}; });
+          showError(errData.error || 'Erro ao validar página.');
+          return;
+        }
+
+        var valResult = await valResponse.json();
+        showValidationModal(valResult, payload);
+
+      } catch (err) {
+        showError('Falha de conexão ao validar. Verifique se o servidor está rodando.');
+      } finally {
+        setExportEnabled(true);
+        if (btnExport)      btnExport.textContent      = 'Gerar Página do Afiliado';
+        if (btnExportPanel) btnExportPanel.textContent = 'Gerar Página do Afiliado';
+      }
+    }
+
+    function showValidationModal(result, payload) {
+      var backdrop = document.getElementById('validation-backdrop');
+      var body     = document.getElementById('validation-body');
+      var footer   = document.getElementById('validation-footer');
+
+      var labels = {
+        pixel:    'Meta Pixel',
+        preload:  'Script Preload',
+        vturb:    'Player VTURB',
+        delay:    'Delay de Revelação',
+        checkout: 'Links de Checkout'
+      };
+
+      var html = '';
+      result.checks.forEach(function(c) {
+        html += '<div class="validation-item">';
+        html += '<div class="validation-icon ' + (c.passed ? 'pass' : 'fail') + '">';
+        html += c.passed ? '&#10003;' : '&#10007;';
+        html += '</div>';
+        html += '<span>' + (labels[c.id] || c.label) + '</span>';
+        html += '</div>';
+      });
+
+      if (result.passed) {
+        html += '<div class="validation-msg success">Tudo certo! Clique para baixar.</div>';
+      } else {
+        html += '<div class="validation-msg error">Atenção: corrija os itens marcados antes de baixar.</div>';
+      }
+
+      body.innerHTML = html;
+
+      if (result.passed) {
+        footer.innerHTML = '<button class="btn btn-ghost" id="val-cancel">Cancelar</button>'
+          + '<button class="btn btn-primary" id="val-download">Baixar ZIP</button>';
+        document.getElementById('val-download').addEventListener('click', function() {
+          closeValidationModal();
+          doActualDownload(payload);
+        });
+        document.getElementById('val-cancel').addEventListener('click', closeValidationModal);
+      } else {
+        footer.innerHTML = '<button class="btn btn-primary" id="val-fix">Corrigir</button>';
+        document.getElementById('val-fix').addEventListener('click', closeValidationModal);
+      }
+
+      backdrop.addEventListener('click', function(e) {
+        if (e.target === backdrop) closeValidationModal();
+      });
+
+      backdrop.classList.add('open');
+    }
+
+    function closeValidationModal() {
+      document.getElementById('validation-backdrop').classList.remove('open');
+    }
+
+    async function doActualDownload(payload) {
       setExportEnabled(false);
       if (btnExport)      btnExport.textContent      = 'Gerando ZIP...';
       if (btnExportPanel) btnExportPanel.textContent = 'Gerando ZIP...';
 
       try {
-        var payload = {
-          html:            state.fetchedHtml,
-          headerPixel:     headerPixel.value,
-          headerPreload:   headerPreload.value,
-          vslembed:        vslEmbed.value,
-          checkoutLinks:   buildCheckoutPayload(),
-          pageUrl:         state.uploadSessionId ? undefined : state.fetchedUrl,
-          extraScripts:    buildExtraScriptsPayload(),
-          uploadSessionId: state.uploadSessionId || undefined,
-        };
-
-        if (delayInput) {
-          var delayVal = parseInt(delayInput.value, 10);
-          if (!isNaN(delayVal) && delayVal >= 1) {
-            payload.delaySeconds       = delayVal;
-            payload.delayScriptContent = state.delayScriptContent;
-            payload.delayType          = state.delayType;
-          }
-        }
-
-        if (Object.keys(state.bundleImages).length > 0) {
-          var bundlePayload = buildBundleImagesPayload();
-          if (Object.keys(bundlePayload).length > 0) payload.bundleImages = bundlePayload;
-        }
-
         var response = await fetchWithTimeout('/api/export-zip', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -2017,5 +2156,21 @@
     });
 
   </script>
+
+  <!-- Validation Modal -->
+  <div class="validation-backdrop" id="validation-backdrop">
+    <div class="validation-card">
+      <div class="validation-header">
+        <h3>Validação Pré-Download</h3>
+      </div>
+      <div class="validation-body" id="validation-body">
+        <!-- Populated by JS -->
+      </div>
+      <div class="validation-footer" id="validation-footer">
+        <!-- Populated by JS -->
+      </div>
+    </div>
+  </div>
+
 </body>
 </html>

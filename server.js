@@ -880,6 +880,66 @@ app.post('/api/export', (req, res) => {
   return res.send(outputHtml);
 });
 
+// ── Route: POST /api/export-validate ─────────────────────────────────────────
+
+app.post('/api/export-validate', (req, res) => {
+  const { html, headerPixel, headerPreload, vslembed, checkoutLinks,
+          delaySeconds, delayScriptContent, delayType, bundleImages, extraScripts,
+          pageUrl, uploadSessionId } = req.body;
+
+  if (!html || typeof html !== 'string') {
+    return res.status(400).json({ error: 'Campo "html" é obrigatório.' });
+  }
+
+  const outputHtml = buildExportHtml({ html, headerPixel, headerPreload, vslembed,
+                                       checkoutLinks, delaySeconds, delayScriptContent,
+                                       delayType, bundleImages, extraScripts, pageUrl });
+
+  const $ = cheerio.load(outputHtml, { decodeEntities: false });
+  const htmlStr = outputHtml;
+
+  const checks = [
+    {
+      id: 'pixel',
+      label: 'Meta Pixel',
+      passed: /fbq\s*\(/.test(htmlStr) || /connect\.facebook\.net/i.test(htmlStr)
+    },
+    {
+      id: 'preload',
+      label: 'Script Preload',
+      passed: $('link[rel="preload"]').length > 0 || /smartplayer-preload/i.test(htmlStr) || /preload/i.test(htmlStr.match(/<script[^>]*>[\s\S]*?<\/script>/gi)?.join('') || '')
+    },
+    {
+      id: 'vturb',
+      label: 'Player VTURB',
+      passed: $('[id*="smartplayer"]').length > 0 || /smartplayer/i.test(htmlStr) || /converteai/i.test(htmlStr) || /vturb/i.test(htmlStr)
+    },
+    {
+      id: 'delay',
+      label: 'Delay de Revelação',
+      passed: /setTimeout[\s\S]*?\.esconder/i.test(htmlStr) || /data-vdelay="/i.test(htmlStr)
+    },
+    {
+      id: 'checkout',
+      label: 'Links de Checkout',
+      passed: (function() {
+        var found = false;
+        $('a').each(function(_, el) {
+          var href = $(el).attr('href') || '';
+          var cls  = $(el).attr('class') || '';
+          var bottles = $(el).attr('data-bottles');
+          if (/checkout|order|buy|clickbank|payment|hotmart|monetizze|eduzz|kiwify|pay\./i.test(href)) found = true;
+          if (/buylink/i.test(cls)) found = true;
+          if (bottles !== undefined) found = true;
+        });
+        return found;
+      })()
+    }
+  ];
+
+  return res.json({ passed: checks.every(c => c.passed), checks });
+});
+
 // ── Route: POST /api/export-zip ──────────────────────────────────────────────
 
 app.post('/api/export-zip', async (req, res) => {

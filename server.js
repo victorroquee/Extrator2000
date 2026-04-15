@@ -312,20 +312,230 @@ function detectBundleImages($, checkoutLinks) {
 
     // Find the first <img> with a valid static src inside that ancestor
     let found = null;
+    let foundWidth = null;
+    let foundHeight = null;
     ancestor.find('img[src]').each((_, imgEl) => {
       if (found) return; // first only
       const src = $(imgEl).attr('src');
       // D-03: skip empty, missing, or data: URIs
       if (!src || src.startsWith('data:') || src.trim() === '') return;
       found = src;
+      const w = $(imgEl).attr('width');
+      const h = $(imgEl).attr('height');
+      if (w) foundWidth = parseInt(w, 10) || null;
+      if (h) foundHeight = parseInt(h, 10) || null;
     });
 
     if (found) {
-      result[bundle] = { src: found };
+      result[bundle] = { src: found, width: foundWidth, height: foundHeight };
     }
   }
 
   return result;
+}
+
+// ── Helper: All product images detection ────────────────────────────────────
+
+/**
+ * Detects ALL product-related images on the page (not logos, icons, or tiny assets).
+ * Used as a fallback / supplement when bundle-based detection finds nothing.
+ * Returns an array of { src, width, height, alt, index }.
+ */
+function detectAllProductImages($) {
+  const images = [];
+  const seen = new Set();
+  // Patterns that suggest a logo/icon rather than product image
+  const logoPatterns = /logo|icon|favicon|badge|arrow|check|star|seal|trust|guarantee|sprite|play|close|menu/i;
+
+  $('img[src]').each((idx, imgEl) => {
+    const src = $(imgEl).attr('src');
+    if (!src || src.startsWith('data:') || src.trim() === '') return;
+    if (seen.has(src)) return;
+    seen.add(src);
+
+    // Skip obvious logos/icons by src name
+    const basename = src.split('/').pop().split('?')[0].toLowerCase();
+    if (logoPatterns.test(basename)) return;
+    // Skip very small known icon extensions
+    if (basename.endsWith('.svg') && !/product|bottle|bundle|pack|main|sub/i.test(basename)) return;
+
+    const w = $(imgEl).attr('width');
+    const h = $(imgEl).attr('height');
+    const alt = $(imgEl).attr('alt') || '';
+
+    images.push({
+      src,
+      width: w ? parseInt(w, 10) || null : null,
+      height: h ? parseInt(h, 10) || null : null,
+      alt,
+      index: idx,
+    });
+  });
+
+  return images;
+}
+
+// ── Helper: Page color detection ─────────────────────────────────────────────
+
+/**
+ * Detects the main colors used in the page from inline styles and <style> tags.
+ * Also attempts to parse linked CSS stylesheets referenced within the HTML.
+ * Returns an array of { color, property, count, context } sorted by frequency.
+ * Focuses on background-color, color, border-color and CSS custom properties.
+ */
+function detectPageColors(html) {
+  const $ = cheerio.load(html, { decodeEntities: false });
+  const colorMap = new Map(); // hex -> { color, properties: Set, count }
+
+  // Normalize color strings to hex
+  function rgbToHex(r, g, b) {
+    return '#' + [r, g, b].map(x => {
+      const hex = parseInt(x, 10).toString(16);
+      return hex.length === 1 ? '0' + hex : hex;
+    }).join('');
+  }
+
+  function normalizeColor(raw) {
+    if (!raw) return null;
+    raw = raw.trim().toLowerCase();
+    if (raw === 'transparent' || raw === 'inherit' || raw === 'initial' || raw === 'currentcolor' || raw === 'none') return null;
+
+    // Already hex
+    if (/^#[0-9a-f]{3,8}$/i.test(raw)) {
+      if (raw.length === 4) {
+        return '#' + raw[1]+raw[1] + raw[2]+raw[2] + raw[3]+raw[3];
+      }
+      return raw.slice(0, 7); // ignore alpha
+    }
+
+    // rgb/rgba
+    const rgbMatch = raw.match(/rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/);
+    if (rgbMatch) return rgbToHex(rgbMatch[1], rgbMatch[2], rgbMatch[3]);
+
+    // Named colors (common ones)
+    const named = {
+      white: '#ffffff', black: '#000000', red: '#ff0000', green: '#008000',
+      blue: '#0000ff', yellow: '#ffff00', orange: '#ffa500', gray: '#808080',
+      grey: '#808080',
+    };
+    if (named[raw]) return named[raw];
+
+    return null;
+  }
+
+  function addColor(hex, prop) {
+    if (!hex) return;
+    // Skip very common generic colors (pure white, pure black, near-white/near-black)
+    if (hex === '#ffffff' || hex === '#000000' || hex === '#f5f5f5' || hex === '#fafafa' || hex === '#333333') return;
+    const entry = colorMap.get(hex) || { color: hex, properties: new Set(), count: 0 };
+    entry.properties.add(prop);
+    entry.count++;
+    colorMap.set(hex, entry);
+  }
+
+  // Extract from <style> tags
+  const colorRegex = /(background-color|background|color|border-color|border)\s*:\s*([^;}\n]+)/gi;
+  $('style').each((_, el) => {
+    const css = $(el).html() || '';
+    let match;
+    while ((match = colorRegex.exec(css)) !== null) {
+      const prop = match[1].toLowerCase();
+      const val = match[2].trim();
+      // For background shorthand, try to extract color part
+      if (prop === 'background') {
+        // Try to match color within the shorthand
+        const colorPart = val.match(/#[0-9a-fA-F]{3,8}|rgba?\([^)]+\)/);
+        if (colorPart) addColor(normalizeColor(colorPart[0]), 'background-color');
+      } else {
+        addColor(normalizeColor(val), prop === 'border' ? 'border-color' : prop);
+      }
+    }
+  });
+
+  // Extract from inline style attributes
+  $('[style]').each((_, el) => {
+    const style = $(el).attr('style') || '';
+    let match;
+    const inlineRegex = /(background-color|background|color|border-color|border)\s*:\s*([^;}\n]+)/gi;
+    while ((match = inlineRegex.exec(style)) !== null) {
+      const prop = match[1].toLowerCase();
+      const val = match[2].trim();
+      if (prop === 'background') {
+        const colorPart = val.match(/#[0-9a-fA-F]{3,8}|rgba?\([^)]+\)/);
+        if (colorPart) addColor(normalizeColor(colorPart[0]), 'background-color');
+      } else {
+        addColor(normalizeColor(val), prop === 'border' ? 'border-color' : prop);
+      }
+    }
+  });
+
+  // Extract CSS custom properties (--var-name: #color)
+  $('style').each((_, el) => {
+    const css = $(el).html() || '';
+    const varRegex = /(--[\w-]+)\s*:\s*(#[0-9a-fA-F]{3,8}|rgba?\([^)]+\))/g;
+    let match;
+    while ((match = varRegex.exec(css)) !== null) {
+      const hex = normalizeColor(match[2]);
+      if (hex) addColor(hex, match[1]);
+    }
+  });
+
+  // Sort by frequency and return top colors
+  const sorted = Array.from(colorMap.values())
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 12)
+    .map(entry => ({
+      color: entry.color,
+      properties: Array.from(entry.properties),
+      count: entry.count,
+    }));
+
+  return sorted;
+}
+
+// ── Helper: Product name detection ──────────────────────────────────────────
+
+/**
+ * Detects the product name from the page by analyzing title, h1, og:title,
+ * and recurring text patterns.
+ * Returns { productName } or null.
+ */
+function detectProductName(html) {
+  const $ = cheerio.load(html, { decodeEntities: false });
+  const candidates = [];
+
+  // og:title
+  const ogTitle = $('meta[property="og:title"]').attr('content');
+  if (ogTitle && ogTitle.trim()) candidates.push(ogTitle.trim());
+
+  // <title> — use only the FIRST title tag to avoid cheerio concatenating duplicates
+  const firstTitle = $('title').first().text();
+  if (firstTitle && firstTitle.trim()) candidates.push(firstTitle.trim());
+
+  // First h1
+  const h1Text = $('h1').first().text();
+  if (h1Text && h1Text.trim()) candidates.push(h1Text.trim());
+
+  // First h2 (fallback)
+  const h2Text = $('h2').first().text();
+  if (h2Text && h2Text.trim()) candidates.push(h2Text.trim());
+
+  if (!candidates.length) return null;
+
+  // Pick the shortest non-empty candidate (usually the cleanest product name)
+  // But prefer og:title if it exists since it's typically well-formatted
+  let best = candidates[0];
+  // Clean up common suffixes
+  best = best.replace(/\s*[-–|]\s*Site Oficial.*$/i, '');
+  best = best.replace(/\s*[-–|]\s*Official.*$/i, '');
+  best = best.replace(/\s*[-–|]\s*Compre.*$/i, '');
+  best = best.replace(/\s*[-–|]\s*Buy.*$/i, '');
+  best = best.replace(/\s*[-–|]\s*Order.*$/i, '');
+  best = best.replace(/\s*™.*$/, '');
+  best = best.replace(/\s*®.*$/, '');
+  best = best.trim();
+
+  return { productName: best, allCandidates: candidates };
 }
 
 // ── Helper: VTURB delay detection ────────────────────────────────────────────
@@ -474,10 +684,15 @@ app.post('/api/fetch', async (req, res) => {
   // DELAY-01: detect delay block BEFORE cleanHtml() removes the VTURB scripts
   const delayInfo = detectVturbDelay(rawHtml);
 
+  // Detect colors and product name from raw HTML (before cleanup strips context)
+  const pageColors = detectPageColors(rawHtml);
+  const productNameInfo = detectProductName(rawHtml);
+
   const { html: cleanedHtml, scriptsRemoved, vslDetected } = cleanHtml(rawHtml);
   const $ = cheerio.load(cleanedHtml, { decodeEntities: false });
   const checkoutLinks = detectCheckoutLinks($, cleanedHtml);
   const bundleImages = detectBundleImages($, checkoutLinks);
+  const allProductImages = detectAllProductImages($);
 
   return res.json({
     html: cleanedHtml,
@@ -486,10 +701,14 @@ app.post('/api/fetch', async (req, res) => {
       vslDetected,
       checkoutLinks,
       bundleImages,
+      allProductImages,
       delaySeconds: delayInfo ? delayInfo.delaySeconds : null,
       hasDelay: delayInfo !== null,
       delayScriptContent: delayInfo ? delayInfo.delayScriptContent : null,
       delayType: delayInfo ? delayInfo.delayType : null,
+      pageColors,
+      productName: productNameInfo ? productNameInfo.productName : null,
+      productNameCandidates: productNameInfo ? productNameInfo.allCandidates : [],
     },
   });
 });
@@ -570,6 +789,8 @@ app.post('/api/upload-folder', folderUpload.array('files', 200), function(req, r
 
   const rawHtml = indexHtmlBuffer.toString('utf8');
   const delayInfo = detectVturbDelay(rawHtml);
+  const pageColors = detectPageColors(rawHtml);
+  const productNameInfo = detectProductName(rawHtml);
   const { html: cleanedHtml, scriptsRemoved, vslDetected } = cleanHtml(rawHtml);
   const $ = cheerio.load(cleanedHtml, { decodeEntities: false });
   const checkoutLinks = detectCheckoutLinks($, cleanedHtml);
@@ -581,6 +802,8 @@ app.post('/api/upload-folder', folderUpload.array('files', 200), function(req, r
     expiresAt: Date.now() + SESSION_TTL_MS,
   });
 
+  const allProductImages = detectAllProductImages($);
+
   return res.json({
     html: cleanedHtml,
     uploadSessionId: sessionId,
@@ -589,10 +812,14 @@ app.post('/api/upload-folder', folderUpload.array('files', 200), function(req, r
       vslDetected,
       checkoutLinks,
       bundleImages,
+      allProductImages,
       delaySeconds: delayInfo ? delayInfo.delaySeconds : null,
       hasDelay: delayInfo !== null,
       delayScriptContent: delayInfo ? delayInfo.delayScriptContent : null,
       delayType: delayInfo ? delayInfo.delayType : null,
+      pageColors,
+      productName: productNameInfo ? productNameInfo.productName : null,
+      productNameCandidates: productNameInfo ? productNameInfo.allCandidates : [],
     },
   });
 });
@@ -740,7 +967,8 @@ function applyCheckoutLinks(outputHtml, checkoutLinks) {
  */
 function buildExportHtml({ html, headerPixel, headerPreload, vslembed, checkoutLinks,
                            delaySeconds, delayScriptContent, delayType, bundleImages,
-                           extraScripts = [], pageUrl }) {
+                           extraScripts = [], pageUrl, colorReplacements, productNameOld, productNameNew,
+                           imageReplacements }) {
   const $ = cheerio.load(html, { decodeEntities: false });
 
   // EXPORT-06: Defensive idempotency guard — skip all injections if already done
@@ -796,6 +1024,19 @@ function buildExportHtml({ html, headerPixel, headerPreload, vslembed, checkoutL
             return entry.trim().replace(originalSrc, newSrc);
           }).join(', '));
         }
+      });
+    }
+  }
+
+  // Image replacements: replace any original src with a new one (from allProductImages UI)
+  if (Array.isArray(imageReplacements) && imageReplacements.length > 0) {
+    for (const { originalSrc, newSrc } of imageReplacements) {
+      if (!originalSrc || !newSrc || originalSrc === newSrc) continue;
+      $('img').each((_, el) => {
+        if ($(el).attr('src') === originalSrc) $(el).attr('src', newSrc);
+      });
+      $('source').each((_, el) => {
+        if ($(el).attr('src') === originalSrc) $(el).attr('src', newSrc);
       });
     }
   }
@@ -858,6 +1099,22 @@ function buildExportHtml({ html, headerPixel, headerPreload, vslembed, checkoutL
     }
   }
 
+  // ── Color replacements: swap old colors for new ones in all CSS ──
+  if (Array.isArray(colorReplacements) && colorReplacements.length > 0) {
+    for (const { oldColor, newColor } of colorReplacements) {
+      if (!oldColor || !newColor || oldColor === newColor) continue;
+      // Escape for regex and replace case-insensitively throughout the HTML (inline styles + style tags)
+      const escaped = oldColor.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      outputHtml = outputHtml.replace(new RegExp(escaped, 'gi'), newColor);
+    }
+  }
+
+  // ── Product name replacement: swap all occurrences of old name with new ──
+  if (productNameOld && productNameNew && productNameOld !== productNameNew) {
+    const escapedName = productNameOld.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    outputHtml = outputHtml.replace(new RegExp(escapedName, 'gi'), productNameNew);
+  }
+
   return outputHtml;
 }
 
@@ -865,7 +1122,8 @@ function buildExportHtml({ html, headerPixel, headerPreload, vslembed, checkoutL
 
 app.post('/api/export', (req, res) => {
   const { html, headerPixel, headerPreload, vslembed, checkoutLinks,
-          delaySeconds, delayScriptContent, delayType, bundleImages, extraScripts, pageUrl } = req.body;
+          delaySeconds, delayScriptContent, delayType, bundleImages, extraScripts, pageUrl,
+          colorReplacements, productNameOld, productNameNew, imageReplacements } = req.body;
 
   if (!html || typeof html !== 'string') {
     return res.status(400).json({ error: 'Campo "html" é obrigatório.' });
@@ -873,7 +1131,8 @@ app.post('/api/export', (req, res) => {
 
   const outputHtml = buildExportHtml({ html, headerPixel, headerPreload, vslembed,
                                        checkoutLinks, delaySeconds, delayScriptContent,
-                                       delayType, bundleImages, extraScripts, pageUrl });
+                                       delayType, bundleImages, extraScripts, pageUrl,
+                                       colorReplacements, productNameOld, productNameNew, imageReplacements });
 
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
   res.setHeader('Content-Disposition', 'attachment; filename="pagina-afiliado.html"');
@@ -885,7 +1144,7 @@ app.post('/api/export', (req, res) => {
 app.post('/api/export-validate', (req, res) => {
   const { html, headerPixel, headerPreload, vslembed, checkoutLinks,
           delaySeconds, delayScriptContent, delayType, bundleImages, extraScripts,
-          pageUrl, uploadSessionId } = req.body;
+          pageUrl, uploadSessionId, colorReplacements, productNameOld, productNameNew, imageReplacements } = req.body;
 
   if (!html || typeof html !== 'string') {
     return res.status(400).json({ error: 'Campo "html" é obrigatório.' });
@@ -893,7 +1152,8 @@ app.post('/api/export-validate', (req, res) => {
 
   const outputHtml = buildExportHtml({ html, headerPixel, headerPreload, vslembed,
                                        checkoutLinks, delaySeconds, delayScriptContent,
-                                       delayType, bundleImages, extraScripts, pageUrl });
+                                       delayType, bundleImages, extraScripts, pageUrl,
+                                       colorReplacements, productNameOld, productNameNew, imageReplacements });
 
   const $ = cheerio.load(outputHtml, { decodeEntities: false });
   const htmlStr = outputHtml;
@@ -960,7 +1220,7 @@ app.post('/api/export-validate', (req, res) => {
 app.post('/api/export-zip', async (req, res) => {
   const { html, headerPixel, headerPreload, vslembed, checkoutLinks, pageUrl,
           delaySeconds, delayScriptContent, delayType, bundleImages, extraScripts,
-          uploadSessionId } = req.body;
+          uploadSessionId, colorReplacements, productNameOld, productNameNew, imageReplacements } = req.body;
 
   if (!html || typeof html !== 'string') {
     return res.status(400).json({ error: 'Campo "html" é obrigatório.' });
@@ -968,7 +1228,8 @@ app.post('/api/export-zip', async (req, res) => {
 
   let outputHtml = buildExportHtml({ html, headerPixel, headerPreload, vslembed,
                                      checkoutLinks, delaySeconds, delayScriptContent,
-                                     delayType, bundleImages, extraScripts, pageUrl });
+                                     delayType, bundleImages, extraScripts, pageUrl,
+                                     colorReplacements, productNameOld, productNameNew, imageReplacements });
 
   // Upload session branch — assets already in memory, no network download needed
   if (uploadSessionId) {
@@ -1064,6 +1325,52 @@ app.post('/api/export-zip', async (req, res) => {
   await archive.finalize();
 });
 
+// ── Route: POST /api/upload-bundle-image ────────────────────────────────────
+
+const bundleImageUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024, files: 1 },
+  fileFilter: function(req, file, cb) {
+    const ext = path.extname(file.originalname).toLowerCase();
+    cb(null, ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg', '.avif'].includes(ext));
+  },
+});
+
+// Store uploaded bundle images in memory (keyed by a temp ID)
+const bundleImageStore = new Map(); // id -> { buffer, mimetype, ext }
+
+setInterval(function() {
+  const now = Date.now();
+  for (const [id, entry] of bundleImageStore) {
+    if (entry.expiresAt < now) bundleImageStore.delete(id);
+  }
+}, 5 * 60 * 1000);
+
+app.post('/api/upload-bundle-image', bundleImageUpload.single('image'), function(req, res) {
+  if (!req.file) {
+    return res.status(400).json({ error: 'Nenhuma imagem recebida.' });
+  }
+
+  const id = crypto.randomUUID();
+  const ext = path.extname(req.file.originalname).toLowerCase();
+  bundleImageStore.set(id, {
+    buffer: req.file.buffer,
+    mimetype: req.file.mimetype,
+    ext,
+    expiresAt: Date.now() + SESSION_TTL_MS,
+  });
+
+  return res.json({ id, url: `/api/bundle-image/${id}` });
+});
+
+app.get('/api/bundle-image/:id', function(req, res) {
+  const entry = bundleImageStore.get(req.params.id);
+  if (!entry) return res.status(404).json({ error: 'Imagem não encontrada ou expirada.' });
+  res.setHeader('Content-Type', entry.mimetype);
+  res.setHeader('Cache-Control', 'public, max-age=1800');
+  return res.send(entry.buffer);
+});
+
 // ── Health check ─────────────────────────────────────────────────────────────
 
 app.get('/api/health', (_, res) => res.json({ ok: true }));
@@ -1084,5 +1391,9 @@ module.exports.cleanHtml = cleanHtml;
 module.exports.detectCheckoutLinks = detectCheckoutLinks;
 module.exports.detectVturbDelay = detectVturbDelay;
 module.exports.detectBundleImages = detectBundleImages;
+module.exports.detectPageColors = detectPageColors;
+module.exports.detectProductName = detectProductName;
+module.exports.detectAllProductImages = detectAllProductImages;
 module.exports.buildExportHtml = buildExportHtml;
 module.exports.uploadSessions = uploadSessions;
+module.exports.bundleImageStore = bundleImageStore;

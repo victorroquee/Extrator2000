@@ -302,23 +302,6 @@
       color: #42945F; border-radius: 4px; padding: 1px 5px; margin-top: 3px;
     }
 
-    /* ── Bundle image items ───────────────────────────────────────── */
-    .bundle-image-item {
-      display: flex; align-items: center; gap: 12px;
-      padding: 10px 0; border-bottom: 1px solid #F3F4F6; flex-wrap: wrap;
-    }
-    .bundle-image-item:last-child { border-bottom: none; }
-    .bundle-image-thumb {
-      width: 50px; height: 50px; object-fit: contain;
-      border-radius: 8px; background: #F9FAFB;
-      border: 1px solid #E5E7EB; flex-shrink: 0;
-    }
-    .bundle-image-label {
-      font-weight: 600; color: #374151;
-      font-size: 0.82rem; white-space: nowrap; min-width: 70px;
-    }
-    .bundle-image-item input[type="url"] { flex: 1; min-width: 180px; }
-
     /* ── Script control buttons ───────────────────────────────────── */
     .btn-script-control {
       display: inline-flex; align-items: center; justify-content: center;
@@ -792,6 +775,104 @@
       color: #111827;
     }
 
+    /* ── Customize tabs ─────────────────────────────────────────── */
+    .customize-tabs {
+      display: flex; gap: 0;
+      border-bottom: 2px solid #E5E7EB;
+      margin-bottom: 0;
+    }
+    .customize-tab {
+      padding: 8px 16px;
+      background: transparent; border: none;
+      color: #9CA3AF; cursor: pointer;
+      font-size: 0.82rem; font-weight: 500;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -2px;
+      transition: color 0.2s, border-color 0.2s;
+      font-family: inherit;
+    }
+    .customize-tab:hover { color: #374151; }
+    .customize-tab.tab-active { color: #42945F; border-bottom-color: #42945F; }
+    .customize-panel { padding-top: 4px; }
+    .customize-empty {
+      text-align: center; color: #9CA3AF;
+      font-size: 0.82rem; padding: 20px 12px;
+    }
+
+    /* ── Colors grid ─────────────────────────────────────────────── */
+    .colors-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 10px; margin-top: 10px;
+    }
+    .color-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 8px 10px;
+      background: #F9FAFB; border: 1px solid #E5E7EB;
+      border-radius: 8px; transition: border-color 0.15s;
+    }
+    .color-item:hover { border-color: #42945F; }
+    .color-item.changed { border-color: #42945F; background: #F0FDF4; }
+    .color-swatch {
+      width: 28px; height: 28px; border-radius: 6px;
+      border: 1px solid #D1D5DB; cursor: pointer;
+      flex-shrink: 0; padding: 0;
+    }
+    .color-swatch::-webkit-color-swatch-wrapper { padding: 0; }
+    .color-swatch::-webkit-color-swatch { border: none; border-radius: 5px; }
+    .color-info { flex: 1; min-width: 0; }
+    .color-hex {
+      font-size: 0.75rem; font-weight: 600; color: #374151;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .color-props {
+      font-size: 0.65rem; color: #9CA3AF;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .color-count {
+      font-size: 0.6rem; color: #9CA3AF;
+      background: #F3F4F6; border-radius: 8px;
+      padding: 1px 6px; flex-shrink: 0;
+    }
+
+    /* ── Bundle image items (enhanced) ───────────────────────────── */
+    .bundle-image-item {
+      display: flex; align-items: center; gap: 12px;
+      padding: 10px 0; border-bottom: 1px solid #F3F4F6; flex-wrap: wrap;
+    }
+    .bundle-image-item:last-child { border-bottom: none; }
+    .bundle-image-thumb {
+      width: 60px; height: 60px; object-fit: contain;
+      border-radius: 8px; background: #F9FAFB;
+      border: 1px solid #E5E7EB; flex-shrink: 0;
+    }
+    .bundle-image-label {
+      font-weight: 600; color: #374151;
+      font-size: 0.82rem; white-space: nowrap; min-width: 70px;
+    }
+    .bundle-image-size {
+      font-size: 0.68rem; color: #9CA3AF;
+      display: block; margin-top: 2px;
+    }
+    .bundle-image-fields { flex: 1; min-width: 200px; display: flex; flex-direction: column; gap: 6px; }
+    .bundle-image-item input[type="url"] { flex: 1; min-width: 180px; }
+    .bundle-upload-row { display: flex; gap: 8px; align-items: center; }
+    .bundle-upload-row input[type="file"] { display: none; }
+    .btn-upload-img {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 5px 12px; font-size: 0.75rem; font-weight: 600;
+      background: #F3F4F6; border: 1px solid #E5E7EB;
+      border-radius: 6px; color: #374151; cursor: pointer;
+      font-family: inherit; transition: all 0.15s;
+    }
+    .btn-upload-img:hover { background: #E5E7EB; border-color: #42945F; color: #42945F; }
+
+    /* ── Product name badge ───────────────────────────────────────── */
+    .product-name-badge {
+      margin-top: 10px; padding: 8px 12px;
+      background: #F0FDF4; border: 1px solid #BBF7D0;
+      border-radius: 8px; font-size: 0.78rem; color: #42945F;
+    }
+
     /* ── Responsive ───────────────────────────────────────────────── */
     @media (max-width: 960px) {
       .app-layout { grid-template-columns: 1fr; }
@@ -1003,14 +1084,65 @@
           <div id="checkout-inputs-container"></div>
         </section>
 
-        <!-- 7 · Imagens de Bundle ────────────────────────────────── -->
-        <section class="card section-hidden" id="section-bundle-images">
+        <!-- 7 · Personalizar Produto da Página ───────────────────── -->
+        <section class="card section-hidden" id="section-customize">
           <div class="card-header">
             <span class="step-num">7</span>
-            <span class="card-title">Imagens de Bundle</span>
+            <span class="card-title">Personalizar Produto da Página</span>
           </div>
-          <p class="card-hint">Substitua as imagens dos bundles da página original pelas suas</p>
-          <div id="bundle-images-container"></div>
+          <p class="card-hint">
+            Opções <strong>opcionais</strong> para personalizar o produto da página.
+            Se não precisar alterar, deixe como está.
+          </p>
+
+          <!-- Sub-tabs -->
+          <div class="customize-tabs">
+            <button class="customize-tab tab-active" data-panel="panel-colors" type="button">Cores</button>
+            <button class="customize-tab" data-panel="panel-bundle-img" type="button">Imagens de Bundle</button>
+            <button class="customize-tab" data-panel="panel-product-name" type="button">Nome do Produto</button>
+          </div>
+
+          <!-- Panel: Cores ──────────────────────────────────────── -->
+          <div class="customize-panel" id="panel-colors">
+            <p class="card-hint" style="margin-top:10px;">
+              Cores principais detectadas na página. Clique em uma cor para alterá-la no resultado final.
+            </p>
+            <div id="colors-container" class="colors-grid"></div>
+            <div id="colors-empty" class="customize-empty" style="display:none;">
+              Nenhuma cor relevante detectada nesta página
+            </div>
+          </div>
+
+          <!-- Panel: Imagens de Bundle ──────────────────────────── -->
+          <div class="customize-panel" id="panel-bundle-img" style="display:none;">
+            <p class="card-hint" style="margin-top:10px;">
+              Imagens de bundles detectadas. Você pode manter as originais ou fazer upload de novas.
+            </p>
+            <div id="bundle-images-container"></div>
+            <div id="bundle-images-empty" class="customize-empty" style="display:none;">
+              Nenhuma imagem de bundle detectada nesta página
+            </div>
+          </div>
+
+          <!-- Panel: Nome do Produto ────────────────────────────── -->
+          <div class="customize-panel" id="panel-product-name" style="display:none;">
+            <p class="card-hint" style="margin-top:10px;">
+              Substitua o nome do produto em todas as menções na página.
+              <strong>Use apenas quando necessário.</strong>
+            </p>
+            <div class="two-col" style="margin-top:10px;">
+              <div class="field-group">
+                <label for="product-name-old">Nome atual do produto</label>
+                <input type="text" id="product-name-old" placeholder="Nome detectado automaticamente" />
+              </div>
+              <div class="field-group">
+                <label for="product-name-new">Novo nome do produto</label>
+                <input type="text" id="product-name-new" placeholder="Deixe vazio para manter o original" />
+              </div>
+            </div>
+            <div id="product-name-badge" class="product-name-badge" style="display:none;"></div>
+          </div>
+
         </section>
 
         <!-- Export ─────────────────────────────────────────────────── -->
@@ -1197,6 +1329,10 @@
       delayType: null,
       bundleImages: {},
       extraScripts: [],
+      pageColors: [],
+      colorReplacements: {},   // { originalHex: newHex }
+      productName: null,
+      allProductImages: [],
     };
 
     // ── DOM refs ──────────────────────────────────────────────────────
@@ -1236,12 +1372,19 @@
     const sectionDelay  = document.getElementById('section-delay');
     const delayInput    = document.getElementById('delay-seconds');
 
-    const sectionBundleImages   = document.getElementById('section-bundle-images');
     const bundleImagesContainer = document.getElementById('bundle-images-container');
 
     const sectionExtraScripts  = document.getElementById('section-extra-scripts');
     const scriptsListContainer = document.getElementById('scripts-list-container');
     const btnAddScript         = document.getElementById('btn-add-script');
+
+    const sectionCustomize     = document.getElementById('section-customize');
+    const colorsContainer      = document.getElementById('colors-container');
+    const colorsEmpty          = document.getElementById('colors-empty');
+    const bundleImagesEmpty    = document.getElementById('bundle-images-empty');
+    const productNameOldInput  = document.getElementById('product-name-old');
+    const productNameNewInput  = document.getElementById('product-name-new');
+    const productNameBadge     = document.getElementById('product-name-badge');
 
     // ── Helpers ───────────────────────────────────────────────────────
 
@@ -1391,25 +1534,49 @@
       });
     }
 
-    // ── Bundle images ─────────────────────────────────────────────────
+    // ── Bundle images (enhanced with upload) ───────────────────────────
 
     function renderBundleImages(images) {
       bundleImagesContainer.innerHTML = '';
       var keys = Object.keys(images);
-      if (!keys.length) return;
+      if (!keys.length) {
+        if (bundleImagesEmpty) bundleImagesEmpty.style.display = '';
+        return;
+      }
+      if (bundleImagesEmpty) bundleImagesEmpty.style.display = 'none';
       keys.sort(function(a, b) { return Number(a) - Number(b); });
       keys.forEach(function(qty) {
         var imgData = images[qty];
         var label = bundleLabel(Number(qty)) || ('Bundle ' + qty);
+        var sizeText = '';
+        if (imgData.width && imgData.height) {
+          sizeText = imgData.width + ' x ' + imgData.height + ' px';
+        }
+
         var row = document.createElement('div');
         row.className = 'bundle-image-item';
+
+        var thumbSrc = resolveImgSrc(imgData.src);
         var thumb = document.createElement('img');
         thumb.className = 'bundle-image-thumb';
-        thumb.src = imgData.src; thumb.alt = label;
+        thumb.src = thumbSrc; thumb.alt = label;
         thumb.onerror = function() { this.style.display = 'none'; };
+
+        var labelWrap = document.createElement('div');
         var labelEl = document.createElement('span');
         labelEl.className = 'bundle-image-label';
         labelEl.textContent = label;
+        labelWrap.appendChild(labelEl);
+        if (sizeText) {
+          var sizeEl = document.createElement('span');
+          sizeEl.className = 'bundle-image-size';
+          sizeEl.textContent = sizeText;
+          labelWrap.appendChild(sizeEl);
+        }
+
+        var fields = document.createElement('div');
+        fields.className = 'bundle-image-fields';
+
         var input = document.createElement('input');
         input.type = 'url'; input.value = imgData.src;
         input.placeholder = 'https://nova-imagem.com/produto.png';
@@ -1419,12 +1586,236 @@
           var val = this.value.trim();
           if (val) { thumb.src = val; thumb.style.display = ''; }
         });
+
+        var uploadRow = document.createElement('div');
+        uploadRow.className = 'bundle-upload-row';
+        var fileInput = document.createElement('input');
+        fileInput.type = 'file';
+        fileInput.accept = 'image/*';
+        fileInput.id = 'bundle-file-' + qty;
+        var uploadBtn = document.createElement('label');
+        uploadBtn.className = 'btn-upload-img';
+        uploadBtn.setAttribute('for', 'bundle-file-' + qty);
+        uploadBtn.innerHTML = '\u2191 Upload nova imagem';
+
+        fileInput.addEventListener('change', function() {
+          var file = this.files[0];
+          if (!file) return;
+          var formData = new FormData();
+          formData.append('image', file);
+          uploadBtn.innerHTML = 'Enviando...';
+          fetch('/api/upload-bundle-image', { method: 'POST', body: formData })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+              if (data.url) {
+                input.value = window.location.origin + data.url;
+                thumb.src = window.location.origin + data.url;
+                thumb.style.display = '';
+                input.dispatchEvent(new Event('input'));
+              }
+              uploadBtn.innerHTML = '\u2191 Upload nova imagem';
+            })
+            .catch(function() { uploadBtn.innerHTML = '\u2191 Upload nova imagem'; });
+        });
+
+        uploadRow.appendChild(fileInput);
+        uploadRow.appendChild(uploadBtn);
+
+        fields.appendChild(input);
+        fields.appendChild(uploadRow);
+
         row.appendChild(thumb);
-        row.appendChild(labelEl);
-        row.appendChild(input);
+        row.appendChild(labelWrap);
+        row.appendChild(fields);
         bundleImagesContainer.appendChild(row);
       });
     }
+
+    // ── Colors rendering ──────────────────────────────────────────────
+
+    function renderPageColors(colors) {
+      if (!colorsContainer) return;
+      colorsContainer.innerHTML = '';
+      if (!colors || !colors.length) {
+        if (colorsEmpty) colorsEmpty.style.display = '';
+        return;
+      }
+      if (colorsEmpty) colorsEmpty.style.display = 'none';
+      colors.forEach(function(c) {
+        var item = document.createElement('div');
+        item.className = 'color-item';
+
+        var swatch = document.createElement('input');
+        swatch.type = 'color';
+        swatch.className = 'color-swatch';
+        swatch.value = c.color;
+        swatch.setAttribute('data-original-color', c.color);
+
+        var info = document.createElement('div');
+        info.className = 'color-info';
+
+        var hex = document.createElement('div');
+        hex.className = 'color-hex';
+        hex.textContent = c.color;
+
+        var props = document.createElement('div');
+        props.className = 'color-props';
+        props.textContent = c.properties.join(', ');
+
+        info.appendChild(hex);
+        info.appendChild(props);
+
+        var count = document.createElement('span');
+        count.className = 'color-count';
+        count.textContent = c.count + 'x';
+
+        swatch.addEventListener('input', function() {
+          var newVal = this.value;
+          var origVal = this.getAttribute('data-original-color');
+          hex.textContent = newVal;
+          if (newVal !== origVal) {
+            item.classList.add('changed');
+            state.colorReplacements[origVal] = newVal;
+          } else {
+            item.classList.remove('changed');
+            delete state.colorReplacements[origVal];
+          }
+        });
+
+        item.appendChild(swatch);
+        item.appendChild(info);
+        item.appendChild(count);
+        colorsContainer.appendChild(item);
+      });
+    }
+
+    // ── All product images (fallback when bundle detection finds nothing) ──
+
+    function resolveImgSrc(src) {
+      // Resolve relative src to absolute URL using the fetched page URL
+      if (!src) return src;
+      if (/^https?:\/\//i.test(src) || src.startsWith('data:')) return src;
+      if (state.fetchedUrl) {
+        try { return new URL(src, state.fetchedUrl).href; } catch(e) {}
+      }
+      return src;
+    }
+
+    function renderAllProductImages(images) {
+      if (!bundleImagesContainer) return;
+      bundleImagesContainer.innerHTML = '';
+      if (!images || !images.length) {
+        if (bundleImagesEmpty) bundleImagesEmpty.style.display = '';
+        return;
+      }
+      if (bundleImagesEmpty) bundleImagesEmpty.style.display = 'none';
+
+      images.forEach(function(imgData, idx) {
+        var row = document.createElement('div');
+        row.className = 'bundle-image-item';
+
+        var thumbSrc = resolveImgSrc(imgData.src);
+        var thumb = document.createElement('img');
+        thumb.className = 'bundle-image-thumb';
+        thumb.src = thumbSrc; thumb.alt = imgData.alt || ('Imagem ' + (idx + 1));
+        thumb.onerror = function() { this.style.display = 'none'; };
+
+        var labelWrap = document.createElement('div');
+        var labelEl = document.createElement('span');
+        labelEl.className = 'bundle-image-label';
+        labelEl.textContent = imgData.alt || ('Imagem ' + (idx + 1));
+        labelWrap.appendChild(labelEl);
+        if (imgData.width && imgData.height) {
+          var sizeEl = document.createElement('span');
+          sizeEl.className = 'bundle-image-size';
+          sizeEl.textContent = imgData.width + ' x ' + imgData.height + ' px';
+          labelWrap.appendChild(sizeEl);
+        }
+
+        var fields = document.createElement('div');
+        fields.className = 'bundle-image-fields';
+
+        var input = document.createElement('input');
+        input.type = 'url'; input.value = imgData.src;
+        input.placeholder = 'https://nova-imagem.com/produto.png';
+        input.setAttribute('data-img-index', idx);
+        input.setAttribute('data-original-src', imgData.src);
+        input.addEventListener('input', function() {
+          var val = this.value.trim();
+          if (val) { thumb.src = val; thumb.style.display = ''; }
+        });
+
+        var uploadRow = document.createElement('div');
+        uploadRow.className = 'bundle-upload-row';
+        var fileInput = document.createElement('input');
+        fileInput.type = 'file';
+        fileInput.accept = 'image/*';
+        fileInput.id = 'img-file-' + idx;
+        var uploadBtn = document.createElement('label');
+        uploadBtn.className = 'btn-upload-img';
+        uploadBtn.setAttribute('for', 'img-file-' + idx);
+        uploadBtn.innerHTML = '\u2191 Upload nova imagem';
+
+        fileInput.addEventListener('change', function() {
+          var file = this.files[0];
+          if (!file) return;
+          var formData = new FormData();
+          formData.append('image', file);
+          uploadBtn.innerHTML = 'Enviando...';
+          fetch('/api/upload-bundle-image', { method: 'POST', body: formData })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+              if (data.url) {
+                input.value = window.location.origin + data.url;
+                thumb.src = window.location.origin + data.url;
+                thumb.style.display = '';
+                input.dispatchEvent(new Event('input'));
+              }
+              uploadBtn.innerHTML = '\u2191 Upload nova imagem';
+            })
+            .catch(function() { uploadBtn.innerHTML = '\u2191 Upload nova imagem'; });
+        });
+
+        uploadRow.appendChild(fileInput);
+        uploadRow.appendChild(uploadBtn);
+
+        fields.appendChild(input);
+        fields.appendChild(uploadRow);
+
+        row.appendChild(thumb);
+        row.appendChild(labelWrap);
+        row.appendChild(fields);
+        bundleImagesContainer.appendChild(row);
+      });
+    }
+
+    function buildImageReplacementsPayload() {
+      var result = [];
+      bundleImagesContainer.querySelectorAll('input[data-img-index]').forEach(function(input) {
+        var originalSrc = input.getAttribute('data-original-src');
+        var newSrc = input.value.trim();
+        if (newSrc && newSrc !== originalSrc) {
+          result.push({ originalSrc: originalSrc, newSrc: newSrc });
+        }
+      });
+      return result;
+    }
+
+    // ── Customize tab switching ───────────────────────────────────────
+
+    (function() {
+      var tabs = document.querySelectorAll('.customize-tab');
+      tabs.forEach(function(tab) {
+        tab.addEventListener('click', function() {
+          tabs.forEach(function(t) { t.classList.remove('tab-active'); });
+          tab.classList.add('tab-active');
+          var targetId = tab.getAttribute('data-panel');
+          document.querySelectorAll('.customize-panel').forEach(function(p) {
+            p.style.display = p.id === targetId ? '' : 'none';
+          });
+        });
+      });
+    })();
 
     // ── Checkout inputs ───────────────────────────────────────────────
 
@@ -1558,6 +1949,7 @@
         state.delayScriptContent = (data.summary && data.summary.delayScriptContent) || null;
         state.delayType          = (data.summary && data.summary.delayType) || null;
         state.bundleImages       = (data.summary && data.summary.bundleImages) || {};
+        state.allProductImages   = (data.summary && data.summary.allProductImages) || [];
 
         var scriptsRemoved = (data.summary && data.summary.scriptsRemoved) || 0;
         var vslDetected    = (data.summary && data.summary.vslDetected)    || false;
@@ -1603,11 +1995,29 @@
           showSection(sectionDelay);
         }
 
-        // Bundle images
-        if (Object.keys(state.bundleImages).length > 0 && sectionBundleImages) {
+        // Customize section: colors, bundle images, product name
+        state.pageColors = (data.summary && data.summary.pageColors) || [];
+        state.productName = (data.summary && data.summary.productName) || null;
+        state.colorReplacements = {};
+
+        // If bundleImages is empty but we have allProductImages, use those
+        if (Object.keys(state.bundleImages).length > 0) {
           renderBundleImages(state.bundleImages);
-          showSection(sectionBundleImages);
+        } else {
+          renderAllProductImages(state.allProductImages);
         }
+        renderPageColors(state.pageColors);
+
+        if (productNameOldInput && state.productName) {
+          productNameOldInput.value = state.productName;
+          if (productNameBadge) {
+            productNameBadge.textContent = 'Detectado: ' + state.productName;
+            productNameBadge.style.display = '';
+          }
+        }
+        if (productNameNewInput) productNameNewInput.value = '';
+
+        if (sectionCustomize) showSection(sectionCustomize);
 
         setExportEnabled(true);
 
@@ -1673,6 +2083,7 @@
         state.delayScriptContent = (data.summary && data.summary.delayScriptContent) || null;
         state.delayType          = (data.summary && data.summary.delayType) || null;
         state.bundleImages       = (data.summary && data.summary.bundleImages) || {};
+        state.allProductImages   = (data.summary && data.summary.allProductImages) || [];
 
         var scriptsRemoved = (data.summary && data.summary.scriptsRemoved) || 0;
         var vslDetected    = (data.summary && data.summary.vslDetected)    || false;
@@ -1718,11 +2129,29 @@
           showSection(sectionDelay);
         }
 
-        // Bundle images
-        if (Object.keys(state.bundleImages).length > 0 && sectionBundleImages) {
+        // Customize section: colors, bundle images, product name
+        state.pageColors = (data.summary && data.summary.pageColors) || [];
+        state.productName = (data.summary && data.summary.productName) || null;
+        state.colorReplacements = {};
+
+        // If bundleImages is empty but we have allProductImages, use those
+        if (Object.keys(state.bundleImages).length > 0) {
           renderBundleImages(state.bundleImages);
-          showSection(sectionBundleImages);
+        } else {
+          renderAllProductImages(state.allProductImages);
         }
+        renderPageColors(state.pageColors);
+
+        if (productNameOldInput && state.productName) {
+          productNameOldInput.value = state.productName;
+          if (productNameBadge) {
+            productNameBadge.textContent = 'Detectado: ' + state.productName;
+            productNameBadge.style.display = '';
+          }
+        }
+        if (productNameNewInput) productNameNewInput.value = '';
+
+        if (sectionCustomize) showSection(sectionCustomize);
 
         setExportEnabled(true);
 
@@ -1768,6 +2197,29 @@
         var bundlePayload = buildBundleImagesPayload();
         if (Object.keys(bundlePayload).length > 0) payload.bundleImages = bundlePayload;
       }
+
+      // Color replacements
+      var colorRepl = [];
+      for (var origColor in state.colorReplacements) {
+        if (state.colorReplacements.hasOwnProperty(origColor)) {
+          colorRepl.push({ oldColor: origColor, newColor: state.colorReplacements[origColor] });
+        }
+      }
+      if (colorRepl.length > 0) payload.colorReplacements = colorRepl;
+
+      // Product name replacement
+      if (productNameOldInput && productNameNewInput) {
+        var oldName = productNameOldInput.value.trim();
+        var newName = productNameNewInput.value.trim();
+        if (oldName && newName && oldName !== newName) {
+          payload.productNameOld = oldName;
+          payload.productNameNew = newName;
+        }
+      }
+
+      // Image replacements (from allProductImages UI)
+      var imgRepl = buildImageReplacementsPayload();
+      if (imgRepl.length > 0) payload.imageReplacements = imgRepl;
 
       return payload;
     }

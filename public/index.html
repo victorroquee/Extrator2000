@@ -2204,11 +2204,14 @@
         if (Object.keys(bundlePayload).length > 0) payload.bundleImages = bundlePayload;
       }
 
-      // Color replacements
+      // Color replacements — include properties for CSS variable override injection
       var colorRepl = [];
       for (var origColor in state.colorReplacements) {
         if (state.colorReplacements.hasOwnProperty(origColor)) {
-          colorRepl.push({ oldColor: origColor, newColor: state.colorReplacements[origColor] });
+          // Find the original color entry to get its properties list
+          var colorEntry = state.pageColors.find(function(c) { return c.color === origColor; });
+          var props = colorEntry ? colorEntry.properties : [];
+          colorRepl.push({ oldColor: origColor, newColor: state.colorReplacements[origColor], properties: props });
         }
       }
       if (colorRepl.length > 0) payload.colorReplacements = colorRepl;

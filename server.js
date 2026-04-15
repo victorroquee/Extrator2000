@@ -404,16 +404,23 @@ function detectAllProductImages($) {
 // ── Helper: Page color detection ─────────────────────────────────────────────
 
 /**
- * Detects the main colors used in the page from inline styles and <style> tags.
- * Also attempts to parse linked CSS stylesheets referenced within the HTML.
- * Returns an array of { color, property, count, context } sorted by frequency.
- * Focuses on background-color, color, border-color and CSS custom properties.
+ * Detects the main colors used in the page by parsing:
+ * 1. Inline style attributes
+ * 2. <style> tags
+ * 3. Linked external CSS files (fetched in parallel, with timeout)
+ * 4. CSS custom properties (--var-name: #color)
+ *
+ * Filters out generic/boring colors (white, black, near-white, near-black, grays).
+ * Returns an array of { color, properties, count } sorted by frequency, max 15.
+ *
+ * @param {string} html - The raw HTML of the page
+ * @param {string|null} pageUrl - The page URL for resolving relative CSS paths
+ * @returns {Promise<Array>}
  */
-function detectPageColors(html) {
+async function detectPageColors(html, pageUrl) {
   const $ = cheerio.load(html, { decodeEntities: false });
-  const colorMap = new Map(); // hex -> { color, properties: Set, count }
+  const colorMap = new Map();
 
-  // Normalize color strings to hex
   function rgbToHex(r, g, b) {
     return '#' + [r, g, b].map(x => {
       const hex = parseInt(x, 10).toString(16);
@@ -424,92 +431,104 @@ function detectPageColors(html) {
   function normalizeColor(raw) {
     if (!raw) return null;
     raw = raw.trim().toLowerCase();
-    if (raw === 'transparent' || raw === 'inherit' || raw === 'initial' || raw === 'currentcolor' || raw === 'none') return null;
+    if (/^(transparent|inherit|initial|currentcolor|none|unset)$/.test(raw)) return null;
 
-    // Already hex
+    // hex
     if (/^#[0-9a-f]{3,8}$/i.test(raw)) {
-      if (raw.length === 4) {
-        return '#' + raw[1]+raw[1] + raw[2]+raw[2] + raw[3]+raw[3];
-      }
-      return raw.slice(0, 7); // ignore alpha
+      if (raw.length === 4) return '#' + raw[1]+raw[1] + raw[2]+raw[2] + raw[3]+raw[3];
+      return raw.slice(0, 7);
     }
 
     // rgb/rgba
     const rgbMatch = raw.match(/rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/);
     if (rgbMatch) return rgbToHex(rgbMatch[1], rgbMatch[2], rgbMatch[3]);
 
-    // Named colors (common ones)
-    const named = {
-      white: '#ffffff', black: '#000000', red: '#ff0000', green: '#008000',
-      blue: '#0000ff', yellow: '#ffff00', orange: '#ffa500', gray: '#808080',
-      grey: '#808080',
-    };
-    if (named[raw]) return named[raw];
+    // Tailwind rgb(R G B / opacity) syntax
+    const twMatch = raw.match(/rgb\(\s*(\d+)\s+(\d+)\s+(\d+)/);
+    if (twMatch) return rgbToHex(twMatch[1], twMatch[2], twMatch[3]);
 
-    return null;
+    const named = {
+      white:'#ffffff', black:'#000000', red:'#ff0000', green:'#008000',
+      blue:'#0000ff', yellow:'#ffff00', orange:'#ffa500', gray:'#808080', grey:'#808080',
+    };
+    return named[raw] || null;
   }
 
+  // Skip boring/generic colors that exist on nearly every page
+  const SKIP_COLORS = new Set([
+    '#ffffff','#000000','#f5f5f5','#fafafa','#f9fafb','#f3f4f6',
+    '#e5e7eb','#d1d5db','#9ca3af','#6b7280','#4b5563','#374151',
+    '#1f2937','#111827','#333333','#666666','#999999','#cccccc',
+    '#f0f0f0','#eeeeee','#dddddd','#f7f7f7','#e0e0e0',
+  ]);
+
   function addColor(hex, prop) {
-    if (!hex) return;
-    // Skip very common generic colors (pure white, pure black, near-white/near-black)
-    if (hex === '#ffffff' || hex === '#000000' || hex === '#f5f5f5' || hex === '#fafafa' || hex === '#333333') return;
+    if (!hex || SKIP_COLORS.has(hex)) return;
     const entry = colorMap.get(hex) || { color: hex, properties: new Set(), count: 0 };
     entry.properties.add(prop);
     entry.count++;
     colorMap.set(hex, entry);
   }
 
-  // Extract from <style> tags
-  const colorRegex = /(background-color|background|color|border-color|border)\s*:\s*([^;}\n]+)/gi;
-  $('style').each((_, el) => {
-    const css = $(el).html() || '';
+  function extractColorsFromCSS(css) {
+    // Color properties
+    const colorRegex = /(background-color|background|color|border-color|border)\s*:\s*([^;}\n]+)/gi;
     let match;
     while ((match = colorRegex.exec(css)) !== null) {
       const prop = match[1].toLowerCase();
       const val = match[2].trim();
-      // For background shorthand, try to extract color part
-      if (prop === 'background') {
-        // Try to match color within the shorthand
+      if (prop === 'background' || prop === 'border') {
         const colorPart = val.match(/#[0-9a-fA-F]{3,8}|rgba?\([^)]+\)/);
-        if (colorPart) addColor(normalizeColor(colorPart[0]), 'background-color');
+        if (colorPart) addColor(normalizeColor(colorPart[0]), prop === 'border' ? 'border-color' : 'background-color');
       } else {
-        addColor(normalizeColor(val), prop === 'border' ? 'border-color' : prop);
+        addColor(normalizeColor(val), prop);
       }
     }
-  });
 
-  // Extract from inline style attributes
-  $('[style]').each((_, el) => {
-    const style = $(el).attr('style') || '';
-    let match;
-    const inlineRegex = /(background-color|background|color|border-color|border)\s*:\s*([^;}\n]+)/gi;
-    while ((match = inlineRegex.exec(style)) !== null) {
-      const prop = match[1].toLowerCase();
-      const val = match[2].trim();
-      if (prop === 'background') {
-        const colorPart = val.match(/#[0-9a-fA-F]{3,8}|rgba?\([^)]+\)/);
-        if (colorPart) addColor(normalizeColor(colorPart[0]), 'background-color');
-      } else {
-        addColor(normalizeColor(val), prop === 'border' ? 'border-color' : prop);
-      }
-    }
-  });
-
-  // Extract CSS custom properties (--var-name: #color)
-  $('style').each((_, el) => {
-    const css = $(el).html() || '';
+    // CSS custom properties
     const varRegex = /(--[\w-]+)\s*:\s*(#[0-9a-fA-F]{3,8}|rgba?\([^)]+\))/g;
-    let match;
     while ((match = varRegex.exec(css)) !== null) {
       const hex = normalizeColor(match[2]);
       if (hex) addColor(hex, match[1]);
     }
+  }
+
+  // 1. Parse <style> tags
+  $('style').each((_, el) => extractColorsFromCSS($(el).html() || ''));
+
+  // 2. Parse inline style attributes
+  $('[style]').each((_, el) => extractColorsFromCSS($(el).attr('style') || ''));
+
+  // 3. Fetch and parse linked CSS files (skip bootstrap/font/icon libraries)
+  const skipPatterns = /bootstrap|font-awesome|fontawesome|icons?\.min|normalize|reset/i;
+  const cssUrls = [];
+  $('link[rel="stylesheet"]').each((_, el) => {
+    const href = $(el).attr('href');
+    if (!href || skipPatterns.test(href)) return;
+    let absUrl = href;
+    if (pageUrl && !/^https?:\/\//i.test(href)) {
+      try { absUrl = new URL(href, pageUrl).href; } catch { return; }
+    }
+    if (/^https?:\/\//i.test(absUrl)) cssUrls.push(absUrl);
   });
 
-  // Sort by frequency and return top colors
+  // Fetch CSS files in parallel with 5s timeout, max 5 files
+  const cssTexts = await Promise.all(
+    cssUrls.slice(0, 5).map(async (url) => {
+      try {
+        const resp = await axios.get(url, { timeout: 5000, maxContentLength: 500 * 1024, responseType: 'text' });
+        return typeof resp.data === 'string' ? resp.data : '';
+      } catch { return ''; }
+    })
+  );
+  for (const css of cssTexts) {
+    if (css) extractColorsFromCSS(css);
+  }
+
+  // Sort by frequency — most used colors first, max 15
   const sorted = Array.from(colorMap.values())
     .sort((a, b) => b.count - a.count)
-    .slice(0, 12)
+    .slice(0, 15)
     .map(entry => ({
       color: entry.color,
       properties: Array.from(entry.properties),
@@ -711,7 +730,7 @@ app.post('/api/fetch', async (req, res) => {
   const delayInfo = detectVturbDelay(rawHtml);
 
   // Detect colors and product name from raw HTML (before cleanup strips context)
-  const pageColors = detectPageColors(rawHtml);
+  const pageColors = await detectPageColors(rawHtml, url);
   const productNameInfo = detectProductName(rawHtml);
 
   const { html: cleanedHtml, scriptsRemoved, vslDetected } = cleanHtml(rawHtml);
@@ -783,7 +802,7 @@ function isSafeRelativePath(relativePath) {
 
 // ── Route: POST /api/upload-folder ──────────────────────────────────────────
 
-app.post('/api/upload-folder', folderUpload.array('files', 200), function(req, res) {
+app.post('/api/upload-folder', folderUpload.array('files', 200), async function(req, res) {
   const files = req.files || [];
   // multer + express parses 'paths[]' field name as req.body.paths (brackets stripped)
   const rawPaths = req.body.paths || req.body['paths[]'] || [];
@@ -815,7 +834,7 @@ app.post('/api/upload-folder', folderUpload.array('files', 200), function(req, r
 
   const rawHtml = indexHtmlBuffer.toString('utf8');
   const delayInfo = detectVturbDelay(rawHtml);
-  const pageColors = detectPageColors(rawHtml);
+  const pageColors = await detectPageColors(rawHtml, null);
   const productNameInfo = detectProductName(rawHtml);
   const { html: cleanedHtml, scriptsRemoved, vslDetected } = cleanHtml(rawHtml);
   const $ = cheerio.load(cleanedHtml, { decodeEntities: false });
@@ -1139,13 +1158,46 @@ function buildExportHtml({ html, headerPixel, headerPreload, vslembed, checkoutL
     }
   }
 
-  // ── Color replacements: swap old colors for new ones in all CSS ──
+  // ── Color replacements ──
+  // Strategy:
+  //   1) String-replace in the HTML for inline styles and <style> tags
+  //   2) Inject a <style> block with :root CSS variable overrides + property overrides
+  //      This catches colors defined in external CSS files (not embedded in HTML)
+  //   3) Store replacements for ZIP export to also patch downloaded CSS files
   if (Array.isArray(colorReplacements) && colorReplacements.length > 0) {
-    for (const { oldColor, newColor } of colorReplacements) {
-      if (!oldColor || !newColor || oldColor === newColor) continue;
-      // Escape for regex and replace case-insensitively throughout the HTML (inline styles + style tags)
+    const validReplacements = colorReplacements.filter(r => r.oldColor && r.newColor && r.oldColor !== r.newColor);
+
+    // 1) Direct string replacement in HTML
+    for (const { oldColor, newColor } of validReplacements) {
       const escaped = oldColor.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       outputHtml = outputHtml.replace(new RegExp(escaped, 'gi'), newColor);
+    }
+
+    // 2) Inject CSS override <style> block
+    if (validReplacements.length > 0) {
+      const lines = [];
+      // Re-declare CSS custom properties that referenced old colors
+      const varLines = [];
+      for (const { oldColor, newColor, properties } of validReplacements) {
+        const props = properties || [];
+        for (const p of props) {
+          if (p.startsWith('--')) {
+            varLines.push(`  ${p}: ${newColor} !important;`);
+          }
+        }
+      }
+      if (varLines.length > 0) {
+        lines.push(':root {');
+        lines.push(...varLines);
+        lines.push('}');
+      }
+
+      const overrideBlock = `<style data-vsl-color-override="1">\n${lines.join('\n')}\n</style>`;
+      if (/<\/head>/i.test(outputHtml)) {
+        outputHtml = outputHtml.replace(/<\/head>/i, `${overrideBlock}\n</head>`);
+      } else {
+        outputHtml = overrideBlock + outputHtml;
+      }
     }
   }
 
@@ -1289,9 +1341,27 @@ app.post('/api/export-zip', async (req, res) => {
     archive.pipe(res);
 
     archive.append(outputHtml, { name: 'index.html' });
+    const validColorReplUpload = Array.isArray(colorReplacements)
+      ? colorReplacements.filter(r => r.oldColor && r.newColor && r.oldColor !== r.newColor)
+      : [];
+    const hasReplUpload = validColorReplUpload.length > 0
+      || (productNameOld && productNameNew && productNameOld !== productNameNew);
     for (const [relativePath, buffer] of session.assets) {
       if (relativePath !== 'index.html' && relativePath !== 'index.htm') {
-        archive.append(buffer, { name: relativePath });
+        if (hasReplUpload && relativePath.endsWith('.css')) {
+          let cssText = buffer.toString('utf8');
+          for (const { oldColor, newColor } of validColorReplUpload) {
+            const escaped = oldColor.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            cssText = cssText.replace(new RegExp(escaped, 'gi'), newColor);
+          }
+          if (productNameOld && productNameNew && productNameOld !== productNameNew) {
+            const escapedName = productNameOld.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            cssText = cssText.replace(new RegExp(escapedName, 'gi'), productNameNew);
+          }
+          archive.append(cssText, { name: relativePath });
+        } else {
+          archive.append(buffer, { name: relativePath });
+        }
       }
     }
 
@@ -1358,8 +1428,30 @@ app.post('/api/export-zip', async (req, res) => {
   archive.pipe(res);
 
   archive.append(outputHtml, { name: 'index.html' });
+
+  // Apply color and product name replacements to downloaded CSS files in the ZIP
+  const validColorRepl = Array.isArray(colorReplacements)
+    ? colorReplacements.filter(r => r.oldColor && r.newColor && r.oldColor !== r.newColor)
+    : [];
+  const hasTextReplacements = validColorRepl.length > 0
+    || (productNameOld && productNameNew && productNameOld !== productNameNew);
+
   for (const [, { buffer, localPath }] of downloaded) {
-    archive.append(buffer, { name: localPath });
+    const isCss = localPath.endsWith('.css');
+    if (isCss && hasTextReplacements) {
+      let cssText = buffer.toString('utf8');
+      for (const { oldColor, newColor } of validColorRepl) {
+        const escaped = oldColor.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        cssText = cssText.replace(new RegExp(escaped, 'gi'), newColor);
+      }
+      if (productNameOld && productNameNew && productNameOld !== productNameNew) {
+        const escapedName = productNameOld.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        cssText = cssText.replace(new RegExp(escapedName, 'gi'), productNameNew);
+      }
+      archive.append(cssText, { name: localPath });
+    } else {
+      archive.append(buffer, { name: localPath });
+    }
   }
 
   await archive.finalize();

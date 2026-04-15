@@ -807,7 +807,7 @@ function buildExportHtml({ html, headerPixel, headerPreload, vslembed, checkoutL
   // When pageUrl is known, resolve the relative path to an absolute base URL (FIX: bundle/floating images).
   if (pageUrl) {
     outputHtml = outputHtml.replace(
-      /([cC]onst|[vV]ar|[lL]et)(\s+assetsPath\s*=\s*")([^"]*\.\.[/\\][^"]*)(")/g,
+      /([cC]onst|[vV]ar|[lL]et)(\s+assetsPath\s*=\s*")([^"]*\.\.[/\\][^"]*)(")/,
       (match, decl, eq, relPath, close) => {
         try {
           const abs = new URL(relPath, pageUrl).href;

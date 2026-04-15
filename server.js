@@ -898,31 +898,46 @@ app.post('/api/export-validate', (req, res) => {
   const $ = cheerio.load(outputHtml, { decodeEntities: false });
   const htmlStr = outputHtml;
 
+  // Validation checks based on what the USER configured (payload fields),
+  // not on what exists in the original page HTML (which may have leftover scripts).
+  const pixelConfigured   = !!(headerPixel && headerPixel.trim());
+  const preloadConfigured = !!(headerPreload && headerPreload.trim());
+  const vturbConfigured   = !!(vslembed && vslembed.trim());
+  const delayConfigured   = delaySeconds !== undefined && delaySeconds !== null && delaySeconds !== '';
+  const checkoutConfigured = Array.isArray(checkoutLinks) && checkoutLinks.length > 0;
+
   const checks = [
     {
       id: 'pixel',
       label: 'Meta Pixel',
-      passed: /fbq\s*\(/.test(htmlStr) || /connect\.facebook\.net/i.test(htmlStr)
+      // User configured pixel AND the fbq/facebook snippet is in the output
+      passed: pixelConfigured && (/fbq\s*\(/.test(htmlStr) || /connect\.facebook\.net/i.test(htmlStr))
     },
     {
       id: 'preload',
       label: 'Script Preload',
-      passed: $('link[rel="preload"]').length > 0 || /smartplayer-preload/i.test(htmlStr) || /preload/i.test(htmlStr.match(/<script[^>]*>[\s\S]*?<\/script>/gi)?.join('') || '')
+      // User supplied a preload snippet AND a <link rel="preload"> is present in the output
+      passed: preloadConfigured && $('link[rel="preload"]').length > 0
     },
     {
       id: 'vturb',
       label: 'Player VTURB',
-      passed: $('[id*="smartplayer"]').length > 0 || /smartplayer/i.test(htmlStr) || /converteai/i.test(htmlStr) || /vturb/i.test(htmlStr)
+      // User supplied a VSL embed AND the VSL placeholder was replaced (placeholder tag gone)
+      // We detect injection by checking that vslembed content contains smartplayer/vturb markers,
+      // or simply that the user provided vslembed and the placeholder tag is no longer in the output.
+      passed: vturbConfigured && !/<!--\s*\[VSL_PLACEHOLDER\]\s*-->/.test(htmlStr)
     },
     {
       id: 'delay',
       label: 'Delay de Revelação',
-      passed: /setTimeout[\s\S]*?\.esconder/i.test(htmlStr) || /data-vdelay="/i.test(htmlStr)
+      // User configured delay AND our standalone esconder reveal script was injected
+      passed: delayConfigured && /var delay\s*=\s*\d+/.test(htmlStr) && /\.esconder/i.test(htmlStr)
     },
     {
       id: 'checkout',
       label: 'Links de Checkout',
-      passed: (function() {
+      // User configured checkout links AND they appear in the output HTML
+      passed: checkoutConfigured && (function() {
         var found = false;
         $('a').each(function(_, el) {
           var href = $(el).attr('href') || '';

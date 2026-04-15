@@ -1582,6 +1582,7 @@
         input.placeholder = 'https://nova-imagem.com/produto.png';
         input.setAttribute('data-bundle-qty', qty);
         input.setAttribute('data-original-src', imgData.src);
+        if (imgData.dataImage) input.setAttribute('data-image-file', imgData.dataImage);
         input.addEventListener('input', function() {
           var val = this.value.trim();
           if (val) { thumb.src = val; thumb.style.display = ''; }
@@ -1890,8 +1891,13 @@
       bundleImagesContainer.querySelectorAll('input[data-bundle-qty]').forEach(function(input) {
         var qty = input.getAttribute('data-bundle-qty');
         var originalSrc = input.getAttribute('data-original-src');
+        var dataImage = input.getAttribute('data-image-file') || null;
         var newSrc = input.value.trim();
-        if (newSrc && newSrc !== originalSrc) result[qty] = { originalSrc: originalSrc, newSrc: newSrc };
+        if (newSrc && newSrc !== originalSrc) {
+          var entry = { originalSrc: originalSrc, newSrc: newSrc };
+          if (dataImage) entry.dataImage = dataImage;
+          result[qty] = entry;
+        }
       });
       return result;
     }

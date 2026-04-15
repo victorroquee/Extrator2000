@@ -279,45 +279,41 @@ function detectCheckoutLinks($, html) {
 // ── Helpers: Bundle image detection ─────────────────────────────────────────
 
 /**
- * Detects the first representative product image for each bundle qty (2, 3, 6).
- * For each checkout link that has a classified bundle qty, walks up the DOM to
- * the nearest section/article/div ancestor and picks the first <img> with a
- * non-empty, non-data: static src inside that ancestor. (D-01, D-03, D-06)
+ * Detects product bundle images using multiple strategies:
+ *
+ * Strategy 1 (DOM): For checkout links with bundle classification, walk up the DOM
+ * to find the first <img> in the nearest ancestor container.
+ *
+ * Strategy 2 (data-* attributes): Look for <a> tags with data-bottles and data-image
+ * attributes (common in ClickBank product pages using products.js). These links
+ * are often inside .esconder elements (hidden by VTURB delay) so static img tags
+ * don't exist yet — the images are rendered by JS at runtime.
  *
  * Returns an object keyed by bundle qty: { 2: { src }, 3: { src }, 6: { src } }
- * Returns {} if no bundle checkout links exist or no ancestor has an <img>. (D-04)
  */
-function detectBundleImages($, checkoutLinks) {
+function detectBundleImages($, checkoutLinks, pageUrl) {
   const result = {};
 
+  // ── Strategy 1: DOM-based (existing logic) ──
   const bundleLinks = (checkoutLinks || []).filter((l) => l.bundle !== null && l.bundle !== undefined);
 
   for (const link of bundleLinks) {
     const bundle = link.bundle;
-
-    // Per D-06: first match per bundle qty wins — skip if already found
     if (result[bundle]) continue;
 
     let el;
-    try {
-      el = $(link.selector);
-    } catch (_) {
-      continue;
-    }
+    try { el = $(link.selector); } catch (_) { continue; }
     if (!el || el.length === 0) continue;
 
-    // Walk up to nearest container ancestor (D-01)
     const ancestor = el.closest('section, article, div');
     if (!ancestor || ancestor.length === 0) continue;
 
-    // Find the first <img> with a valid static src inside that ancestor
     let found = null;
     let foundWidth = null;
     let foundHeight = null;
     ancestor.find('img[src]').each((_, imgEl) => {
-      if (found) return; // first only
+      if (found) return;
       const src = $(imgEl).attr('src');
-      // D-03: skip empty, missing, or data: URIs
       if (!src || src.startsWith('data:') || src.trim() === '') return;
       found = src;
       const w = $(imgEl).attr('width');
@@ -329,6 +325,36 @@ function detectBundleImages($, checkoutLinks) {
     if (found) {
       result[bundle] = { src: found, width: foundWidth, height: foundHeight };
     }
+  }
+
+  // ── Strategy 2: data-bottles + data-image attributes (JS-rendered products) ──
+  // These are common in ClickBank pages using products.js
+  // The images are built at runtime: assetsPath + "assets/main/products/img/" + data-image
+  if (Object.keys(result).length === 0) {
+    // Extract assetsPath from inline scripts
+    let assetsPath = '';
+    $('script').each((_, el) => {
+      const txt = $(el).html() || '';
+      const match = txt.match(/(?:var|let|const)\s+assetsPath\s*=\s*["']([^"']*)["']/);
+      if (match) assetsPath = match[1];
+    });
+
+    $('a[data-bottles][data-image]').each((_, el) => {
+      const bottles = parseInt($(el).attr('data-bottles'), 10);
+      const image = $(el).attr('data-image');
+      if (!bottles || !image) return;
+      if (result[bottles]) return; // first per qty
+
+      // Build full image path: assetsPath + "assets/main/products/img/" + image
+      let src = assetsPath + 'assets/main/products/img/' + image;
+
+      // If we have a pageUrl, resolve the relative path to absolute
+      if (pageUrl) {
+        try { src = new URL(src, pageUrl).href; } catch (_) {}
+      }
+
+      result[bottles] = { src, width: null, height: null, dataImage: image };
+    });
   }
 
   return result;
@@ -691,7 +717,7 @@ app.post('/api/fetch', async (req, res) => {
   const { html: cleanedHtml, scriptsRemoved, vslDetected } = cleanHtml(rawHtml);
   const $ = cheerio.load(cleanedHtml, { decodeEntities: false });
   const checkoutLinks = detectCheckoutLinks($, cleanedHtml);
-  const bundleImages = detectBundleImages($, checkoutLinks);
+  const bundleImages = detectBundleImages($, checkoutLinks, url);
   const allProductImages = detectAllProductImages($);
 
   return res.json({
@@ -794,7 +820,7 @@ app.post('/api/upload-folder', folderUpload.array('files', 200), function(req, r
   const { html: cleanedHtml, scriptsRemoved, vslDetected } = cleanHtml(rawHtml);
   const $ = cheerio.load(cleanedHtml, { decodeEntities: false });
   const checkoutLinks = detectCheckoutLinks($, cleanedHtml);
-  const bundleImages = detectBundleImages($, checkoutLinks);
+  const bundleImages = detectBundleImages($, checkoutLinks, null);
 
   const sessionId = crypto.randomUUID();
   uploadSessions.set(sessionId, {
@@ -999,32 +1025,46 @@ function buildExportHtml({ html, headerPixel, headerPreload, vslembed, checkoutL
     for (const [, imgData] of Object.entries(bundleImages)) {
       const originalSrc = imgData.originalSrc;
       const newSrc = imgData.newSrc;
-      if (!originalSrc || !newSrc || originalSrc === newSrc) continue;
+      const dataImage = imgData.dataImage; // JS-rendered image filename (from data-image attr)
+      if (!newSrc || originalSrc === newSrc) continue;
 
       // Validate newSrc is a valid URL (T-05-01 mitigation)
       try { new URL(newSrc); } catch { continue; }
 
-      // Replace in all <img> src attributes matching the original (D-12)
-      $('img').each((_, el) => {
-        if ($(el).attr('src') === originalSrc) {
-          $(el).attr('src', newSrc);
-        }
-      });
-      // Replace in <source> src attributes
-      $('source').each((_, el) => {
-        if ($(el).attr('src') === originalSrc) {
-          $(el).attr('src', newSrc);
-        }
-      });
-      // Replace in srcset attributes (img and source) — each entry is "url descriptor"
-      $('img[srcset], source[srcset]').each((_, el) => {
-        const srcset = $(el).attr('srcset');
-        if (srcset && srcset.includes(originalSrc)) {
-          $(el).attr('srcset', srcset.split(',').map((entry) => {
-            return entry.trim().replace(originalSrc, newSrc);
-          }).join(', '));
-        }
-      });
+      // Replace data-image attributes (for JS-rendered product pages like ClickBank/products.js)
+      if (dataImage) {
+        $('a[data-image]').each((_, el) => {
+          if ($(el).attr('data-image') === dataImage) {
+            // Extract just the filename from newSrc for data-image replacement
+            const newFilename = newSrc.split('/').pop().split('?')[0];
+            $(el).attr('data-image', newFilename);
+          }
+        });
+      }
+
+      if (originalSrc) {
+        // Replace in all <img> src attributes matching the original (D-12)
+        $('img').each((_, el) => {
+          if ($(el).attr('src') === originalSrc) {
+            $(el).attr('src', newSrc);
+          }
+        });
+        // Replace in <source> src attributes
+        $('source').each((_, el) => {
+          if ($(el).attr('src') === originalSrc) {
+            $(el).attr('src', newSrc);
+          }
+        });
+        // Replace in srcset attributes (img and source) — each entry is "url descriptor"
+        $('img[srcset], source[srcset]').each((_, el) => {
+          const srcset = $(el).attr('srcset');
+          if (srcset && srcset.includes(originalSrc)) {
+            $(el).attr('srcset', srcset.split(',').map((entry) => {
+              return entry.trim().replace(originalSrc, newSrc);
+            }).join(', '));
+          }
+        });
+      }
     }
   }
 

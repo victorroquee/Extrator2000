@@ -2462,7 +2462,8 @@
           return;
         }
 
-        var blob = await response.blob();
+        var text = await response.text();
+        var blob = new Blob([text], { type: 'application/octet-stream' });
         var blobUrl = URL.createObjectURL(blob);
         var anchor = document.createElement('a');
         anchor.href = blobUrl;
@@ -2476,10 +2477,13 @@
         } catch(e) {}
         var slug = (pageTitle || 'page').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').substring(0, 50);
         anchor.download = 'elementor-' + (slug || 'page') + '.json';
+        anchor.style.display = 'none';
         document.body.appendChild(anchor);
         anchor.click();
-        document.body.removeChild(anchor);
-        URL.revokeObjectURL(blobUrl);
+        setTimeout(function() {
+          document.body.removeChild(anchor);
+          URL.revokeObjectURL(blobUrl);
+        }, 100);
 
       } catch (err) {
         showError('Falha de conexão ao exportar JSON Elementor. Verifique se o servidor está rodando.');

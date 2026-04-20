@@ -610,7 +610,6 @@
     .validation-summary.has-fail { background: #FFFBEB; color: #B45309; border: 1px solid #FDE68A; }
     .validation-footer {
       padding: 12px 24px 20px;
-      display: flex; gap: 8px; justify-content: flex-end;
       border-top: 1px solid #E5E8EE;
       opacity: 0; transition: opacity 0.2s;
     }
@@ -636,19 +635,17 @@
       background: #7C3AED; color: #fff; border: none;
       padding: 12px 24px; border-radius: 9px;
       font-size: 0.92rem; font-weight: 700;
-      cursor: pointer; display: flex; align-items: center; gap: 8px;
-      transition: background 0.15s, transform 0.1s;
+      cursor: pointer; transition: background 0.15s, transform 0.1s;
     }
     .btn-download-elementor:hover { background: #6D28D9; transform: scale(1.02); }
-    .download-options { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
-    .download-option-hint {
-      font-size: 0.68rem; color: #9CA3AF; margin-top: 4px; text-align: center;
-      max-width: 180px;
+    .val-download-area {
+      display: flex; flex-direction: column; align-items: stretch; gap: 8px; width: 100%;
     }
-    .download-option-wrap { display: flex; flex-direction: column; align-items: center; }
-    .elementor-info {
-      font-size: 0.7rem; color: #A78BFA; margin-top: 10px; text-align: center;
-      max-width: 400px; line-height: 1.4;
+    .val-download-row {
+      display: flex; gap: 8px; justify-content: flex-end;
+    }
+    .val-elementor-hint {
+      font-size: 0.68rem; color: #9CA3AF; text-align: right; margin: 0; line-height: 1.3;
     }
 
     .modal {
@@ -2376,18 +2373,14 @@
       setTimeout(function() {
         footer.classList.add('visible');
         if (allPass) {
-          footer.innerHTML = '<button class="btn btn-ghost" id="val-cancel">Cancelar</button>'
-            + '<div class="download-options">'
-            + '<div class="download-option-wrap">'
-            + '<button class="btn-download-big" id="val-download">&#11123; Baixar ZIP</button>'
-            + '<span class="download-option-hint">HTML + assets prontos para hospedar</span>'
+          footer.innerHTML = '<div class="val-download-area">'
+            + '<div class="val-download-row">'
+            + '<button class="btn btn-ghost" id="val-cancel">Cancelar</button>'
+            + '<button class="btn-download-big" id="val-download">&#11123; Baixar ZIP (HTML)</button>'
+            + '<button class="btn-download-elementor" id="val-download-elementor">&#11123; Baixar JSON (Elementor)</button>'
             + '</div>'
-            + '<div class="download-option-wrap">'
-            + '<button class="btn-download-elementor" id="val-download-elementor">&#11123; Baixar JSON Elementor</button>'
-            + '<span class="download-option-hint">Importar direto no WordPress</span>'
-            + '</div>'
-            + '</div>'
-            + '<p class="elementor-info">&#9432; Para usar o JSON no Elementor: WordPress &rarr; Templates &rarr; Importar Templates. Requer Elementor 3.6+ com Containers habilitado.</p>';
+            + '<p class="val-elementor-hint">Para importar o JSON: WordPress &rarr; Templates &rarr; Importar Templates (Elementor 3.6+)</p>'
+            + '</div>';
           document.getElementById('val-download').addEventListener('click', function() {
             closeValidationModal();
             doActualDownload();
@@ -2398,8 +2391,10 @@
           });
           document.getElementById('val-cancel').addEventListener('click', closeValidationModal);
         } else {
-          footer.innerHTML = '<button class="btn btn-ghost" id="val-cancel">Fechar</button>'
-            + '<button class="btn-fix-big" id="val-fix">Corrigir itens</button>';
+          footer.innerHTML = '<div class="val-download-row">'
+            + '<button class="btn btn-ghost" id="val-cancel">Fechar</button>'
+            + '<button class="btn-fix-big" id="val-fix">Corrigir itens</button>'
+            + '</div>';
           document.getElementById('val-fix').addEventListener('click', closeValidationModal);
           document.getElementById('val-cancel').addEventListener('click', closeValidationModal);
         }
@@ -2471,9 +2466,16 @@
         var blobUrl = URL.createObjectURL(blob);
         var anchor = document.createElement('a');
         anchor.href = blobUrl;
-        var disposition = response.headers.get('Content-Disposition') || '';
-        var filenameMatch = disposition.match(/filename="?([^";\n]+)"?/);
-        anchor.download = filenameMatch ? filenameMatch[1] : 'elementor-page.json';
+        // Build filename from page title (same logic as server)
+        var pageTitle = '';
+        try {
+          var tmp = document.createElement('div');
+          tmp.innerHTML = state.fetchedHtml || '';
+          var titleTag = tmp.querySelector('title');
+          if (titleTag) pageTitle = titleTag.textContent.trim();
+        } catch(e) {}
+        var slug = (pageTitle || 'page').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').substring(0, 50);
+        anchor.download = 'elementor-' + (slug || 'page') + '.json';
         document.body.appendChild(anchor);
         anchor.click();
         document.body.removeChild(anchor);

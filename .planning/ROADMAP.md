@@ -31,6 +31,17 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [ ] **Phase 7: Checkout & Bundle Detection Fix** - fix CSS selector specificity and bundle keyword context so each button gets its correct pote number
 - [x] **Phase 8: Folder Upload** - allow users to upload a local HTML project folder (index.html + assets) as an alternative to URL fetch (completed 2026-04-14)
 
+### Milestone v1.3 — Extrator Interno (branch: extrator-interno)
+
+- [ ] **Phase 10: Nome do Produto — Detecção e Substituição** - detectar o nome do produto na página e substituir todas as ocorrências por um novo nome fornecido pelo afiliado
+- [ ] **Phase 11: Potes & Cores — Editor Visual** - editor visual de potes e paleta de cores por seção de pricing (promovido do backlog 999.1)
+
+### Milestone v1.4 — Export JSON Elementor (branch: EXPORT-JSON-ELEMENTOR)
+
+- [ ] **Phase 12: Core JSON Builder** - buildElementorJson function: valid Elementor structure, unique IDs, per-section containers, html widgets, all affiliate customizations included
+- [ ] **Phase 13: Export Route** - POST /api/export-elementor endpoint: reuses buildExportHtml, validates output, returns .json download
+- [ ] **Phase 14: Frontend Export Button** - "Exportar Elementor (.json)" button and tooltip in the UI alongside existing export options
+
 ## Phase Details
 
 ---
@@ -218,6 +229,46 @@ Plans:
 
 ---
 
+### [Milestone v1.4 — Export JSON Elementor] (branch: EXPORT-JSON-ELEMENTOR)
+
+### Phase 12: Core JSON Builder
+**Goal**: Server-side buildElementorJson function converts any affiliate-customized HTML into a valid, importable Elementor JSON structure
+**Depends on**: Phase 11
+**Branch**: EXPORT-JSON-ELEMENTOR
+**Requirements**: ELEM-01, ELEM-02, ELEM-03, ELEM-04, ELEM-05
+**Success Criteria** (what must be TRUE):
+  1. Calling buildElementorJson with a processed HTML string returns a JSON object with version "0.4", type "page", a content array, and a page_settings object — parseable by Elementor without errors
+  2. Every element in the JSON (container or widget) has a unique 8-character hexadecimal ID — no two IDs are identical within the same export
+  3. Each visually distinct section of the HTML becomes a separate top-level container in the content array — not one monolithic block
+  4. Each container holds exactly one widget of type "html" whose settings.html contains the original section markup
+  5. The HTML passed to buildElementorJson already contains the affiliate's pixel, VTURB embed, delay script, updated checkout links, bundle images, and extra scripts — all customizations survive into the JSON output unchanged
+**Plans**: TBD
+
+### Phase 13: Export Route
+**Goal**: Affiliates can trigger an Elementor JSON export from the server via a dedicated API route that returns a ready-to-import .json file
+**Depends on**: Phase 12
+**Branch**: EXPORT-JSON-ELEMENTOR
+**Requirements**: EXPRT-01, EXPRT-02, EXPRT-03
+**Success Criteria** (what must be TRUE):
+  1. POST /api/export-elementor with the same payload shape as /api/export returns a file download named "elementor-page.json" with Content-Type application/json
+  2. The JSON file returned is built from the HTML produced by buildExportHtml — all affiliate injections (pixel, player, checkout links, bundle images, delay, extra scripts) are present in the widget content
+  3. Before the file is sent, the server validates the JSON structure: all IDs are unique 8-char hex strings, all settings values are objects (not strings), and the container hierarchy is correct — validation failures return a 422 with a clear error message
+**Plans**: TBD
+
+### Phase 14: Frontend Export Button
+**Goal**: Users see and can use the Elementor JSON export option directly in the interface, with enough context to use it correctly
+**Depends on**: Phase 13
+**Branch**: EXPORT-JSON-ELEMENTOR
+**Requirements**: UIEXP-01, UIEXP-02
+**Success Criteria** (what must be TRUE):
+  1. After fetching a VSL page, a button labeled "Exportar Elementor (.json)" appears in the export section alongside the existing HTML and ZIP export buttons
+  2. Clicking the button triggers the POST /api/export-elementor call and initiates a .json file download — same UX pattern as existing export buttons
+  3. A tooltip or info note adjacent to the button states the requirements: Elementor 3.6+ with Containers enabled, import via Templates in the WordPress backend
+**Plans**: TBD
+**UI hint**: yes
+
+---
+
 ## Backlog
 
 ### Phase 999.1: Potes e Cores — Editor Visual (PROMOVIDO → Phase 11)
@@ -229,7 +280,7 @@ Plans:
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10 → 11
+Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10 → 11 → 12 → 13 → 14
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
@@ -244,3 +295,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 9. Export Verification Flow | 0/0 | Planned | — |
 | 10. Nome do Produto — Detecção e Substituição | 0/0 | Planned (extrator-interno) | — |
 | 11. Potes & Cores — Editor Visual | 0/0 | Planned (extrator-interno) | — |
+| 12. Core JSON Builder | 0/0 | Not started | — |
+| 13. Export Route | 0/0 | Not started | — |
+| 14. Frontend Export Button | 0/0 | Not started | — |

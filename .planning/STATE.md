@@ -2,12 +2,12 @@
 gsd_state_version: 1.0
 milestone: v1.4
 milestone_name: — Export JSON Elementor
-status: defining-requirements
+status: roadmap-ready
 stopped_at: null
 last_updated: "2026-04-20"
 last_activity: 2026-04-20
 progress:
-  total_phases: 0
+  total_phases: 3
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -21,17 +21,17 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-20)
 
 **Core value:** Transformar qualquer página VSL em uma cópia 100% funcional com as credenciais do afiliado, em menos de 1 minuto.
-**Current focus:** Defining requirements for v1.4
+**Current focus:** Phase 12 — Core JSON Builder
 
 ## Current Position
 
-Phase: Not started (defining requirements)
+Phase: 12 — Core JSON Builder (not started)
 Plan: —
-Status: Defining requirements
-Last activity: 2026-04-20 — Milestone v1.4 started
+Status: Roadmap defined, ready to plan Phase 12
+Last activity: 2026-04-20 — Milestone v1.4 roadmap created (3 phases, 10 requirements)
 
 ```
-v1.4 Progress: [░░░░░░░░░░] 0% (0/0 phases)
+v1.4 Progress: [░░░░░░░░░░] 0% (0/3 phases)
 ```
 
 ## Performance Metrics
@@ -64,6 +64,9 @@ New for v1.4:
 - Elementor JSON reference file analyzed: 258 elements, 17 sections, 8 widget types
 - Elementor uses hierarchical structure: container → widget, with elType and widgetType
 - HTML custom code goes in `html` widgets (settings.html), checkout URLs in buttons (settings.link.url), images in `image` widgets (settings.image)
+- Strategy: "HTML envelope" — buildExportHtml() first, then wrap sections in Elementor JSON containers
+- buildElementorJson() is the core new function (~60-70% of work); zero new npm packages needed
+- IDs: 8-character unique hex strings generated per element
 
 ### Pending Todos
 
@@ -76,5 +79,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-04-20
-Stopped at: Milestone v1.4 initialization
+Stopped at: Roadmap created for v1.4 — Phase 12 ready to plan
 Resume file: None

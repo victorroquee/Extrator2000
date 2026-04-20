@@ -144,22 +144,22 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| ELEM-01 | TBD | Pending |
-| ELEM-02 | TBD | Pending |
-| ELEM-03 | TBD | Pending |
-| ELEM-04 | TBD | Pending |
-| ELEM-05 | TBD | Pending |
-| EXPRT-01 | TBD | Pending |
-| EXPRT-02 | TBD | Pending |
-| EXPRT-03 | TBD | Pending |
-| UIEXP-01 | TBD | Pending |
-| UIEXP-02 | TBD | Pending |
+| ELEM-01 | Phase 12 | Pending |
+| ELEM-02 | Phase 12 | Pending |
+| ELEM-03 | Phase 12 | Pending |
+| ELEM-04 | Phase 12 | Pending |
+| ELEM-05 | Phase 12 | Pending |
+| EXPRT-01 | Phase 13 | Pending |
+| EXPRT-02 | Phase 13 | Pending |
+| EXPRT-03 | Phase 13 | Pending |
+| UIEXP-01 | Phase 14 | Pending |
+| UIEXP-02 | Phase 14 | Pending |
 
 **Coverage v1.4:**
 - v1.4 requirements: 10 total
-- Mapped to phases: 0
-- Unmapped: 10 ⚠️
+- Mapped to phases: 10
+- Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-04-10*
-*Last updated: 2026-04-20 — v1.4 requirements added*
+*Last updated: 2026-04-20 — v1.4 traceability complete (Phases 12-14)*

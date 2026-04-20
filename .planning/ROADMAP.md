@@ -38,7 +38,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 ### Milestone v1.4 — Export JSON Elementor (branch: EXPORT-JSON-ELEMENTOR)
 
-- [ ] **Phase 12: Core JSON Builder** - buildElementorJson function: valid Elementor structure, unique IDs, per-section containers, html widgets, all affiliate customizations included
+- [x] **Phase 12: Core JSON Builder** - buildElementorJson function: valid Elementor structure, unique IDs, per-section containers, html widgets, all affiliate customizations included (completed 2026-04-20)
 - [ ] **Phase 13: Export Route** - POST /api/export-elementor endpoint: reuses buildExportHtml, validates output, returns .json download
 - [ ] **Phase 14: Frontend Export Button** - "Exportar Elementor (.json)" button and tooltip in the UI alongside existing export options
 
@@ -244,7 +244,7 @@ Plans:
   5. The HTML passed to buildElementorJson already contains the affiliate's pixel, VTURB embed, delay script, updated checkout links, bundle images, and extra scripts — all customizations survive into the JSON output unchanged
 **Plans**: 1 plan
 Plans:
-- [ ] 12-01-PLAN.md — buildElementorJson function: valid Elementor structure, unique IDs, per-section containers, html widgets, head scripts container, validation script
+- [x] 12-01-PLAN.md — buildElementorJson function: valid Elementor structure, unique IDs, per-section containers, html widgets, head scripts container, validation script
 
 ### Phase 13: Export Route
 **Goal**: Affiliates can trigger an Elementor JSON export from the server via a dedicated API route that returns a ready-to-import .json file
@@ -301,6 +301,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 9. Export Verification Flow | 0/0 | Planned | — |
 | 10. Nome do Produto — Detecção e Substituição | 0/0 | Planned (extrator-interno) | — |
 | 11. Potes & Cores — Editor Visual | 0/0 | Planned (extrator-interno) | — |
-| 12. Core JSON Builder | 0/1 | Planning complete | — |
+| 12. Core JSON Builder | 1/1 | Complete    | 2026-04-20 |
 | 13. Export Route | 0/0 | Not started | — |
 | 14. Frontend Export Button | 0/0 | Not started | — |

@@ -1,37 +1,37 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.1
-milestone_name: — Editor Avançado
-status: verifying
-stopped_at: Completed 08-02-PLAN.md
-last_updated: "2026-04-14T18:05:03.871Z"
-last_activity: 2026-04-14
+milestone: v1.4
+milestone_name: — Export JSON Elementor
+status: defining-requirements
+stopped_at: null
+last_updated: "2026-04-20"
+last_activity: 2026-04-20
 progress:
-  total_phases: 7
-  completed_phases: 4
-  total_plans: 8
-  completed_plans: 8
-  percent: 100
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-04-11)
+See: .planning/PROJECT.md (updated 2026-04-20)
 
 **Core value:** Transformar qualquer página VSL em uma cópia 100% funcional com as credenciais do afiliado, em menos de 1 minuto.
-**Current focus:** Phase 08 — folder-upload
+**Current focus:** Defining requirements for v1.4
 
 ## Current Position
 
-Phase: 08 (folder-upload) — EXECUTING
-Plan: 2 of 2
-Status: Phase complete — ready for verification
-Last activity: 2026-04-14
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-04-20 — Milestone v1.4 started
 
 ```
-v1.1 Progress: [░░░░░░░░░░] 0% (0/3 phases)
+v1.4 Progress: [░░░░░░░░░░] 0% (0/0 phases)
 ```
 
 ## Performance Metrics
@@ -50,25 +50,24 @@ v1.1 Progress: [░░░░░░░░░░] 0% (0/3 phases)
 
 Decisions are logged in PROJECT.md Key Decisions table.
 
-Carried from v1.0:
+Carried from previous milestones:
 
 - Single HTML file for frontend — maximum simplicity, no build step
 - Cheerio for HTML parsing — lightweight, jQuery-like API, no headless browser
 - Selector path stored for checkout links — enables precise replacement on export
-
-New for v1.1:
-
-- Phase 4 ships before Phase 6 (EXPORT-06 idempotency fix must precede SCRIPTS-04)
-- VTURB delay extracted before cleanHtml() removes the block — cleanHtml() return shape extended
-- Bundle image replacement uses global src-match (not selector index) to handle desktop+mobile duplicate sections
+- VTURB delay extracted before cleanHtml() removes the block
+- Bundle image replacement uses global src-match
 - Extra scripts auto-wrap: bare JS input auto-wrapped in `<script>` tags on export
-- [Phase 08-folder-upload]: req.body.paths fallback: multer+express strips brackets so paths[] arrives as req.body.paths
-- [Phase 08-folder-upload]: setFetchLoading extended to cover btnUpload — single loading gate for both URL and folder flows
-- [Phase 08-folder-upload]: doExport sends uploadSessionId OR pageUrl, never both — server branches on uploadSessionId presence
+
+New for v1.4:
+
+- Elementor JSON reference file analyzed: 258 elements, 17 sections, 8 widget types
+- Elementor uses hierarchical structure: container → widget, with elType and widgetType
+- HTML custom code goes in `html` widgets (settings.html), checkout URLs in buttons (settings.link.url), images in `image` widgets (settings.image)
 
 ### Pending Todos
 
-- Plan Phase 4 (`/gsd-plan-phase 4`)
+None.
 
 ### Blockers/Concerns
 
@@ -76,6 +75,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-14T18:04:59.794Z
-Stopped at: Completed 08-02-PLAN.md
+Last session: 2026-04-20
+Stopped at: Milestone v1.4 initialization
 Resume file: None

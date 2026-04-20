@@ -1652,6 +1652,70 @@ app.post('/api/export-zip', async (req, res) => {
   await archive.finalize();
 });
 
+// ── Route: POST /api/export-elementor ────────────────────────────────────────
+
+app.post('/api/export-elementor', (req, res) => {
+  const { html, headerPixel, headerPreload, vslembed, checkoutLinks,
+          delaySeconds, delayScriptContent, delayType, bundleImages, extraScripts, pageUrl,
+          colorReplacements, productNameOld, productNameNew, imageReplacements } = req.body;
+
+  if (!html || typeof html !== 'string') {
+    return res.status(400).json({ error: 'Campo "html" é obrigatório.' });
+  }
+
+  // Step 1: Build the affiliate-customized HTML (same as other exports)
+  const outputHtml = buildExportHtml({ html, headerPixel, headerPreload, vslembed,
+                                       checkoutLinks, delaySeconds, delayScriptContent,
+                                       delayType, bundleImages, extraScripts, pageUrl,
+                                       colorReplacements, productNameOld, productNameNew, imageReplacements });
+
+  // Step 2: Convert to Elementor JSON
+  const elementorJson = buildElementorJson(outputHtml);
+
+  // Step 3: Validate — unique IDs, settings are objects
+  const idSet = new Set();
+  let valid = true;
+  let validationError = '';
+  function walkValidate(elements) {
+    for (const el of elements) {
+      if (!el.id || typeof el.id !== 'string' || !/^[0-9a-f]{6,8}$/.test(el.id)) {
+        valid = false;
+        validationError = 'Elemento com ID inválido: ' + el.id;
+        return;
+      }
+      if (idSet.has(el.id)) {
+        valid = false;
+        validationError = 'ID duplicado: ' + el.id;
+        return;
+      }
+      idSet.add(el.id);
+      if (el.settings && typeof el.settings !== 'object') {
+        valid = false;
+        validationError = 'Settings não é objeto no elemento: ' + el.id;
+        return;
+      }
+      if (Array.isArray(el.elements)) walkValidate(el.elements);
+    }
+  }
+  if (Array.isArray(elementorJson.content)) walkValidate(elementorJson.content);
+
+  if (!valid) {
+    return res.status(422).json({ error: 'JSON Elementor inválido: ' + validationError });
+  }
+
+  // Step 4: Generate filename from title
+  const slug = (elementorJson.title || 'page')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')
+    .substring(0, 50);
+  const filename = 'elementor-' + (slug || 'page') + '.json';
+
+  res.setHeader('Content-Type', 'application/json; charset=utf-8');
+  res.setHeader('Content-Disposition', 'attachment; filename="' + filename + '"');
+  return res.send(JSON.stringify(elementorJson, null, 2));
+});
+
 // ── Route: POST /api/upload-bundle-image ────────────────────────────────────
 
 const bundleImageUpload = multer({

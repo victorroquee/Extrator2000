@@ -632,6 +632,24 @@
       transition: background 0.15s, transform 0.1s;
     }
     .btn-fix-big:hover { background: #C2410C; transform: scale(1.02); }
+    .btn-download-elementor {
+      background: #7C3AED; color: #fff; border: none;
+      padding: 12px 24px; border-radius: 9px;
+      font-size: 0.92rem; font-weight: 700;
+      cursor: pointer; display: flex; align-items: center; gap: 8px;
+      transition: background 0.15s, transform 0.1s;
+    }
+    .btn-download-elementor:hover { background: #6D28D9; transform: scale(1.02); }
+    .download-options { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+    .download-option-hint {
+      font-size: 0.68rem; color: #9CA3AF; margin-top: 4px; text-align: center;
+      max-width: 180px;
+    }
+    .download-option-wrap { display: flex; flex-direction: column; align-items: center; }
+    .elementor-info {
+      font-size: 0.7rem; color: #A78BFA; margin-top: 10px; text-align: center;
+      max-width: 400px; line-height: 1.4;
+    }
 
     .modal {
       background: #fff; border-radius: 14px;
@@ -1157,7 +1175,7 @@
           <button class="btn-export" id="btn-export" type="button" disabled>
             Gerar Página do Afiliado
           </button>
-          <p class="export-hint">Baixa um ZIP com o HTML e todos os assets da página</p>
+          <p class="export-hint">Valida e oferece download em ZIP (HTML) ou JSON (Elementor)</p>
         </section>
 
       </div><!-- /.form-panel -->
@@ -2359,10 +2377,24 @@
         footer.classList.add('visible');
         if (allPass) {
           footer.innerHTML = '<button class="btn btn-ghost" id="val-cancel">Cancelar</button>'
-            + '<button class="btn-download-big" id="val-download">&#11123; Baixar ZIP</button>';
+            + '<div class="download-options">'
+            + '<div class="download-option-wrap">'
+            + '<button class="btn-download-big" id="val-download">&#11123; Baixar ZIP</button>'
+            + '<span class="download-option-hint">HTML + assets prontos para hospedar</span>'
+            + '</div>'
+            + '<div class="download-option-wrap">'
+            + '<button class="btn-download-elementor" id="val-download-elementor">&#11123; Baixar JSON Elementor</button>'
+            + '<span class="download-option-hint">Importar direto no WordPress</span>'
+            + '</div>'
+            + '</div>'
+            + '<p class="elementor-info">&#9432; Para usar o JSON no Elementor: WordPress &rarr; Templates &rarr; Importar Templates. Requer Elementor 3.6+ com Containers habilitado.</p>';
           document.getElementById('val-download').addEventListener('click', function() {
             closeValidationModal();
             doActualDownload();
+          });
+          document.getElementById('val-download-elementor').addEventListener('click', function() {
+            closeValidationModal();
+            doActualDownloadElementor();
           });
           document.getElementById('val-cancel').addEventListener('click', closeValidationModal);
         } else {
@@ -2409,6 +2441,46 @@
 
       } catch (err) {
         showError('Falha de conexão ao exportar. Verifique se o servidor está rodando.');
+      } finally {
+        setExportEnabled(true);
+        if (btnExport)      btnExport.textContent      = 'Gerar Página do Afiliado';
+        if (btnExportPanel) btnExportPanel.textContent = 'Gerar Página do Afiliado';
+      }
+    }
+
+    async function doActualDownloadElementor() {
+      var payload = buildExportPayload();
+      setExportEnabled(false);
+      if (btnExport)      btnExport.textContent      = 'Gerando JSON...';
+      if (btnExportPanel) btnExportPanel.textContent = 'Gerando JSON...';
+
+      try {
+        var response = await fetchWithTimeout('/api/export-elementor', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        }, 30000);
+
+        if (!response.ok) {
+          var errData = await response.json().catch(function() { return {}; });
+          showError(errData.error || 'Erro ao gerar JSON Elementor. Tente novamente.');
+          return;
+        }
+
+        var blob = await response.blob();
+        var blobUrl = URL.createObjectURL(blob);
+        var anchor = document.createElement('a');
+        anchor.href = blobUrl;
+        var disposition = response.headers.get('Content-Disposition') || '';
+        var filenameMatch = disposition.match(/filename="?([^";\n]+)"?/);
+        anchor.download = filenameMatch ? filenameMatch[1] : 'elementor-page.json';
+        document.body.appendChild(anchor);
+        anchor.click();
+        document.body.removeChild(anchor);
+        URL.revokeObjectURL(blobUrl);
+
+      } catch (err) {
+        showError('Falha de conexão ao exportar JSON Elementor. Verifique se o servidor está rodando.');
       } finally {
         setExportEnabled(true);
         if (btnExport)      btnExport.textContent      = 'Gerar Página do Afiliado';

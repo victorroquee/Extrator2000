@@ -3,7 +3,28 @@
 **Defined:** 2026-04-10
 **Core Value:** Transformar qualquer página VSL em uma cópia 100% funcional com as credenciais do afiliado, em menos de 1 minuto.
 
-## v1.1 Requirements — Editor Avançado
+## v1.4 Requirements — Export JSON Elementor
+
+### Geração de JSON Elementor
+
+- [ ] **ELEM-01**: Sistema gera JSON com estrutura válida para Elementor (version "0.4", type "page", content array, page_settings)
+- [ ] **ELEM-02**: Cada elemento no JSON possui ID único hexadecimal de 8 caracteres
+- [ ] **ELEM-03**: Cada seção distinta da página HTML vira um container separado no JSON (não um bloco único)
+- [ ] **ELEM-04**: Conteúdo HTML de cada seção é encapsulado em widget tipo `html` dentro do container correspondente
+- [ ] **ELEM-05**: JSON inclui todas as personalizações do afiliado já aplicadas (pixel, VTURB player, delay, checkout links, bundle images, scripts extras)
+
+### Export Route
+
+- [ ] **EXPRT-01**: POST /api/export-elementor aceita o mesmo payload dos outros exports e retorna arquivo .json
+- [ ] **EXPRT-02**: Rota reutiliza `buildExportHtml()` para aplicar todas as injeções antes da conversão para JSON
+- [ ] **EXPRT-03**: JSON é validado antes de retornar (IDs únicos, settings como objetos, estrutura de containers correta)
+
+### UI Export Elementor
+
+- [ ] **UIEXP-01**: Interface exibe botão "Exportar Elementor (.json)" junto aos outros botões de export
+- [ ] **UIEXP-02**: Tooltip/info junto ao botão explica requisitos: Elementor 3.6+ com Containers habilitado, importar via Templates no backend do WordPress
+
+## v1.1 Requirements — Editor Avançado (Shipped)
 
 ### Scripts Extras
 
@@ -94,6 +115,9 @@
 | Headless browser (Puppeteer) | Axios + cheerio suficiente para os padrões alvo |
 | Banco de dados | Sem persistência necessária |
 | data-image JS-rendered images | Requer runtime JS; fora do escopo v1.1 |
+| Full HTML-to-Elementor widget decomposition | Complexidade desproporcional; html widget é suficiente e validado |
+| WordPress media library integration | Afiliado usa URLs externas; image id: 0 funciona corretamente |
+| Third-party Elementor plugins (Essential Addons) | Não se pode garantir que o afiliado terá os plugins instalados |
 
 ## Traceability
 
@@ -116,6 +140,26 @@
 - Mapped to phases: 11
 - Unmapped: 0 ✓
 
+### v1.4 Traceability
+
+| Requirement | Phase | Status |
+|-------------|-------|--------|
+| ELEM-01 | TBD | Pending |
+| ELEM-02 | TBD | Pending |
+| ELEM-03 | TBD | Pending |
+| ELEM-04 | TBD | Pending |
+| ELEM-05 | TBD | Pending |
+| EXPRT-01 | TBD | Pending |
+| EXPRT-02 | TBD | Pending |
+| EXPRT-03 | TBD | Pending |
+| UIEXP-01 | TBD | Pending |
+| UIEXP-02 | TBD | Pending |
+
+**Coverage v1.4:**
+- v1.4 requirements: 10 total
+- Mapped to phases: 0
+- Unmapped: 10 ⚠️
+
 ---
 *Requirements defined: 2026-04-10*
-*Last updated: 2026-04-11 — v1.1 requirements added*
+*Last updated: 2026-04-20 — v1.4 requirements added*

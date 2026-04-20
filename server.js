@@ -1292,6 +1292,119 @@ function buildExportHtml({ html, headerPixel, headerPreload, vslembed, checkoutL
   return outputHtml;
 }
 
+// ── buildElementorJson ───────────────────────────────────────────────────────
+//
+// Converts affiliate-customized HTML (output of buildExportHtml) into a valid,
+// importable Elementor JSON structure (version 0.4).
+//
+// @param {string} html - Full HTML string with <!DOCTYPE>, <html>, <head>, <body>
+// @returns {object} Elementor JSON object ready for JSON.stringify
+//
+// Design decisions (from .planning/phases/12-core-json-builder/12-CONTEXT.md):
+//   D-01: Each direct child of <body> becomes a top-level container
+//   D-02: If <body> has exactly 1 child (wrapper div), use wrapper's children
+//   D-03/D-04: Head scripts/styles go in a dedicated first container
+//   D-05: IDs are 8-char hex via crypto.randomBytes(4); collision-checked with Set
+//   D-06: Root envelope: { version, type, title, page_settings, content }
+//   D-07: Container shape: { id, elType, isInner, settings, elements }
+//   D-08: Widget shape:    { id, elType, widgetType, isInner, settings, elements }
+//   D-09: title extracted from <title> tag
+//
+// Pitfalls avoided:
+//   Pitfall 1:  unique IDs enforced via Set
+//   Pitfall 2:  isInner: false for all top-level containers and widgets
+//   Pitfall 8:  settings always an object {}, never an array []
+//   Pitfall 13: flex_direction always explicit
+//   Pitfall 15: type always "page"
+//   Pitfall 16: page_settings always {}
+
+function buildElementorJson(html) {
+  const $ = cheerio.load(html, { decodeEntities: false });
+
+  // D-09: Extract page title
+  const rawTitle = $('title').first().text().trim() || '';
+
+  // D-05: Unique ID generator with collision guard (Pitfall 1)
+  const usedIds = new Set();
+  function genId() {
+    let id;
+    do { id = crypto.randomBytes(4).toString('hex'); } while (usedIds.has(id));
+    usedIds.add(id);
+    return id;
+  }
+
+  // Helper: build one container wrapping one html widget
+  function makeContainer(htmlContent) {
+    return {
+      id: genId(),
+      elType: 'container',
+      isInner: false,                          // Pitfall 2: top-level containers are always false
+      settings: { flex_direction: 'column' },  // Pitfall 8 + 13: object, explicit direction
+      elements: [{
+        id: genId(),
+        elType: 'widget',
+        widgetType: 'html',
+        isInner: false,
+        settings: { html: htmlContent },       // Pitfall 8: settings is an object
+        elements: []
+      }]
+    };
+  }
+
+  const containers = [];
+
+  // D-03 / D-04: Collect head content excluding <title> and <meta charset>
+  // Filter keeps <script>, <style>, <link>, <meta> (non-charset), and other head tags
+  const headParts = [];
+  $('head').children().each(function() {
+    const el = $(this);
+    const tagName = (this.tagName || '').toLowerCase();
+    if (tagName === 'title') return; // Elementor manages page title separately
+    if (tagName === 'meta' && el.attr('charset')) return; // Elementor manages charset
+    headParts.push($.html(this));
+  });
+  const headContent = headParts.join('\n').trim();
+  if (headContent) {
+    containers.push(makeContainer(headContent));
+  }
+
+  // D-01 / D-02: Determine body sections
+  let bodyChildren = $('body').children().toArray();
+
+  // D-02: If body has exactly one child element (wrapper div), look one level deeper
+  if (bodyChildren.length === 1) {
+    const onlyChild = bodyChildren[0];
+    const tagName = (onlyChild.tagName || '').toLowerCase();
+    // Only unwrap generic wrapper divs, not semantic sectioning elements
+    if (tagName === 'div' || tagName === 'main' || tagName === 'article') {
+      const innerChildren = $(onlyChild).children().toArray();
+      if (innerChildren.length > 0) {
+        bodyChildren = innerChildren;
+      }
+    }
+  }
+
+  // Build one container per body section element
+  // Skip text nodes, comment nodes, and top-level <script>/<style> loose tags
+  bodyChildren.forEach(function(el) {
+    const tagName = (el.tagName || '').toLowerCase();
+    if (!tagName) return; // text node or comment
+    if (tagName === 'script' || tagName === 'style') return; // loose scripts at body level
+    const markup = $.html(el).trim();
+    if (!markup) return;
+    containers.push(makeContainer(markup));
+  });
+
+  // D-06: Assemble root JSON envelope (Pitfalls 15, 16)
+  return {
+    version: '0.4',
+    title: rawTitle,
+    type: 'page',         // Pitfall 15: must be "page"
+    page_settings: {},    // Pitfall 16: must be {} not null
+    content: containers
+  };
+}
+
 // ── Route: POST /api/export ──────────────────────────────────────────────────
 
 app.post('/api/export', (req, res) => {
@@ -1609,5 +1722,6 @@ module.exports.detectPageColors = detectPageColors;
 module.exports.detectProductName = detectProductName;
 module.exports.detectAllProductImages = detectAllProductImages;
 module.exports.buildExportHtml = buildExportHtml;
+module.exports.buildElementorJson = buildElementorJson;
 module.exports.uploadSessions = uploadSessions;
 module.exports.bundleImageStore = bundleImageStore;

@@ -1292,6 +1292,59 @@ function buildExportHtml({ html, headerPixel, headerPreload, vslembed, checkoutL
   return outputHtml;
 }
 
+// ── Helper: Inline external CSS for Elementor export ────────────────────────
+//
+// Fetches all <link rel="stylesheet"> CSS files and replaces them with inline
+// <style> tags. This is critical for Elementor JSON export because the HTML
+// widget renders on the user's WordPress domain — external CSS URLs pointing
+// to the original site won't resolve, causing the page to appear without styles.
+
+async function inlineExternalCss(html, pageUrl) {
+  const $ = cheerio.load(html, { decodeEntities: false });
+  const links = [];
+
+  $('link[rel="stylesheet"]').each((_, el) => {
+    const href = $(el).attr('href');
+    if (!href || href.startsWith('data:')) return;
+    let absUrl = href;
+    if (pageUrl && !/^https?:\/\//i.test(href)) {
+      try { absUrl = new URL(href, pageUrl).href; } catch { return; }
+    }
+    if (/^https?:\/\//i.test(absUrl)) {
+      links.push({ el, absUrl });
+    }
+  });
+
+  if (links.length === 0) return html;
+
+  // Fetch CSS files in parallel (max 10, 8s timeout each, 500KB limit)
+  const results = await Promise.all(
+    links.slice(0, 10).map(async ({ el, absUrl }) => {
+      try {
+        const resp = await axios.get(absUrl, {
+          timeout: 8000,
+          maxContentLength: 500 * 1024,
+          responseType: 'text',
+          headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
+        });
+        return { el, css: typeof resp.data === 'string' ? resp.data : '' };
+      } catch {
+        return { el, css: null };
+      }
+    })
+  );
+
+  for (const { el, css } of results) {
+    if (css) {
+      // Replace <link> with inline <style> containing the fetched CSS
+      $(el).replaceWith(`<style>${css}</style>`);
+    }
+    // If fetch failed, keep the original <link> tag as fallback
+  }
+
+  return $.html();
+}
+
 // ── buildElementorJson ───────────────────────────────────────────────────────
 //
 // Converts affiliate-customized HTML (output of buildExportHtml) into a valid,
@@ -1634,7 +1687,7 @@ app.post('/api/export-zip', async (req, res) => {
 
 // ── Route: POST /api/export-elementor ────────────────────────────────────────
 
-app.post('/api/export-elementor', (req, res) => {
+app.post('/api/export-elementor', async (req, res) => {
   const { html, headerPixel, headerPreload, vslembed, checkoutLinks,
           delaySeconds, delayScriptContent, delayType, bundleImages, extraScripts, pageUrl,
           colorReplacements, productNameOld, productNameNew, imageReplacements } = req.body;
@@ -1649,8 +1702,13 @@ app.post('/api/export-elementor', (req, res) => {
                                        delayType, bundleImages, extraScripts, pageUrl,
                                        colorReplacements, productNameOld, productNameNew, imageReplacements });
 
+  // Step 1.5: Inline external CSS — Elementor HTML widgets render on the user's
+  // WordPress domain, so <link> tags pointing to the original site won't load.
+  // Fetching and inlining CSS makes the widget fully self-contained.
+  const htmlWithInlinedCss = await inlineExternalCss(outputHtml, pageUrl || null);
+
   // Step 2: Convert to Elementor JSON
-  const elementorJson = buildElementorJson(outputHtml);
+  const elementorJson = buildElementorJson(htmlWithInlinedCss);
 
   // Step 3: Validate — unique IDs, settings are objects
   const idSet = new Set();
@@ -1767,5 +1825,6 @@ module.exports.detectProductName = detectProductName;
 module.exports.detectAllProductImages = detectAllProductImages;
 module.exports.buildExportHtml = buildExportHtml;
 module.exports.buildElementorJson = buildElementorJson;
+module.exports.inlineExternalCss = inlineExternalCss;
 module.exports.uploadSessions = uploadSessions;
 module.exports.bundleImageStore = bundleImageStore;

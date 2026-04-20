@@ -1,468 +1,344 @@
-# Architecture Patterns: VSL Cloner v1.1
+# Architecture Research
 
-**Domain:** VSL page cloner — Node.js/Express + single-file frontend
-**Researched:** 2026-04-11
-**Confidence:** HIGH — based on direct codebase reading, no external research needed
+**Domain:** HTML-to-Elementor JSON conversion integrated into existing VSL Cloner pipeline
+**Researched:** 2026-04-20
+**Confidence:** HIGH (based on direct inspection of real Elementor JSON export file + full codebase reading)
 
 ---
 
-## Existing Architecture (Baseline)
+## Prior Architecture (Baseline — v1.x)
+
+The baseline architecture is documented in commits prior to this milestone. Key facts:
 
 ```
-public/index.html  (vanilla JS, dark theme, PT-BR)
+public/index.html  (vanilla JS, PT-BR)
       |
-      |  POST /api/fetch  { url }
-      |  POST /api/export-zip  { html, headerPixel, headerPreload, vslembed, checkoutLinks[], pageUrl }
+      |  POST /api/fetch               { url }
+      |  POST /api/upload-folder       { files, paths }
+      |  POST /api/export-validate     { html, ...affiliate fields }
+      |  POST /api/export-zip          { html, ...affiliate fields }
       v
-server.js  (Express)
-  cleanHtml(rawHtml)           → { html, scriptsRemoved, vslDetected }
-  detectCheckoutLinks($, html) → checkoutLinks[]
-  buildExportHtml(payload)     → outputHtml string
-  applyCheckoutLinks(html, []) → outputHtml string
-```
-
-**Frontend state object (current):**
-```js
-state = {
-  fetchedHtml: null,     // cleaned HTML string, held in memory only
-  fetchedUrl: '',        // original URL (for ZIP asset resolution)
-  checkoutLinks: [],     // [{ selector, href, anchorText, platform, bundle }]
-}
-```
-
-**`/api/fetch` response shape (current):**
-```json
-{
-  "html": "...",
-  "summary": {
-    "scriptsRemoved": 4,
-    "vslDetected": true,
-    "checkoutLinks": [{ "href": "...", "selector": "a.btn", "anchorText": "...", "platform": "ClickBank", "bundle": 2 }]
-  }
-}
-```
-
-**`/api/export-zip` request shape (current):**
-```json
-{
-  "html": "...",
-  "headerPixel": "...",
-  "headerPreload": "...",
-  "vslembed": "...",
-  "checkoutLinks": [{ "selector": "a.btn", "affiliateHref": "..." }],
-  "pageUrl": "https://..."
-}
+server.js (Express)
+  cleanHtml(rawHtml)             → { html, scriptsRemoved, vslDetected }
+  detectVturbDelay(rawHtml)      → { delaySeconds, delayScriptContent, delayType } | null
+  detectCheckoutLinks($, html)   → checkoutLinks[]
+  detectBundleImages($, links)   → bundleImages{}
+  detectPageColors(html, url)    → pageColors[]
+  detectProductName(html)        → { productName }
+  detectAllProductImages($)      → allProductImages[]
+  buildExportHtml(payload)       → outputHtml string
+  applyCheckoutLinks(html, [])   → outputHtml string
 ```
 
 ---
 
-## Feature Integration Analysis
+## System Overview: Current + New Elementor Route
 
-### Feature 1: Extra Scripts
-
-**What it is:** A dynamic list of arbitrary `<script>` blocks the affiliate adds manually. On export they are injected into `<head>` after the existing pixel block.
-
-**Server changes — `/api/fetch`:** None. The server does not detect extra scripts; this is purely user-supplied content.
-
-**Server changes — `buildExportHtml`:** Add one extra `$('head').append()` call per extra script, after the existing `headerPixel` and `headerPreload` appends. The simplest shape is a single concatenated string:
-
-```js
-// export payload addition
-extraScripts: "<script>...</script><script>...</script>"
 ```
-
-Alternatively an array. A single string is simpler — the frontend concatenates entries before sending, the server appends the whole block once. Array adds flexibility but no real benefit here.
-
-**Recommended export payload addition:**
-```json
-{ "extraScripts": "<script>block1</script>\n<script>block2</script>" }
+┌─────────────────────────────────────────────────────────────────────┐
+│                     public/index.html (Vanilla JS UI)               │
+│                                                                     │
+│  [URL Input / Folder Upload]  →  [Affiliate Config Fields]          │
+│         ↓                                                           │
+│  buildExportPayload()   ←── same function, unchanged                │
+│         ↓                              ↓                            │
+│  doExport()                   [NEW] doExportElementor()             │
+│  → validate → /api/export-zip        → /api/export-elementor        │
+└───────────────────────┬────────────────────────┬────────────────────┘
+                        │                        │
+┌───────────────────────▼────────────────────────▼────────────────────┐
+│                          server.js (Express)                        │
+│                                                                     │
+│  POST /api/fetch                POST /api/upload-folder             │
+│       ↓                               ↓                             │
+│  [detection pipeline — unchanged]     [same detection pipeline]     │
+│       ↓ returns { html, summary }                                   │
+│                                                                     │
+│  POST /api/export-validate   POST /api/export-zip                   │
+│       ↓ (existing)                ↓ (existing)                      │
+│  buildExportHtml()            buildExportHtml()                     │
+│                                   ↓                                 │
+│                               archiver → ZIP                        │
+│                                                                     │
+│  [NEW] POST /api/export-elementor                                   │
+│       ↓                                                             │
+│  buildExportHtml()  ←── reuse exact existing function               │
+│       ↓  affiliateHtml string                                       │
+│  buildElementorJson(affiliateHtml)  ←── new function                │
+│       ↓  Elementor JSON object                                      │
+│  res.json() → Content-Disposition: attachment; filename=".json"     │
+└─────────────────────────────────────────────────────────────────────┘
 ```
-
-**`buildExportHtml` change (server.js):**
-```js
-function buildExportHtml({ html, headerPixel, headerPreload, vslembed, checkoutLinks, extraScripts }) {
-  const $ = cheerio.load(html, { decodeEntities: false });
-  if (headerPixel && headerPixel.trim()) $('head').append(headerPixel);
-  if (headerPreload && headerPreload.trim()) $('head').append(headerPreload);
-  if (extraScripts && extraScripts.trim()) $('head').append(extraScripts);  // NEW
-  // ... rest unchanged
-}
-```
-
-**Frontend state addition:**
-```js
-state.extraScripts = [];  // [{ id: number, content: string }]
-```
-
-The frontend renders a tab/section "Scripts Extras" with an "Adicionar Script" button that appends a new `<textarea class="mono">` entry. Each entry gets a remove button. On export, all non-empty values are joined with `\n` and sent as `extraScripts`.
-
-**Component touch points — Feature 1:**
-- MODIFIED: `buildExportHtml()` — add `extraScripts` param and append
-- MODIFIED: `/api/export` and `/api/export-zip` — destructure `extraScripts` from `req.body`, pass to `buildExportHtml`
-- NEW: Section E in `index.html` — dynamic list UI with add/remove
-- MODIFIED: `state` object — add `extraScripts` array
-- MODIFIED: export click handler — join `state.extraScripts` and add to payload
 
 ---
 
-### Feature 2: Bundle Images
+## Elementor JSON Schema (from real export: elementor-20405-2026-04-20.json)
 
-**What it is:** The server detects product/bundle images (pote images) during fetch and returns them. The frontend shows a preview and lets the affiliate replace the `src` URL. On export the server swaps `src` attributes in the HTML.
+Inspected a 184KB real Elementor export (258 nodes, 17 top-level containers, max nesting depth 7). Key findings:
 
-**Detection logic (new helper in server.js):**
-
-Bundle images on VSL pages are almost always `<img>` tags inside sections that contain bundle/checkout context. The reliable heuristic is: find all `<img>` tags inside the closest `section`, `div`, `td`, or `li` ancestor of a checkout link. De-duplicate by `src`.
-
-```js
-function detectBundleImages($) {
-  const images = [];
-  const seen = new Set();
-
-  $('a, button').each((_, el) => {
-    const href = $(el).attr('href') || '';
-    const isCheckout = CHECKOUT_URL_PATTERNS.some(p => p.test(href));
-    if (!isCheckout) return;
-
-    const container = $(el).closest('section, div, td, li').first();
-    container.find('img').each((_, img) => {
-      const src = $(img).attr('src') || '';
-      if (!src || src.startsWith('data:') || seen.has(src)) return;
-      seen.add(src);
-      images.push({ src, index: images.length });
-    });
-  });
-
-  return images;
-}
-```
-
-**`/api/fetch` response shape addition:**
+**Root envelope — always this shape:**
 ```json
 {
-  "html": "...",
-  "summary": {
-    "scriptsRemoved": 4,
-    "vslDetected": true,
-    "checkoutLinks": [...],
-    "bundleImages": [
-      { "src": "https://cdn.example.com/pot-6.png", "index": 0 },
-      { "src": "https://cdn.example.com/pot-3.png", "index": 1 }
-    ]
-  }
+  "version": "0.4",
+  "title": "Page Title",
+  "type": "page",
+  "page_settings": {},
+  "content": [ /* array of top-level containers */ ]
 }
 ```
 
-**Export replacement logic (new helper in server.js):**
-
-Use cheerio `src` attribute replacement. Match by original `src` value exactly:
-
-```js
-function applyBundleImageReplacements(html, replacements) {
-  if (!Array.isArray(replacements) || replacements.length === 0) return html;
-  const $ = cheerio.load(html, { decodeEntities: false });
-  for (const { originalSrc, newSrc } of replacements) {
-    if (!originalSrc || !newSrc || !newSrc.trim()) continue;
-    $('img').each((_, el) => {
-      if ($(el).attr('src') === originalSrc) $(el).attr('src', newSrc);
-    });
-  }
-  return $.html();
-}
-```
-
-**`/api/export-zip` request shape addition:**
+**Container node:**
 ```json
 {
-  "bundleImageReplacements": [
-    { "originalSrc": "https://cdn.example.com/pot-6.png", "newSrc": "https://new-cdn.com/my-pot-6.png" }
-  ]
+  "id": "2f29558d",
+  "elType": "container",
+  "isInner": false,
+  "settings": {
+    "flex_direction": "column",
+    "background_color": "#A60B0D",
+    "padding": { "unit": "px", "top": "15", "right": "15", "bottom": "15", "left": "15", "isLinked": true },
+    "css_classes": "esconder"
+  },
+  "elements": []
 }
 ```
 
-**`buildExportHtml` change:** Add `bundleImageReplacements` param; call `applyBundleImageReplacements` after all other transforms.
-
-**Frontend state addition:**
-```js
-state.bundleImages = [];  // [{ src, index }] — from server response
+**HTML widget (the universal workhorse — used for pixel, player, custom sections, timers):**
+```json
+{
+  "id": "4e345984",
+  "elType": "widget",
+  "widgetType": "html",
+  "isInner": false,
+  "settings": { "html": "<script>...</script>" },
+  "elements": []
+}
 ```
 
-The frontend renders a new section "Imagens de Bundle" that maps `state.bundleImages` to rows: `<img src="..." style="max-height:60px">` preview + `<input type="url">` for new URL. On export, build array of `{ originalSrc, newSrc }` for entries where `newSrc` is non-empty.
+**Button widget (for checkout links with clean URL):**
+```json
+{
+  "id": "fa1b2c3d",
+  "elType": "widget",
+  "widgetType": "button",
+  "isInner": false,
+  "settings": {
+    "text": "BUY NOW",
+    "link": { "url": "https://...", "is_external": "", "nofollow": "", "custom_attributes": "" },
+    "background_color": "#hex",
+    "button_text_color": "#hex",
+    "align": "center"
+  },
+  "elements": []
+}
+```
 
-**Component touch points — Feature 2:**
-- NEW: `detectBundleImages($)` helper in server.js
-- MODIFIED: `/api/fetch` handler — call `detectBundleImages`, include in `summary.bundleImages`
-- NEW: `applyBundleImageReplacements(html, replacements)` helper in server.js
-- MODIFIED: `buildExportHtml()` — add `bundleImageReplacements` param, call new helper last
-- MODIFIED: `/api/export` and `/api/export-zip` — destructure `bundleImageReplacements`, pass through
-- NEW: Section F in `index.html` — image preview grid
-- MODIFIED: `state` object — add `bundleImages` array
-- MODIFIED: fetch response handler — store `data.summary.bundleImages`
-- MODIFIED: export click handler — build and add `bundleImageReplacements` to payload
+**Image widget (for bundle/product images):**
+```json
+{
+  "id": "3aa3c4f0",
+  "elType": "widget",
+  "widgetType": "image",
+  "isInner": false,
+  "settings": {
+    "image": { "url": "https://cdn.example.com/image.webp" },
+    "_element_width": "initial",
+    "_element_custom_width": { "unit": "%", "size": 100, "sizes": [] },
+    "_flex_align_self": "center"
+  },
+  "elements": []
+}
+```
+
+**Critical observation:** The real Elementor export uses `html` widgets for the majority of content — pixel scripts, VTURB player, ticker animations, countdown timers, CSS blocks. This validates using `html` widgets as the primary conversion target rather than attempting full DOM decomposition.
 
 ---
 
-### Feature 3: VTURB Delay
+## Recommended Architecture for buildElementorJson()
 
-**What it is:** VSL pages commonly contain a script block like:
-```js
-var delaySeconds = 10;
-function displayHiddenElements() { ... }
+### Conversion pipeline
+
 ```
-The server extracts the current `delaySeconds` value during fetch. The frontend shows an editable number input. On export the server rebuilds the script block with the new value.
-
-**Detection (modify `cleanHtml` or add separate helper):**
-
-The delay block is removed by `cleanHtml` because it matches `vturb` keywords. It must be extracted BEFORE removal, or the detection must be added to the cleanup loop. The cleanest approach: add detection inside the `scriptsToRemove` collection loop in `cleanHtml`, capturing the delay value when a VTURB script is flagged.
-
-```js
-// Inside the scriptsToRemove loop, before pushing:
-const delayMatch = content.match(/var\s+delaySeconds\s*=\s*(\d+)/);
-if (delayMatch) {
-  detectedDelay = parseInt(delayMatch[1], 10);
-}
-```
-
-`cleanHtml` currently returns `{ html, scriptsRemoved, vslDetected }`. Extend to:
-```js
-return { html, scriptsRemoved, vslDetected, delaySeconds: detectedDelay, hasDelay: detectedDelay !== null };
+affiliateHtml (output of buildExportHtml)
+    ↓
+cheerio.load(affiliateHtml)
+    ↓
+Extract <head> content  → head_scripts_container (html widget)
+    ↓
+Extract <body> children → section_containers[]
+    ↓
+For each body section:
+  - Detect background color from style/class → container settings.background_color
+  - Detect .esconder class → container settings.css_classes = "esconder"
+  - Detect padding from style → container settings.padding
+  - Wrap section innerHTML in html widget (default path)
+  - Upgrade to image widget if section is a lone <img> tag
+  - Upgrade to button widget if section is a simple <a> checkout link
+    ↓
+Assemble root envelope + emit JSON
 ```
 
-**`/api/fetch` response shape addition:**
-```json
-{
-  "html": "...",
-  "summary": {
-    "scriptsRemoved": 4,
-    "vslDetected": true,
-    "checkoutLinks": [...],
-    "bundleImages": [...],
-    "delaySeconds": 10,
-    "hasDelay": true
-  }
-}
-```
+### ID generation
 
-**Export rebuild logic:**
+Elementor uses 8-character hex IDs (e.g., `"2f29558d"`). Implementation: `crypto.randomBytes(4).toString('hex')`. The `crypto` module is already imported in server.js with `const crypto = require('crypto')` — zero new dependencies.
 
-The original delay script block was removed during `cleanHtml`. On export, if `delaySeconds` is provided, the server must inject a new script block containing the delay and the `displayHiddenElements` call:
+### Section detection heuristic
 
-```js
-function buildDelayScript(delaySeconds) {
-  return `<script>
-var delaySeconds = ${Number(delaySeconds)};
-function displayHiddenElements() {
-  var elements = document.querySelectorAll('.hidden-element, [data-hidden]');
-  elements.forEach(function(el) { el.style.display = ''; });
-}
-setTimeout(displayHiddenElements, delaySeconds * 1000);
-</script>`;
-}
-```
+VSL pages are single-column landing pages. The reliable strategy: direct `<body>` children that are block-level elements become top-level Elementor containers. Depth of nesting inside each section is preserved inside the `html` widget's raw HTML content.
 
-This is a partial reconstruction — the original `displayHiddenElements` body varies by page. The safe minimum is to reconstruct only the `var delaySeconds = N` and the `setTimeout` call. If the page's own inline body was removed alongside the vturb scripts, a full round-trip of the original function body is impossible without storing it. The practical approach: store the entire matching script block's content before removal, then re-emit it with the `delaySeconds` value substituted.
-
-**Revised detection — store full content:**
-```js
-let capturedDelayBlock = null;
-// Inside scriptsToRemove loop:
-if (/var\s+delaySeconds\s*=\s*\d+/.test(content)) {
-  detectedDelay = parseInt(content.match(/var\s+delaySeconds\s*=\s*(\d+)/)[1], 10);
-  capturedDelayBlock = content;  // preserve full text
-}
-```
-
-`cleanHtml` returns additionally: `delayScriptContent` (the full original script body). The `/api/fetch` response includes `delayScriptContent` in the summary (not in `html`). The frontend does not display it — it is opaque state. On export, the server swaps the `delaySeconds` value inside `delayScriptContent` and appends the result as a `<script>` tag at end of `<body>`.
-
-**`/api/export-zip` request shape addition:**
-```json
-{
-  "delaySeconds": 5,
-  "delayScriptContent": "var delaySeconds = 10;\nfunction displayHiddenElements() { ... }"
-}
-```
-
-**`buildExportHtml` change:** Add `delaySeconds` and `delayScriptContent` params. If both are present, rebuild and append to `<body>`:
-```js
-if (delayScriptContent && delaySeconds !== undefined) {
-  const rebuilt = delayScriptContent.replace(
-    /var\s+delaySeconds\s*=\s*\d+/,
-    `var delaySeconds = ${Number(delaySeconds)}`
-  );
-  $('body').append(`<script>${rebuilt}<\/script>`);
-}
-```
-
-**Frontend state addition:**
-```js
-state.delaySeconds = null;       // number or null
-state.hasDelay = false;
-state.delayScriptContent = null; // opaque string, re-sent to server on export
-```
-
-The frontend renders a small row inside an existing section (or a new minimal section) showing: label "Delay VTURB", `<input type="number" min="0">` pre-populated with `state.delaySeconds`. The input is only shown when `state.hasDelay` is true.
-
-**Component touch points — Feature 3:**
-- MODIFIED: `cleanHtml()` — extract `delaySeconds`, `delayScriptContent` before/during removal, add to return value
-- MODIFIED: `/api/fetch` handler — include `delaySeconds`, `hasDelay`, `delayScriptContent` in `summary`
-- MODIFIED: `buildExportHtml()` — add `delaySeconds`, `delayScriptContent` params, append rebuilt block
-- MODIFIED: `/api/export` and `/api/export-zip` — destructure and pass through new params
-- NEW: Delay input row in `index.html` (inside section C or a dedicated minimal section)
-- MODIFIED: `state` object — add `delaySeconds`, `hasDelay`, `delayScriptContent`
-- MODIFIED: fetch response handler — store delay fields from `data.summary`
-- MODIFIED: export click handler — add delay fields to payload
+Priority order for section boundaries:
+1. `<section>` elements at body level → one container each
+2. `<div>` with `id` or a distinctive class (not utility/layout classes) at body level → one container each
+3. The `#vsl-placeholder` or VTURB embed after injection → one dedicated container (the player section)
+4. `<div class="esconder ...">` → container gets `css_classes: "esconder"` so the delay system keeps working
+5. Remaining content that does not fit clean sectioning → one catch-all html widget container
 
 ---
 
-## Complete Data Flow: v1.1
+## Data Flow: New Route
 
-### `/api/fetch` response (final shape)
-```json
-{
-  "html": "<cleaned page html>",
-  "summary": {
-    "scriptsRemoved": 4,
-    "vslDetected": true,
-    "checkoutLinks": [
-      { "href": "https://hop.clickbank.net/...", "selector": "a.btn-buy", "anchorText": "Comprar", "platform": "ClickBank", "bundle": 6 }
-    ],
-    "bundleImages": [
-      { "src": "https://cdn.example.com/6potes.png", "index": 0 },
-      { "src": "https://cdn.example.com/3potes.png", "index": 1 }
-    ],
-    "delaySeconds": 10,
-    "hasDelay": true,
-    "delayScriptContent": "var delaySeconds = 10;\nfunction displayHiddenElements() { ... }"
-  }
-}
+### Request / response
+
+```
+[User clicks "Exportar JSON Elementor" in UI]
+    ↓
+doExportElementor() in index.html
+    ↓  payload = buildExportPayload()  (same function, unchanged)
+POST /api/export-elementor  { html, headerPixel, vslembed, checkoutLinks, delaySeconds, ... }
+    ↓
+buildExportHtml({ ...payload })   ← existing function, returns affiliateHtml string
+    ↓
+buildElementorJson(affiliateHtml, opts)   ← new function
+    ↓  returns JS object: { version, title, type, page_settings, content }
+    ↓
+res.setHeader('Content-Type', 'application/json')
+res.setHeader('Content-Disposition', 'attachment; filename="pagina-afiliado.json"')
+res.json(elementorJson)
 ```
 
-### `/api/export` and `/api/export-zip` request (final shape)
-```json
-{
-  "html": "<cleaned page html>",
-  "headerPixel": "<script><!-- affiliate pixel --></script>",
-  "headerPreload": "<script data-vturb><!-- vturb preload --></script>",
-  "vslembed": "<div id='smartplayer'>...</div>",
-  "checkoutLinks": [
-    { "selector": "a.btn-buy", "affiliateHref": "https://hop.clickbank.net/affiliate-id/..." }
-  ],
-  "extraScripts": "<script>/* script 1 */</script>\n<script>/* script 2 */</script>",
-  "bundleImageReplacements": [
-    { "originalSrc": "https://cdn.example.com/6potes.png", "newSrc": "https://newcdn.com/my-6potes.png" }
-  ],
-  "delaySeconds": 5,
-  "delayScriptContent": "var delaySeconds = 10;\nfunction displayHiddenElements() { ... }",
-  "pageUrl": "https://original-page.com/vsl"
-}
-```
+### Where affiliate customizations land in the Elementor JSON
 
-### Frontend state (final shape)
-```js
-state = {
-  fetchedHtml: null,           // string
-  fetchedUrl: '',              // string
-  checkoutLinks: [],           // [{ selector, href, anchorText, platform, bundle }]
-  bundleImages: [],            // [{ src, index }]
-  delaySeconds: null,          // number | null
-  hasDelay: false,             // bool
-  delayScriptContent: null,    // string | null (opaque, round-tripped to server)
-  extraScripts: [],            // [{ id, content }] — managed locally, not from server
-}
-```
+| Customization | Applied by | Where it appears in Elementor JSON |
+|--------------|-----------|-------------------------------------|
+| Meta Pixel (`headerPixel`) | `buildExportHtml` → injected into `<head>` | First `html` widget (extracted from `<head>`) |
+| VTURB embed (`vslembed`) | `buildExportHtml` → replaces `<!-- [VSL_PLACEHOLDER] -->` | `html` widget inside the player container |
+| Checkout links | `buildExportHtml` → `applyCheckoutLinks` rewrites hrefs | `button` widget or raw in `html` widget |
+| Delay script | `buildExportHtml` → appended before `</body>` | `html` widget in last container |
+| Color replacements | `buildExportHtml` → CSS override `<style>` in `<head>` | First `html` widget (head content) |
+| Product name | `buildExportHtml` → string replace in HTML | Wherever it appears in `html` widget content |
+| Bundle images | `buildExportHtml` → swaps `src` attrs | `image` widget or raw in `html` widget |
+
+Key insight: because `buildExportHtml()` is called first, `buildElementorJson()` receives a fully-baked HTML string. It does not need to understand or replicate any affiliate injection logic — it only needs to convert structure.
 
 ---
 
 ## Component Map: New vs Modified
 
-| Component | Status | Changes |
-|-----------|--------|---------|
-| `cleanHtml()` | MODIFIED | Extract `delaySeconds`, `capturedDelayBlock` inside removal loop; expand return shape |
-| `detectCheckoutLinks()` | UNCHANGED | No change |
-| `detectBundleImages($)` | NEW | Called in `/api/fetch` handler after `cleanHtml` |
-| `applyCheckoutLinks()` | UNCHANGED | No change |
-| `applyBundleImageReplacements()` | NEW | Called in `buildExportHtml` after checkout replacement |
-| `buildExportHtml()` | MODIFIED | Accept `extraScripts`, `bundleImageReplacements`, `delaySeconds`, `delayScriptContent`; call new helpers; append delay block |
-| `/api/fetch` handler | MODIFIED | Call `detectBundleImages`; include new summary fields |
-| `/api/export` handler | MODIFIED | Destructure new fields, pass to `buildExportHtml` |
-| `/api/export-zip` handler | MODIFIED | Destructure new fields, pass to `buildExportHtml` |
-| `index.html` — Section E (Extra Scripts) | NEW | Dynamic add/remove textarea list |
-| `index.html` — Section F (Bundle Images) | NEW | Image preview + URL input grid |
-| `index.html` — Delay row (in section C or standalone) | NEW | Number input, shown only when `hasDelay` |
-| `index.html` — `state` object | MODIFIED | Add 5 new fields |
-| `index.html` — fetch response handler | MODIFIED | Read and store new summary fields; render new sections |
-| `index.html` — export click handler | MODIFIED | Add new fields to payload; build `bundleImageReplacements` and `extraScripts` before send |
+| Component | Status | What changes |
+|-----------|--------|--------------|
+| `buildElementorJson(html, opts)` | NEW in server.js | Core conversion function; cheerio traversal → JSON |
+| `POST /api/export-elementor` | NEW route in server.js | Calls buildExportHtml → buildElementorJson → res.json |
+| `doExportElementor()` | NEW function in index.html | Sends payload, triggers .json download |
+| `btn-export-elementor` | NEW button in index.html HTML | Lives alongside existing export buttons in export section |
+| `setExportEnabled()` | MODIFIED in index.html | Must include the new button |
+| `buildExportHtml()` | UNTOUCHED | No changes required |
+| `buildExportPayload()` | UNTOUCHED | Existing payload shape works as-is |
+| `cleanHtml()` | UNTOUCHED | No changes required |
+| All detection helpers | UNTOUCHED | No changes required |
+| All existing routes | UNTOUCHED | No changes required |
 
 ---
 
-## Build Order
+## Recommended Build Order
 
-Dependencies drive the order. Features share the `buildExportHtml` modification — tackle server-side first, then frontend per feature.
+Dependencies are linear. Build in this exact sequence:
 
-### Phase order recommendation
+**Step 1 — `buildElementorJson()` function (server.js only)**
 
-**Step 1 — VTURB Delay (Feature 3) — server side only**
+Write and test the conversion function in isolation. Input: a known HTML string. Output: Elementor JSON object. Validate by importing the result into Elementor. No frontend work yet, no route needed — test via a temporary inline call or unit test.
 
-Rationale: the change is entirely within `cleanHtml()`, which already iterates scripts. It is the smallest, most contained server change and touches code that must not regress. Do this first while the script-removal logic is freshly understood.
+**Step 2 — `POST /api/export-elementor` route (server.js)**
 
-Deliverable: `cleanHtml` returns `delaySeconds`, `hasDelay`, `delayScriptContent`. `/api/fetch` includes these in `summary`. `buildExportHtml` accepts and applies them.
+Wire `buildExportHtml()` → `buildElementorJson()` → file download. Test the complete server-side pipeline with curl or Postman using a real export payload before touching the UI.
 
-**Step 2 — Bundle Images (Feature 2) — server side only**
+**Step 3 — Frontend button + `doExportElementor()` (index.html)**
 
-Rationale: adds a new independent helper (`detectBundleImages`) and a new independent export helper (`applyBundleImageReplacements`). No dependency on Feature 3 or Feature 1. Do server side before building the frontend section so there is a working API to test against.
+Add the "Exportar JSON Elementor" button to the existing export section. Write `doExportElementor()` which calls `buildExportPayload()` (unchanged) and sends to the new route. Trigger `.json` file download with a Blob URL, identical pattern to the existing `doActualDownload()` for ZIP.
 
-Deliverable: `/api/fetch` response includes `summary.bundleImages`. `buildExportHtml` accepts and applies `bundleImageReplacements`.
+**Step 4 — End-to-end validation**
 
-**Step 3 — Extra Scripts (Feature 1) — server side only**
+Import the generated `.json` into WordPress/Elementor. Verify: pixel in head, VTURB player renders, checkout links correct, `.esconder` sections hidden initially, delay script fires.
 
-Rationale: the smallest server change — one `$('head').append()` line in `buildExportHtml`. Do last on the server because it depends on `buildExportHtml` being in its final signature shape after Steps 1 and 2.
-
-Deliverable: `buildExportHtml` accepts `extraScripts` string and appends to `<head>`.
-
-**Step 4 — Frontend: Delay row (Feature 3)**
-
-Now that the server API is stable, build the frontend for each feature in the same dependency order. Delay is a single input row — fast to implement, easiest to verify.
-
-**Step 5 — Frontend: Bundle Images section (Feature 2)**
-
-Grid of image previews with URL inputs. Requires `state.bundleImages` to be populated from the fetch response handler before the section can render.
-
-**Step 6 — Frontend: Extra Scripts tab (Feature 1)**
-
-Dynamic add/remove list. Pure frontend state management, no server dependency beyond Step 3.
-
-**Dependency graph:**
+Dependency graph:
 ```
-cleanHtml change (Step 1)
-  └── /api/fetch new fields
-        └── Frontend delay row (Step 4)
-detectBundleImages (Step 2)
-  └── /api/fetch bundleImages
-        └── Frontend bundle images section (Step 5)
-buildExportHtml extraScripts (Step 3)
-  └── Frontend extra scripts tab (Step 6)
+buildElementorJson() (Step 1)
+    └── POST /api/export-elementor (Step 2)
+            └── doExportElementor() + button (Step 3)
+                    └── Import validation (Step 4)
 ```
-
-Steps 1, 2, and 3 can be written in a single server.js edit pass since they touch distinct code paths. The frontend steps must follow after the server changes are stable.
 
 ---
 
-## Pitfalls Specific to These Features
+## Anti-Patterns
 
-**Bundle image detection false positives:** The heuristic (find `<img>` inside a checkout link's ancestor container) may pick up decorative images (icons, badges). Adding a minimum-dimension filter (`width > 60 || height > 60` from attribute values, or simply accepting noise and letting the user ignore extras) is preferable over over-engineering. Keep the detection permissive and let the user decide which images to replace.
+### Anti-Pattern 1: Convert from clean HTML instead of affiliate HTML
 
-**`delayScriptContent` round-trip size:** Passing the full script body back to the server in every export is harmless at this scale (local app, single user, scripts are typically under 2 KB). No caching layer is needed.
+**What people do:** Call `buildElementorJson(state.fetchedHtml)` directly, bypassing `buildExportHtml()`.
 
-**`cleanHtml` receives raw HTML, not the already-cleaned version:** `detectBundleImages` must operate on the cleaned HTML (after `cleanHtml` runs), since the cleaned version is what gets stored in `state.fetchedHtml` and re-sent on export. The `/api/fetch` handler already creates a second `cheerio.load(cleanedHtml)` instance for `detectCheckoutLinks` — `detectBundleImages` reuses that same `$` instance.
+**Why it's wrong:** The Elementor JSON would contain the cleaned page — no pixel, no VTURB embed, no affiliate checkout links, no delay script. The import would be completely wrong for the affiliate.
 
-**Extra scripts injection order:** The spec says after the existing pixel. `buildExportHtml` appends `headerPixel` first, then `headerPreload`, then `extraScripts`. Append order in cheerio is sequential, so this is guaranteed by call order. No additional sequencing mechanism is needed.
+**Do this instead:** The `/api/export-elementor` route must call `buildExportHtml()` first, exactly like `/api/export-zip` does. Pass its output to `buildElementorJson()`.
 
-**Section IDs and state reset:** If the user fetches a second URL without reloading the page, `state` must be fully reset before the new fetch response is applied. The current code does not have an explicit reset. With more state fields (bundleImages, delaySeconds, etc.), a `resetState()` helper should be added to the fetch click handler before the API call completes.
+### Anti-Pattern 2: Attempting full DOM-to-widget decomposition
+
+**What people do:** Try to map every `<h1>`, `<p>`, `<ul>`, `<img>` to native Elementor `heading`, `text-editor`, `icon-list`, `image` widgets respectively.
+
+**Why it's wrong:** VSL pages have hundreds of inline-styled elements, custom CSS classes, complex nested structures, and JS-dependent rendering. Full decomposition is unreliable and produces broken layouts. The real Elementor export (inspected directly) uses `html` widgets for most content, including pixel scripts, player, timers, and all custom sections.
+
+**Do this instead:** Map page sections (structural body-level blocks) to containers, wrap each section's inner content in a single `html` widget. Selectively upgrade only obvious, unambiguous elements: a standalone `<img>` → `image` widget; a simple `<a>` or `<button>` checkout link → `button` widget.
+
+### Anti-Pattern 3: Including full HTML document inside html widget
+
+**What people do:** Pass the full `<html><head>...</head><body>...</body></html>` output from `buildExportHtml()` directly as the content of one `html` widget.
+
+**Why it's wrong:** Elementor imports into WordPress which provides its own document structure. Injecting a full HTML document into a widget causes broken markup and double execution of scripts.
+
+**Do this instead:** `buildElementorJson()` calls `cheerio.load(affiliateHtml)` and extracts `$('head').html()` (for head scripts container) and `$('body').children()` (for content containers) separately.
+
+### Anti-Pattern 4: Sequential or patterned IDs
+
+**What people do:** Generate IDs as `"el_0001"`, `"el_0002"`, or short hex `"1"`, `"2"`.
+
+**Why it's wrong:** Elementor expects 8-character hex IDs. Non-conforming IDs may cause import validation failures or collide with existing page elements.
+
+**Do this instead:** `crypto.randomBytes(4).toString('hex')` — already available via the existing `crypto` import.
+
+---
+
+## Integration Points
+
+### Internal Boundaries
+
+| Boundary | Communication | Notes |
+|----------|---------------|-------|
+| `buildExportHtml` → `buildElementorJson` | Direct call, HTML string in / JS object out | `buildElementorJson` is stateless, pure function |
+| `/api/export-elementor` route → both functions | Sequential calls within route handler | Same pattern as `/api/export-zip` |
+| Frontend `doExportElementor` → route | HTTP POST, identical JSON body to export-zip | `buildExportPayload()` reused unchanged |
+| ID generation | `crypto.randomBytes(4).toString('hex')` per node | `crypto` already imported in server.js |
+
+### External Dependencies
+
+None. No new npm packages required. The conversion is pure JavaScript + cheerio (already installed).
 
 ---
 
 ## Sources
 
-- Direct reading of `/Users/victorroque/Downloads/Extrator2000/server.js` (commit 1d774b8)
-- Direct reading of `/Users/victorroque/Downloads/Extrator2000/public/index.html`
-- `.planning/PROJECT.md` milestone definition
-- Confidence: HIGH — all findings are from direct codebase inspection, not external sources
+- Direct inspection: `/Users/victorroque/Downloads/Extrator2000/elementor-20405-2026-04-20.json` — real Elementor JSON export (184KB, 258 nodes, 17 top-level containers, 7 nesting levels max)
+- Direct reading: `/Users/victorroque/Downloads/Extrator2000/server.js` — full codebase
+- Direct reading: `/Users/victorroque/Downloads/Extrator2000/public/index.html` — frontend export flow
+- Direct reading: `/Users/victorroque/Downloads/Extrator2000/.planning/PROJECT.md` — milestone definition
+
+---
+*Architecture research for: Elementor JSON export integration into VSL Cloner*
+*Researched: 2026-04-20*

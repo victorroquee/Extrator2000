@@ -1,107 +1,121 @@
-# Technology Stack
+# Stack Research
 
-**Project:** VSL Cloner v1.1 — Extra Scripts, Bundle Images, VTURB Delay
-**Researched:** 2026-04-11
-**Scope:** NEW feature stack only — existing capabilities are already validated and in production.
+**Domain:** Elementor JSON export — HTML-to-Elementor conversion
+**Researched:** 2026-04-20
+**Scope:** NEW capabilities only for v1.4. Existing stack (Express + axios + cheerio + archiver + multer) is validated; not re-researched.
+**Confidence:** HIGH
 
 ---
 
 ## Verdict: No New npm Packages Required
 
-All three new features are fully implementable with the existing dependency set:
-- **cheerio ^1.0.0** — already handles all server-side HTML/DOM needs
-- **Vanilla JS + innerHTML/DOM API** — already the established frontend pattern
-- **Node.js built-ins (RegExp)** — sufficient for JS variable extraction
+The Elementor JSON export is fully implementable with the existing dependency set plus Node.js built-ins. After inspecting the real Elementor export file (`elementor-20405-2026-04-20.json`) and the complete `server.js` pipeline, there is no capability gap that requires a new package.
 
-Do NOT add new packages. The constraint "Node.js + Express + axios + cheerio, sem frameworks adicionais" applies and there is no capability gap that requires filling.
+Key findings from the JSON inspection:
+- Elementor JSON is a plain object: `{ content, page_settings, version, title, type }`
+- All elements are either `elType: "container"` or `elType: "widget"`
+- Widget types in use: `html`, `heading`, `text-editor`, `image`, `button`, `icon-list`, `icon-box`, `nested-accordion`
+- Element IDs are lowercase hex strings of 6-8 chars (e.g., `"2f29558d"`)
+- Responsive settings use `_mobile` suffix keys (e.g., `typography_font_size_mobile`)
+- CSS parsing is NOT needed: the conversion strategy is wrapping content in `html` widgets, not reconstructing typography/layout from scratch
 
 ---
 
-## Feature 1: Extra Scripts (dynamic script list in `<head>`)
+## Recommended Stack
 
-### Server side
-No new capability needed. `buildExportHtml` already does:
+### Core Technologies (unchanged)
+
+| Technology | Version | Purpose | Why |
+|------------|---------|---------|-----|
+| cheerio | ^1.0.0 | Parse cleaned HTML, extract sections/elements | Already in pipeline; `$.html(el)` produces the exact HTML string needed for `html` widget `settings.html` |
+| Node.js `crypto` | built-in | Generate unique element IDs | Already in use (`crypto.randomUUID()`); short hex IDs generated via `randomBytes(4).toString('hex')` |
+| `JSON.stringify` | built-in | Serialize final Elementor JSON | Native, no library needed |
+
+### What the HTML-to-Elementor Conversion Actually Requires
+
+Inspect the real Elementor file: all complex content (headings, text, images, buttons, video players, pixels) is stored either as native widget settings OR as raw HTML inside `html` widgets. This means the conversion strategy is:
+
+**Strategy: Structural HTML wrapping, not CSS reconstruction.**
+
+Each top-level `<section>` or `<div>` block in the cleaned HTML becomes one Elementor `container`. Its inner HTML goes into a single `html` widget. Injected VTURB, pixel, delay, checkout links are already in the cleaned+injected HTML string — they carry over verbatim.
+
+This approach:
+- Requires only cheerio (already present) to iterate top-level blocks
+- Requires only `crypto.randomBytes` (already present) for unique hex IDs
+- Requires zero CSS parsing because widget type `html` accepts raw HTML including inline styles
+- Produces a valid, importable Elementor page — proven by the reference file structure
+
+### Supporting Libraries
+
+None needed. Specific rejections documented below.
+
+---
+
+## Element ID Generation
+
+Elementor uses lowercase hex IDs of 6-8 characters. Node.js `crypto.randomBytes` is already imported:
+
 ```js
-if (headerPixel && headerPixel.trim()) $('head').append(headerPixel);
+// Already in server.js: const crypto = require('crypto');
+
+function elementorId() {
+  return crypto.randomBytes(4).toString('hex'); // 8-char hex, matches Elementor's own format
+}
 ```
-Adding extra scripts is the same pattern: accept an array of script strings in the export payload, iterate, and append each to `<head>` after the pixel block. Cheerio's `$('head').append(scriptString)` handles arbitrary HTML strings including multi-line `<script>` tags.
 
-### Frontend
-The existing dynamic checkout inputs pattern (`renderCheckoutInputs`) already demonstrates how to build a dynamic list of inputs with add/remove controls using `document.createElement` and `innerHTML`. Apply the same pattern for the extra scripts list: a `<div id="extra-scripts-container">` with a textarea per script entry and an "Add script" button.
-
-No new libraries. No new patterns beyond what already exists.
-
-**Integration point:** `buildExportHtml` signature gains an `extraScripts` array parameter. Each item is appended to `<head>` after `headerPixel`.
+Do NOT use `crypto.randomUUID()` for this — Elementor IDs are short hex strings, not UUIDs.
 
 ---
 
-## Feature 2: Bundle Images (detect `<img>` inside bundle sections, preview + editable URL)
+## JSON Structure Reference (from real export)
 
-### Server side — cheerio image detection
+```json
+{
+  "content": [
+    {
+      "id": "2f29558d",
+      "elType": "container",
+      "isInner": false,
+      "settings": {
+        "flex_direction": "column",
+        "background_background": "classic",
+        "background_color": "#RRGGBB",
+        "flex_gap": { "column": "0", "row": "0", "isLinked": true, "unit": "px", "size": 0 },
+        "flex_gap_mobile": { "column": "0", "row": "0", "isLinked": true, "unit": "px", "size": 0 }
+      },
+      "elements": [
+        {
+          "id": "1d3fccd3",
+          "elType": "widget",
+          "widgetType": "html",
+          "isInner": false,
+          "settings": { "html": "<raw html string here>" },
+          "elements": []
+        }
+      ]
+    }
+  ],
+  "page_settings": {},
+  "version": "0.4",
+  "title": "Página Afiliado",
+  "type": "page"
+}
+```
 
-Cheerio's `$('img')` selector is already used in `collectAssets` (line 358 of server.js). For bundle image detection the approach is:
-
-1. For each bundle section detected (using existing `BUNDLE_KEYWORDS` logic applied to section containers), collect `$(sectionEl).find('img')` and extract `.attr('src')`.
-2. Return the list of `{ src, sectionIndex, bundleQty }` objects in the `/api/fetch` response alongside `checkoutLinks`.
-3. On export, replace image `src` attributes: use cheerio to find the same `<img>` nodes by index/src and set the new URL. Because pages may have duplicate bundle sections (same image appearing N times), iterate with `$('img[src="ORIGINAL_SRC"]').attr('src', newSrc)` to replace all occurrences at once — this is exactly what cheerio's multi-match selectors do natively.
-
-No new packages needed. Cheerio already supports attribute-equality selectors.
-
-### Frontend — thumbnail preview
-
-Browser `<img>` element with `src` set to the detected URL, rendered inside the card. This is vanilla HTML. The user edits the URL in a text input (same style as checkout inputs); on input change, update the preview `<img>` src live via an `input` event listener. This is a well-established vanilla JS pattern requiring zero libraries.
-
-**Deduplication concern:** if the same image appears in multiple bundle section duplicates, the server returns one entry per unique `src` value (deduplicate by src during detection). On export, replacing by src attribute value replaces all occurrences automatically.
-
-**Integration point:** `/api/fetch` response gains a `bundleImages` array: `[{ src, bundleQty, label }]`. `/api/export` (and `/api/export-zip` via `buildExportHtml`) gains a `bundleImages` parameter and applies src replacements before returning.
+The `html` widget is the universal escape hatch: it accepts arbitrary HTML. Pixel code, VTURB embeds, delay scripts, checkout buttons — all already injected by `buildExportHtml` — are placed as-is inside `html` widgets.
 
 ---
 
-## Feature 3: VTURB Delay (extract and edit `var delaySeconds = N`)
+## Integration Points with Existing Pipeline
 
-### Server side — regex extraction
+The export route pattern already exists for HTML and ZIP. Elementor JSON follows the same shape:
 
-The target pattern is:
-```
-var delaySeconds = 5
-```
-inside a `<script>` block that also contains `displayHiddenElements`. This is a pure regex operation on the raw HTML string or on cheerio's `.html()` of a script element.
+1. **Input:** Same payload as `/api/export` — `html`, `headerPixel`, `vslembed`, `checkoutLinks`, `delaySeconds`, `bundleImages`, etc.
+2. **Processing:** Call `buildExportHtml(...)` exactly as the existing routes do. This returns the fully-injected HTML string.
+3. **Conversion:** Parse the injected HTML with cheerio. Iterate top-level children of `<body>`. Each becomes a `container` with one inner `html` widget.
+4. **Output:** `JSON.stringify(elementorDoc)` sent as `Content-Disposition: attachment; filename="pagina-afiliado.json"` with `Content-Type: application/json`.
 
-Extraction regex (zero new deps):
-```js
-const match = scriptContent.match(/var\s+delaySeconds\s*=\s*(\d+)/);
-const delaySeconds = match ? parseInt(match[1], 10) : null;
-```
-
-Detection strategy: iterate `$('script')` in `cleanHtml` or in a new `detectVturvDelay` helper, check if `$(el).html()` includes `displayHiddenElements` AND matches the regex above.
-
-Replacement on export:
-```js
-outputHtml = outputHtml.replace(
-  /var\s+delaySeconds\s*=\s*\d+/,
-  `var delaySeconds = ${newValue}`
-);
-```
-This is a single `String.replace` call. No cheerio needed — script content replacement via string regex is simpler and safer than round-tripping through the HTML parser (cheerio can mangle inline script text in edge cases).
-
-### Frontend
-
-An `<input type="number" min="0">` with a label "Delay VTURB (segundos)". Pre-populated with the extracted value returned by `/api/fetch`. Shown only when `delaySeconds !== null` (same `section-hidden` toggle pattern already used). Vanilla JS, no library.
-
-**Integration point:** `/api/fetch` response gains `delaySeconds: number | null`. `buildExportHtml` gains a `delaySeconds` parameter and applies the string replacement.
-
----
-
-## Existing Stack (unchanged)
-
-| Package | Version | Role |
-|---------|---------|------|
-| express | ^4.18.2 | HTTP server, routing, static serving |
-| axios | ^1.6.0 | Anti-bot fetch of VSL pages |
-| cheerio | ^1.0.0 | Server-side HTML parsing, DOM queries, attribute manipulation |
-| archiver | ^7.0.1 | ZIP bundling for export-zip route |
-
-Frontend: single HTML file, vanilla JS, no bundler, no framework.
+New route: `POST /api/export-elementor` — mirrors `/api/export` but adds the cheerio-to-JSON conversion step and changes the response content type.
 
 ---
 
@@ -109,19 +123,45 @@ Frontend: single HTML file, vanilla JS, no bundler, no framework.
 
 | Considered | For | Rejected Because |
 |------------|-----|-----------------|
-| `jsdom` | Richer DOM on server | Already have cheerio; overkill; heavier |
-| `sortablejs` / drag-and-drop lib | Script list reordering | No reordering requirement in v1.1 spec |
-| `croppie` / image preview lib | Bundle image preview | Native `<img>` element is sufficient; constraint forbids additional libs |
-| Dedicated regex library | delaySeconds extraction | Built-in RegExp is adequate for a single, stable pattern |
+| `css-tree` | Parsing CSS to extract computed styles for Elementor typography settings | Not needed — the `html` widget accepts raw HTML with inline styles; no need to reconstruct font-size/color as Elementor widget settings |
+| `html-to-json` / custom recursive mapper | Full semantic conversion (heading → heading widget, p → text-editor widget) | Fragile — VSL pages use non-standard markup; html widget approach is robust and produces functionally identical pages |
+| `uuid` npm package | Elementor element IDs | Overkill — `crypto.randomBytes(4).toString('hex')` already in the codebase produces the right format |
+| `jsdom` | Richer DOM traversal than cheerio | Already rejected in v1.1; cheerio's `.children()` and `.html()` are sufficient for top-level section splitting |
+| Puppeteer/headless browser | Getting "rendered" HTML to capture JS-generated content | Out of scope; the existing axios fetch handles VSL pages adequately |
 
 ---
 
-## Confidence Assessment
+## What NOT to Use
 
-| Area | Confidence | Basis |
-|------|------------|-------|
-| No new packages needed | HIGH | Codebase read; all patterns already present in server.js and index.html |
-| Cheerio multi-match src replacement | HIGH | Cheerio attribute selectors documented; used in existing collectAssets |
-| Regex for `var delaySeconds` | HIGH | Pattern is syntactically simple and stable; built-in RegExp is sufficient |
-| Frontend dynamic list (extra scripts) | HIGH | renderCheckoutInputs in index.html is the same pattern |
-| Image preview via native `<img>` | HIGH | Standard browser capability, no library needed |
+| Avoid | Why | Use Instead |
+|-------|-----|-------------|
+| Full semantic HTML→Elementor mapping (heading→heading widget, p→text-editor widget) | VSL pages use arbitrary markup; semantic mapping breaks on complex layouts, nested tables, custom CSS classes | `html` widget wrapping — robust, zero mapping logic, Elementor renders it identically |
+| CSS parsing libraries (`css-tree`, `postcss`) | The responsive settings (`_mobile` keys) in Elementor native widgets require knowing the original Elementor widget that generated them — impossible to reconstruct from a cloned page | Omit per-element responsive settings; use a single container with `flex_direction: column` and sensible defaults |
+| Generating native Elementor heading/text-editor/image widgets from HTML | Requires CSS extraction + style mapping + font detection; extremely fragile | `html` widget |
+
+---
+
+## Responsive Settings Strategy
+
+The reference file shows `_mobile` suffix settings on containers and widgets (e.g., `typography_font_size_mobile`, `padding_mobile`, `flex_gap_mobile`). These are needed for native widgets. Since this implementation uses `html` widgets for all content, the mobile CSS is already embedded inside the raw HTML (inline styles, CSS classes from the original page's stylesheet references). No `_mobile` Elementor settings are required on the wrapper containers — set only the minimum:
+
+```json
+{
+  "flex_direction": "column",
+  "flex_gap": { "column": "0", "row": "0", "isLinked": true, "unit": "px", "size": 0 }
+}
+```
+
+This is sufficient for a valid, importable Elementor page. The visual fidelity comes from the original page's CSS (which the `html` widgets preserve), not from Elementor's own style system.
+
+---
+
+## Sources
+
+- Direct inspection of `elementor-20405-2026-04-20.json` (258 elements, 17 top-level containers, 8 widget types) — HIGH confidence
+- `server.js` full read — confirmed `crypto` is already imported, `buildExportHtml` is the correct integration point — HIGH confidence
+- Elementor export format: `version: "0.4"`, `type: "page"`, containers + widgets with `html` widget as universal content escape hatch — HIGH confidence from real file, not docs
+
+---
+*Stack research for: Elementor JSON export (v1.4 milestone)*
+*Researched: 2026-04-20*

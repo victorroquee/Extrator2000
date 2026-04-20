@@ -1338,69 +1338,49 @@ function buildElementorJson(html) {
     return {
       id: genId(),
       elType: 'container',
-      isInner: false,                          // Pitfall 2: top-level containers are always false
-      settings: { flex_direction: 'column' },  // Pitfall 8 + 13: object, explicit direction
+      isInner: false,
+      settings: { flex_direction: 'column' },
       elements: [{
         id: genId(),
         elType: 'widget',
         widgetType: 'html',
         isInner: false,
-        settings: { html: htmlContent },       // Pitfall 8: settings is an object
+        settings: { html: htmlContent },
         elements: []
       }]
     };
   }
 
-  const containers = [];
-
-  // D-03 / D-04: Collect head content excluding <title> and <meta charset>
-  // Filter keeps <script>, <style>, <link>, <meta> (non-charset), and other head tags
+  // Collect ALL head content (styles, links, scripts) — excluding title and charset meta
   const headParts = [];
   $('head').children().each(function() {
     const el = $(this);
     const tagName = (this.tagName || '').toLowerCase();
-    if (tagName === 'title') return; // Elementor manages page title separately
-    if (tagName === 'meta' && el.attr('charset')) return; // Elementor manages charset
+    if (tagName === 'title') return;
+    if (tagName === 'meta' && el.attr('charset')) return;
     headParts.push($.html(this));
   });
-  const headContent = headParts.join('\n').trim();
-  if (headContent) {
-    containers.push(makeContainer(headContent));
+  const headBlock = headParts.join('\n').trim();
+
+  // Collect ALL body content as raw HTML
+  const bodyHtml = $('body').html() || '';
+
+  // Combine head styles/scripts + body content in ONE html widget.
+  // This ensures CSS and JS from <head> apply to body content — splitting them
+  // into separate Elementor containers breaks style scoping.
+  const fullContent = (headBlock ? headBlock + '\n' : '') + bodyHtml;
+
+  const containers = [];
+  if (fullContent.trim()) {
+    containers.push(makeContainer(fullContent));
   }
-
-  // D-01 / D-02: Determine body sections
-  let bodyChildren = $('body').children().toArray();
-
-  // D-02: If body has exactly one child element (wrapper div), look one level deeper
-  if (bodyChildren.length === 1) {
-    const onlyChild = bodyChildren[0];
-    const tagName = (onlyChild.tagName || '').toLowerCase();
-    // Only unwrap generic wrapper divs, not semantic sectioning elements
-    if (tagName === 'div' || tagName === 'main' || tagName === 'article') {
-      const innerChildren = $(onlyChild).children().toArray();
-      if (innerChildren.length > 0) {
-        bodyChildren = innerChildren;
-      }
-    }
-  }
-
-  // Build one container per body section element
-  // Skip text nodes, comment nodes, and top-level <script>/<style> loose tags
-  bodyChildren.forEach(function(el) {
-    const tagName = (el.tagName || '').toLowerCase();
-    if (!tagName) return; // text node or comment
-    if (tagName === 'script' || tagName === 'style') return; // loose scripts at body level
-    const markup = $.html(el).trim();
-    if (!markup) return;
-    containers.push(makeContainer(markup));
-  });
 
   // D-06: Assemble root JSON envelope (Pitfalls 15, 16)
   return {
     version: '0.4',
     title: rawTitle,
-    type: 'page',         // Pitfall 15: must be "page"
-    page_settings: {},    // Pitfall 16: must be {} not null
+    type: 'page',
+    page_settings: {},
     content: containers
   };
 }

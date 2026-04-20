@@ -1,7 +1,7 @@
 'use strict';
 
 // Validation script for buildElementorJson
-// Tests ELEM-01 through ELEM-05, D-02, Pitfall 1, Pitfall 6, Pitfall 8
+// Tests ELEM-01 through ELEM-05, Pitfall 1, Pitfall 6, Pitfall 8
 // Run: node test-elementor-json.js
 // Exit code 0 = all pass, 1 = failures
 
@@ -20,7 +20,6 @@ function assert(condition, testName) {
   }
 }
 
-// Recursively collect all `id` values from the JSON tree
 function collectIds(obj) {
   const ids = [];
   function walk(node) {
@@ -33,7 +32,6 @@ function collectIds(obj) {
   return ids;
 }
 
-// Recursively collect all `settings` values from the JSON tree
 function collectSettings(obj) {
   const settings = [];
   function walk(node) {
@@ -62,8 +60,7 @@ console.log('\nTest 1: Basic structure (ELEM-01)');
   assert(typeof result.page_settings === 'object' && !Array.isArray(result.page_settings), 'page_settings is a plain object');
   assert(result.page_settings !== null, 'page_settings is not null');
   assert(Array.isArray(result.content), 'content is an array');
-  // 1 head container + 2 body section containers = 3
-  assert(result.content.length === 3, `content.length === 3 (got ${result.content.length})`);
+  assert(result.content.length === 1, `content.length === 1 (single container with full page, got ${result.content.length})`);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -71,41 +68,37 @@ console.log('\nTest 1: Basic structure (ELEM-01)');
 // ─────────────────────────────────────────────────────────────────────────────
 console.log('\nTest 2: Unique IDs (ELEM-02)');
 {
-  // 12 body sections generates 12 containers + 12 widgets = 24 IDs, plus head IDs
-  const sections = Array.from({ length: 12 }, (_, i) => `<div>S${i + 1}</div>`).join('');
-  const html = `<!DOCTYPE html><html><head><script>px</script></head><body>${sections}</body></html>`;
+  const html = `<!DOCTYPE html><html><head><script>px</script></head><body><div>A</div></body></html>`;
   const result = buildElementorJson(html);
 
   const ids = collectIds(result);
+  assert(ids.length === 2, `2 IDs generated (1 container + 1 widget, got ${ids.length})`);
   assert(ids.every(id => /^[0-9a-f]{8}$/.test(id)), 'all IDs are 8-char lowercase hex');
-  assert(ids.length === new Set(ids).size, `no duplicate IDs (${ids.length} unique IDs)`);
+  assert(ids.length === new Set(ids).size, 'no duplicate IDs');
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Test 3: Per-section containers (ELEM-03)
+// Test 3: Single container with full page (ELEM-03)
 // ─────────────────────────────────────────────────────────────────────────────
-console.log('\nTest 3: Per-section containers (ELEM-03)');
+console.log('\nTest 3: Single container with full page (ELEM-03)');
 {
   const html = `<!DOCTYPE html><html>
-    <head><script>px</script></head>
+    <head><style>.hero{color:red}</style></head>
     <body>
       <section id="a">Section A</section>
       <section id="b">Section B</section>
-      <section id="c">Section C</section>
     </body>
   </html>`;
   const result = buildElementorJson(html);
 
-  // head container + 3 section containers = at least 3
-  assert(result.content.length >= 3, `content has >= 3 containers (got ${result.content.length})`);
-  assert(
-    result.content.every(c => c.elType === 'container'),
-    'every top-level item has elType "container"'
-  );
-  assert(
-    result.content.every(c => c.isInner === false),
-    'every top-level container has isInner: false'
-  );
+  assert(result.content.length === 1, 'content has 1 container (full page in single widget)');
+  const widget = result.content[0].elements[0];
+  assert(widget.widgetType === 'html', 'widget type is html');
+  assert(widget.settings.html.includes('.hero{color:red}'), 'head styles are included in widget');
+  assert(widget.settings.html.includes('Section A'), 'body content A is included');
+  assert(widget.settings.html.includes('Section B'), 'body content B is included');
+  assert(result.content[0].elType === 'container', 'top-level item is container');
+  assert(result.content[0].isInner === false, 'container has isInner: false');
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -119,17 +112,11 @@ console.log('\nTest 4: HTML widget wrapping (ELEM-04)');
   </html>`;
   const result = buildElementorJson(html);
 
-  // No head content → only 1 body section container
-  const bodyContainer = result.content.find(c => c.elements && c.elements.length > 0 &&
-    c.elements[0].widgetType === 'html' &&
-    c.elements[0].settings.html.includes('Buy now'));
-
-  assert(bodyContainer !== undefined, 'body section container contains "Buy now" in html widget');
-  if (bodyContainer) {
-    assert(bodyContainer.elements.length === 1, 'container has exactly 1 element');
-    assert(bodyContainer.elements[0].widgetType === 'html', 'element widgetType is "html"');
-    assert(bodyContainer.elements[0].settings.html.includes('Buy now'), 'settings.html contains "Buy now"');
-  }
+  const container = result.content[0];
+  assert(container !== undefined, 'container exists');
+  assert(container.elements.length === 1, 'container has exactly 1 element');
+  assert(container.elements[0].widgetType === 'html', 'element widgetType is "html"');
+  assert(container.elements[0].settings.html.includes('Buy now'), 'settings.html contains "Buy now"');
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -163,37 +150,31 @@ console.log('\nTest 5: Affiliate customizations survive (ELEM-05)');
   assert(serialized.includes('smartplayer'), 'VTURB smartplayer survived');
   assert(serialized.includes('hotmart.com'), 'Hotmart checkout URL survived');
 
-  // Pitfall 6: JSON serialization roundtrip
   let roundtripOk = true;
   try { JSON.parse(serialized); } catch (e) { roundtripOk = false; }
   assert(roundtripOk, 'JSON.parse(JSON.stringify(result)) roundtrip succeeds (Pitfall 6)');
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Test 6: Single wrapper child fallback (D-02)
+// Test 6: Head + body combined in single widget
 // ─────────────────────────────────────────────────────────────────────────────
-console.log('\nTest 6: Single wrapper child fallback (D-02)');
+console.log('\nTest 6: Head + body combined in single widget');
 {
   const html = `<!DOCTYPE html><html>
-    <head></head>
+    <head>
+      <style>.hero { background: blue; }</style>
+      <script>fbq('init','999')</script>
+    </head>
     <body>
-      <div id="wrapper">
-        <section>Section A</section>
-        <section>Section B</section>
-      </div>
+      <div class="hero">Hello</div>
     </body>
   </html>`;
   const result = buildElementorJson(html);
 
-  // D-02: wrapper's children should produce 2 containers, not 1 monolithic block
-  assert(result.content.length >= 2, `D-02: content has >= 2 containers (got ${result.content.length})`);
-  // Verify no container's html widget contains both "Section A" and "Section B" in one block
-  const monolithic = result.content.some(c =>
-    c.elements && c.elements[0] &&
-    c.elements[0].settings.html.includes('Section A') &&
-    c.elements[0].settings.html.includes('Section B')
-  );
-  assert(!monolithic, 'D-02: sections are not collapsed into one monolithic widget');
+  const widgetHtml = result.content[0].elements[0].settings.html;
+  assert(widgetHtml.includes('.hero { background: blue; }'), 'head styles present in widget');
+  assert(widgetHtml.includes("fbq('init'"), 'head scripts present in widget');
+  assert(widgetHtml.includes('class="hero"'), 'body content present in widget');
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -202,10 +183,8 @@ console.log('\nTest 6: Single wrapper child fallback (D-02)');
 console.log('\nTest 7: Settings are objects, never arrays (Pitfall 8)');
 {
   const html = `<!DOCTYPE html><html>
-    <head><script>px()</script><style>body{}</style></head>
-    <body>
-      <div>A</div><div>B</div><div>C</div>
-    </body>
+    <head><script>px()</script></head>
+    <body><div>A</div></body>
   </html>`;
   const result = buildElementorJson(html);
   const allSettings = collectSettings(result);
@@ -231,6 +210,16 @@ console.log('\nTest 8: Empty body graceful handling');
   }
   assert(!threw, 'buildElementorJson does not throw on empty body');
   assert(Array.isArray(result && result.content), 'result.content is an array even for empty body');
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Test 9: Title extraction
+// ─────────────────────────────────────────────────────────────────────────────
+console.log('\nTest 9: Title extraction');
+{
+  const html = `<!DOCTYPE html><html><head><title>BurnSlim Official</title></head><body><div>Hi</div></body></html>`;
+  const result = buildElementorJson(html);
+  assert(result.title === 'BurnSlim Official', `title extracted correctly (got "${result.title}")`);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

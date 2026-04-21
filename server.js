@@ -1327,17 +1327,34 @@ async function inlineExternalCss(html, pageUrl) {
           responseType: 'text',
           headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
         });
-        return { el, css: typeof resp.data === 'string' ? resp.data : '' };
+        return { el, css: typeof resp.data === 'string' ? resp.data : '', cssUrl: absUrl };
       } catch {
-        return { el, css: null };
+        return { el, css: null, cssUrl: absUrl };
       }
     })
   );
 
-  for (const { el, css } of results) {
+  for (const { el, css, cssUrl } of results) {
     if (css) {
+      // Rewrite relative url() references in CSS to absolute URLs.
+      // When CSS is inlined, relative paths (e.g. url("fonts/file.woff")) would resolve
+      // against the WordPress page instead of the original CSS file location.
+      let fixedCss = css;
+      try {
+        const cssBase = cssUrl.substring(0, cssUrl.lastIndexOf('/') + 1);
+        fixedCss = css.replace(/url\(\s*(['"]?)(?!data:|https?:\/\/|\/\/)([^)'"]+)\1\s*\)/gi,
+          (match, quote, relPath) => {
+            try {
+              const absPath = new URL(relPath, cssBase).href;
+              return `url(${quote}${absPath}${quote})`;
+            } catch {
+              return match;
+            }
+          }
+        );
+      } catch { /* keep original CSS if rewriting fails */ }
       // Replace <link> with inline <style> containing the fetched CSS
-      $(el).replaceWith(`<style>${css}</style>`);
+      $(el).replaceWith(`<style>${fixedCss}</style>`);
     }
     // If fetch failed, keep the original <link> tag as fallback
   }
@@ -1415,8 +1432,22 @@ function buildElementorJson(html) {
   });
   const headBlock = headParts.join('\n').trim();
 
-  // Collect ALL body content as raw HTML
-  const bodyHtml = $('body').html() || '';
+  // Collect ALL body content as raw HTML, wrapped in a <div> that preserves
+  // the original <body> tag's attributes (id, class, style, data-*).
+  // Without this wrapper, CSS selectors targeting body, #id, or .class won't
+  // match any element inside the Elementor HTML widget container.
+  const bodyEl = $('body');
+  const bodyInner = bodyEl.html() || '';
+  const bodyAttrs = [];
+  const bodyNode = bodyEl[0];
+  if (bodyNode && bodyNode.attribs) {
+    for (const [attr, val] of Object.entries(bodyNode.attribs)) {
+      bodyAttrs.push(`${attr}="${val.replace(/"/g, '&quot;')}"`);
+    }
+  }
+  const bodyHtml = bodyAttrs.length > 0
+    ? `<div ${bodyAttrs.join(' ')}>${bodyInner}</div>`
+    : bodyInner;
 
   // Combine head styles/scripts + body content in ONE html widget.
   // This ensures CSS and JS from <head> apply to body content — splitting them

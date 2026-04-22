@@ -1356,7 +1356,50 @@ async function inlineExternalCss(html, pageUrl) {
       // Replace <link> with inline <style> containing the fetched CSS
       $(el).replaceWith(`<style>${fixedCss}</style>`);
     }
-    // If fetch failed, keep the original <link> tag as fallback
+    // If fetch failed, remove the <link> tag — it will never load on WordPress
+    // and leaving it causes Elementor to render the page without any CSS.
+    else { $(el).remove(); }
+  }
+
+  return $.html();
+}
+
+// ── rewriteRelativeUrls ─────────────────────────────────────────────────────
+//
+// Rewrites relative src, srcset, and poster attributes to absolute URLs.
+// Elementor HTML widgets render on the user's WordPress domain, so relative
+// paths would resolve against that domain instead of the original site.
+//
+// @param {string} html - HTML string to process
+// @param {string} pageUrl - Original page URL used as base for resolution
+// @returns {string} HTML with all asset URLs made absolute
+
+function rewriteRelativeUrls(html, pageUrl) {
+  if (!pageUrl) return html;
+
+  const $ = cheerio.load(html, { decodeEntities: false });
+  const attrPairs = [
+    ['img[src]', 'src'], ['source[src]', 'src'], ['source[srcset]', 'srcset'],
+    ['video[src]', 'src'], ['video[poster]', 'poster'], ['audio[src]', 'src'],
+    ['script[src]', 'src'], ['img[srcset]', 'srcset'],
+  ];
+
+  for (const [sel, attr] of attrPairs) {
+    $(sel).each((_, el) => {
+      const val = $(el).attr(attr);
+      if (!val) return;
+      if (attr === 'srcset') {
+        const rewritten = val.split(',').map(entry => {
+          const parts = entry.trim().split(/\s+/);
+          const resolved = resolveUrl(parts[0], pageUrl);
+          return resolved ? [resolved, ...parts.slice(1)].join(' ') : entry;
+        }).join(', ');
+        $(el).attr(attr, rewritten);
+      } else {
+        const resolved = resolveUrl(val, pageUrl);
+        if (resolved) $(el).attr(attr, resolved);
+      }
+    });
   }
 
   return $.html();
@@ -1367,34 +1410,20 @@ async function inlineExternalCss(html, pageUrl) {
 // Converts affiliate-customized HTML (output of buildExportHtml) into a valid,
 // importable Elementor JSON structure (version 0.4).
 //
+// All head + body content is combined into a single Elementor HTML widget inside
+// one top-level container. CSS selectors targeting body/html/:root are rewritten
+// to a scoped wrapper class so they apply correctly within the widget.
+//
 // @param {string} html - Full HTML string with <!DOCTYPE>, <html>, <head>, <body>
 // @returns {object} Elementor JSON object ready for JSON.stringify
-//
-// Design decisions (from .planning/phases/12-core-json-builder/12-CONTEXT.md):
-//   D-01: Each direct child of <body> becomes a top-level container
-//   D-02: If <body> has exactly 1 child (wrapper div), use wrapper's children
-//   D-03/D-04: Head scripts/styles go in a dedicated first container
-//   D-05: IDs are 8-char hex via crypto.randomBytes(4); collision-checked with Set
-//   D-06: Root envelope: { version, type, title, page_settings, content }
-//   D-07: Container shape: { id, elType, isInner, settings, elements }
-//   D-08: Widget shape:    { id, elType, widgetType, isInner, settings, elements }
-//   D-09: title extracted from <title> tag
-//
-// Pitfalls avoided:
-//   Pitfall 1:  unique IDs enforced via Set
-//   Pitfall 2:  isInner: false for all top-level containers and widgets
-//   Pitfall 8:  settings always an object {}, never an array []
-//   Pitfall 13: flex_direction always explicit
-//   Pitfall 15: type always "page"
-//   Pitfall 16: page_settings always {}
 
 function buildElementorJson(html) {
   const $ = cheerio.load(html, { decodeEntities: false });
 
-  // D-09: Extract page title
+  // Extract page title for the Elementor JSON envelope
   const rawTitle = $('title').first().text().trim() || '';
 
-  // D-05: Unique ID generator with collision guard (Pitfall 1)
+  // Unique ID generator — 8-char hex, collision-checked via Set
   const usedIds = new Set();
   function genId() {
     let id;
@@ -1421,7 +1450,16 @@ function buildElementorJson(html) {
     };
   }
 
-  // Collect ALL head content (styles, links, scripts) — excluding title and charset meta
+  // Unique class used to scope body/html/:root CSS selectors inside the widget.
+  // Elementor renders widget content inside its own DOM — there is no <body> or
+  // <html> element inside a widget, so selectors like "body { ... }" never match.
+  // We wrap all body content in a div with this class and rewrite those selectors
+  // to ".elwrap { ... }" so they apply correctly within the widget scope.
+  const wrapClass = 'el-page-wrap-' + crypto.randomBytes(3).toString('hex');
+
+  // Collect ALL head content (styles, links, scripts) — excluding title and charset meta.
+  // After inlineExternalCss runs, there should be NO <link rel="stylesheet"> tags left —
+  // they were either inlined to <style> or removed (broken links never load in WordPress).
   const headParts = [];
   $('head').children().each(function() {
     const el = $(this);
@@ -1432,34 +1470,58 @@ function buildElementorJson(html) {
   });
   const headBlock = headParts.join('\n').trim();
 
-  // Collect ALL body content as raw HTML, wrapped in a <div> that preserves
-  // the original <body> tag's attributes (id, class, style, data-*).
-  // Without this wrapper, CSS selectors targeting body, #id, or .class won't
-  // match any element inside the Elementor HTML widget container.
+  // Rewrite body/html/:root selectors in all <style> blocks so they match the
+  // wrapper div instead of the real document root (which doesn't exist in a widget).
+  // Pattern: match "body", "html", or ":root" when they appear as standalone selectors
+  // (at line start or after , { space) and replace with the wrapper class.
+  function rewriteBodySelectors(styleText) {
+    return styleText.replace(
+      /(^|[,{}\s])(?:body|html|:root)(\s*[,{>+~\s])/gm,
+      (match, pre, post) => pre + '.' + wrapClass + post
+    );
+  }
+
+  // Rewrite <style> blocks in the head portion
+  const rewrittenHead = headBlock.replace(
+    /<style([^>]*)>([\s\S]*?)<\/style>/gi,
+    (_, attrs, css) => '<style' + attrs + '>' + rewriteBodySelectors(css) + '</style>'
+  );
+
+  // Collect body content and wrap it with the scoping class div,
+  // preserving the original <body> attributes (id, class, style, data-*).
   const bodyEl = $('body');
   const bodyInner = bodyEl.html() || '';
   const bodyAttrs = [];
   const bodyNode = bodyEl[0];
   if (bodyNode && bodyNode.attribs) {
     for (const [attr, val] of Object.entries(bodyNode.attribs)) {
-      bodyAttrs.push(`${attr}="${val.replace(/"/g, '&quot;')}"`);
+      bodyAttrs.push(attr + '="' + val.replace(/"/g, '&quot;') + '"');
     }
   }
-  const bodyHtml = bodyAttrs.length > 0
-    ? `<div ${bodyAttrs.join(' ')}>${bodyInner}</div>`
-    : bodyInner;
+  // Always add the wrapClass so body/html/:root selector rewriting applies
+  const classAttr = bodyAttrs.find(a => a.startsWith('class='));
+  const otherAttrs = bodyAttrs.filter(a => !a.startsWith('class='));
+  const mergedClass = classAttr
+    ? classAttr.replace(/^class="/, 'class="' + wrapClass + ' ')
+    : 'class="' + wrapClass + '"';
+  const bodyHtml = '<div ' + [mergedClass, ...otherAttrs].join(' ') + '>' + bodyInner + '</div>';
+
+  // Elementor-specific CSS fixes: WP Rocket lazy-loading replaces img src with
+  // a 0x0 SVG placeholder, which distorts images that rely on intrinsic aspect
+  // ratio. Adding object-fit:cover ensures avatars and thumbnails stay correct.
+  const elementorFixCss = '<style>.avatar{width:40px!important;height:40px!important;min-width:40px;min-height:40px;border-radius:50%!important;object-fit:cover!important;display:inline-block}img{max-width:100%;height:auto}</style>';
 
   // Combine head styles/scripts + body content in ONE html widget.
   // This ensures CSS and JS from <head> apply to body content — splitting them
   // into separate Elementor containers breaks style scoping.
-  const fullContent = (headBlock ? headBlock + '\n' : '') + bodyHtml;
+  const fullContent = (rewrittenHead ? rewrittenHead + '\n' : '') + elementorFixCss + '\n' + bodyHtml;
 
   const containers = [];
   if (fullContent.trim()) {
     containers.push(makeContainer(fullContent));
   }
 
-  // D-06: Assemble root JSON envelope (Pitfalls 15, 16)
+  // Assemble root JSON envelope
   return {
     version: '0.4',
     title: rawTitle,
@@ -1733,15 +1795,16 @@ app.post('/api/export-elementor', async (req, res) => {
                                        delayType, bundleImages, extraScripts, pageUrl,
                                        colorReplacements, productNameOld, productNameNew, imageReplacements });
 
-  // Step 1.5: Inline external CSS — Elementor HTML widgets render on the user's
-  // WordPress domain, so <link> tags pointing to the original site won't load.
-  // Fetching and inlining CSS makes the widget fully self-contained.
+  // Step 2: Inline external CSS (widgets can't load cross-origin stylesheets)
   const htmlWithInlinedCss = await inlineExternalCss(outputHtml, pageUrl || null);
 
-  // Step 2: Convert to Elementor JSON
-  const elementorJson = buildElementorJson(htmlWithInlinedCss);
+  // Step 3: Rewrite relative asset URLs to absolute
+  const htmlWithAbsoluteUrls = rewriteRelativeUrls(htmlWithInlinedCss, pageUrl || null);
 
-  // Step 3: Validate — unique IDs, settings are objects
+  // Step 4: Convert to Elementor JSON
+  const elementorJson = buildElementorJson(htmlWithAbsoluteUrls);
+
+  // Step 5: Validate — unique IDs, settings are objects
   const idSet = new Set();
   let valid = true;
   let validationError = '';
@@ -1772,7 +1835,7 @@ app.post('/api/export-elementor', async (req, res) => {
     return res.status(422).json({ error: 'JSON Elementor inválido: ' + validationError });
   }
 
-  // Step 4: Generate filename from title
+  // Step 6: Generate filename from title and respond
   const slug = (elementorJson.title || 'page')
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
@@ -1857,5 +1920,6 @@ module.exports.detectAllProductImages = detectAllProductImages;
 module.exports.buildExportHtml = buildExportHtml;
 module.exports.buildElementorJson = buildElementorJson;
 module.exports.inlineExternalCss = inlineExternalCss;
+module.exports.rewriteRelativeUrls = rewriteRelativeUrls;
 module.exports.uploadSessions = uploadSessions;
 module.exports.bundleImageStore = bundleImageStore;

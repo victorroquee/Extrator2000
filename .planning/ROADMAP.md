@@ -39,8 +39,8 @@ Decimal phases appear between their surrounding integers in numeric order.
 ### Milestone v1.4 — Export JSON Elementor (branch: EXPORT-JSON-ELEMENTOR)
 
 - [x] **Phase 12: Core JSON Builder** - buildElementorJson function: valid Elementor structure, unique IDs, per-section containers, html widgets, all affiliate customizations included (completed 2026-04-20)
-- [ ] **Phase 13: Export Route** - POST /api/export-elementor endpoint: reuses buildExportHtml, validates output, returns .json download
-- [ ] **Phase 14: Frontend Export Button** - "Exportar Elementor (.json)" button and tooltip in the UI alongside existing export options
+- [x] **Phase 13: Export Route** - POST /api/export-elementor endpoint: reuses buildExportHtml, validates output, returns .json download (completed 2026-04-22)
+- [x] **Phase 14: Frontend Export Button** - "Exportar Elementor (.json)" button and tooltip in the UI alongside existing export options (completed 2026-04-22)
 
 ## Phase Details
 
@@ -302,5 +302,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 10. Nome do Produto — Detecção e Substituição | 0/0 | Planned (extrator-interno) | — |
 | 11. Potes & Cores — Editor Visual | 0/0 | Planned (extrator-interno) | — |
 | 12. Core JSON Builder | 1/1 | Complete    | 2026-04-20 |
-| 13. Export Route | 0/0 | Not started | — |
-| 14. Frontend Export Button | 0/0 | Not started | — |
+| 13. Export Route | 1/1 | Complete | 2026-04-22 |
+| 14. Frontend Export Button | 1/1 | Complete | 2026-04-22 |

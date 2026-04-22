@@ -610,7 +610,6 @@
     .validation-summary.has-fail { background: #FFFBEB; color: #B45309; border: 1px solid #FDE68A; }
     .validation-footer {
       padding: 12px 24px 20px;
-      display: flex; gap: 8px; justify-content: flex-end;
       border-top: 1px solid #E5E8EE;
       opacity: 0; transition: opacity 0.2s;
     }
@@ -632,6 +631,22 @@
       transition: background 0.15s, transform 0.1s;
     }
     .btn-fix-big:hover { background: #C2410C; transform: scale(1.02); }
+    .btn-download-elementor {
+      background: #7C3AED; color: #fff; border: none;
+      padding: 12px 24px; border-radius: 9px;
+      font-size: 0.92rem; font-weight: 700;
+      cursor: pointer; transition: background 0.15s, transform 0.1s;
+    }
+    .btn-download-elementor:hover { background: #6D28D9; transform: scale(1.02); }
+    .val-download-area {
+      display: flex; flex-direction: column; align-items: stretch; gap: 8px; width: 100%;
+    }
+    .val-download-row {
+      display: flex; gap: 8px; justify-content: flex-end;
+    }
+    .val-elementor-hint {
+      font-size: 0.68rem; color: #9CA3AF; text-align: right; margin: 0; line-height: 1.3;
+    }
 
     .modal {
       background: #fff; border-radius: 14px;
@@ -1157,7 +1172,7 @@
           <button class="btn-export" id="btn-export" type="button" disabled>
             Gerar Página do Afiliado
           </button>
-          <p class="export-hint">Baixa um ZIP com o HTML e todos os assets da página</p>
+          <p class="export-hint">Valida e oferece download em ZIP (HTML) ou JSON (Elementor)</p>
         </section>
 
       </div><!-- /.form-panel -->
@@ -2358,16 +2373,28 @@
       setTimeout(function() {
         footer.classList.add('visible');
         if (allPass) {
-          footer.innerHTML = '<button class="btn btn-ghost" id="val-cancel">Cancelar</button>'
-            + '<button class="btn-download-big" id="val-download">&#11123; Baixar ZIP</button>';
+          footer.innerHTML = '<div class="val-download-area">'
+            + '<div class="val-download-row">'
+            + '<button class="btn btn-ghost" id="val-cancel">Cancelar</button>'
+            + '<button class="btn-download-big" id="val-download">&#11123; Baixar ZIP (HTML)</button>'
+            + '<button class="btn-download-elementor" id="val-download-elementor">&#11123; Baixar JSON (Elementor)</button>'
+            + '</div>'
+            + '<p class="val-elementor-hint">Para importar o JSON: WordPress &rarr; Templates &rarr; Importar Templates (Elementor 3.6+)</p>'
+            + '</div>';
           document.getElementById('val-download').addEventListener('click', function() {
             closeValidationModal();
             doActualDownload();
           });
+          document.getElementById('val-download-elementor').addEventListener('click', function() {
+            closeValidationModal();
+            doActualDownloadElementor();
+          });
           document.getElementById('val-cancel').addEventListener('click', closeValidationModal);
         } else {
-          footer.innerHTML = '<button class="btn btn-ghost" id="val-cancel">Fechar</button>'
-            + '<button class="btn-fix-big" id="val-fix">Corrigir itens</button>';
+          footer.innerHTML = '<div class="val-download-row">'
+            + '<button class="btn btn-ghost" id="val-cancel">Fechar</button>'
+            + '<button class="btn-fix-big" id="val-fix">Corrigir itens</button>'
+            + '</div>';
           document.getElementById('val-fix').addEventListener('click', closeValidationModal);
           document.getElementById('val-cancel').addEventListener('click', closeValidationModal);
         }
@@ -2409,6 +2436,57 @@
 
       } catch (err) {
         showError('Falha de conexão ao exportar. Verifique se o servidor está rodando.');
+      } finally {
+        setExportEnabled(true);
+        if (btnExport)      btnExport.textContent      = 'Gerar Página do Afiliado';
+        if (btnExportPanel) btnExportPanel.textContent = 'Gerar Página do Afiliado';
+      }
+    }
+
+    async function doActualDownloadElementor() {
+      var payload = buildExportPayload();
+      setExportEnabled(false);
+      if (btnExport)      btnExport.textContent      = 'Gerando JSON...';
+      if (btnExportPanel) btnExportPanel.textContent = 'Gerando JSON...';
+
+      try {
+        var response = await fetchWithTimeout('/api/export-elementor', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        }, 30000);
+
+        if (!response.ok) {
+          var errData = await response.json().catch(function() { return {}; });
+          showError(errData.error || 'Erro ao gerar JSON Elementor. Tente novamente.');
+          return;
+        }
+
+        var text = await response.text();
+        var blob = new Blob([text], { type: 'application/octet-stream' });
+        var blobUrl = URL.createObjectURL(blob);
+        var anchor = document.createElement('a');
+        anchor.href = blobUrl;
+        // Build filename from page title (same logic as server)
+        var pageTitle = '';
+        try {
+          var tmp = document.createElement('div');
+          tmp.innerHTML = state.fetchedHtml || '';
+          var titleTag = tmp.querySelector('title');
+          if (titleTag) pageTitle = titleTag.textContent.trim();
+        } catch(e) {}
+        var slug = (pageTitle || 'page').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').substring(0, 50);
+        anchor.download = 'elementor-' + (slug || 'page') + '.json';
+        anchor.style.display = 'none';
+        document.body.appendChild(anchor);
+        anchor.click();
+        setTimeout(function() {
+          document.body.removeChild(anchor);
+          URL.revokeObjectURL(blobUrl);
+        }, 100);
+
+      } catch (err) {
+        showError('Falha de conexão ao exportar JSON Elementor. Verifique se o servidor está rodando.');
       } finally {
         setExportEnabled(true);
         if (btnExport)      btnExport.textContent      = 'Gerar Página do Afiliado';

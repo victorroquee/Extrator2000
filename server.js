@@ -1292,6 +1292,245 @@ function buildExportHtml({ html, headerPixel, headerPreload, vslembed, checkoutL
   return outputHtml;
 }
 
+// ── Helper: Inline external CSS for Elementor export ────────────────────────
+//
+// Fetches all <link rel="stylesheet"> CSS files and replaces them with inline
+// <style> tags. This is critical for Elementor JSON export because the HTML
+// widget renders on the user's WordPress domain — external CSS URLs pointing
+// to the original site won't resolve, causing the page to appear without styles.
+
+async function inlineExternalCss(html, pageUrl) {
+  const $ = cheerio.load(html, { decodeEntities: false });
+  const links = [];
+
+  $('link[rel="stylesheet"]').each((_, el) => {
+    const href = $(el).attr('href');
+    if (!href || href.startsWith('data:')) return;
+    let absUrl = href;
+    if (pageUrl && !/^https?:\/\//i.test(href)) {
+      try { absUrl = new URL(href, pageUrl).href; } catch { return; }
+    }
+    if (/^https?:\/\//i.test(absUrl)) {
+      links.push({ el, absUrl });
+    }
+  });
+
+  if (links.length === 0) return html;
+
+  // Fetch CSS files in parallel (max 10, 8s timeout each, 500KB limit)
+  const results = await Promise.all(
+    links.slice(0, 10).map(async ({ el, absUrl }) => {
+      try {
+        const resp = await axios.get(absUrl, {
+          timeout: 8000,
+          maxContentLength: 500 * 1024,
+          responseType: 'text',
+          headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
+        });
+        return { el, css: typeof resp.data === 'string' ? resp.data : '', cssUrl: absUrl };
+      } catch {
+        return { el, css: null, cssUrl: absUrl };
+      }
+    })
+  );
+
+  for (const { el, css, cssUrl } of results) {
+    if (css) {
+      // Rewrite relative url() references in CSS to absolute URLs.
+      // When CSS is inlined, relative paths (e.g. url("fonts/file.woff")) would resolve
+      // against the WordPress page instead of the original CSS file location.
+      let fixedCss = css;
+      try {
+        const cssBase = cssUrl.substring(0, cssUrl.lastIndexOf('/') + 1);
+        fixedCss = css.replace(/url\(\s*(['"]?)(?!data:|https?:\/\/|\/\/)([^)'"]+)\1\s*\)/gi,
+          (match, quote, relPath) => {
+            try {
+              const absPath = new URL(relPath, cssBase).href;
+              return `url(${quote}${absPath}${quote})`;
+            } catch {
+              return match;
+            }
+          }
+        );
+      } catch { /* keep original CSS if rewriting fails */ }
+      // Replace <link> with inline <style> containing the fetched CSS
+      $(el).replaceWith(`<style>${fixedCss}</style>`);
+    }
+    // If fetch failed, remove the <link> tag — it will never load on WordPress
+    // and leaving it causes Elementor to render the page without any CSS.
+    else { $(el).remove(); }
+  }
+
+  return $.html();
+}
+
+// ── rewriteRelativeUrls ─────────────────────────────────────────────────────
+//
+// Rewrites relative src, srcset, and poster attributes to absolute URLs.
+// Elementor HTML widgets render on the user's WordPress domain, so relative
+// paths would resolve against that domain instead of the original site.
+//
+// @param {string} html - HTML string to process
+// @param {string} pageUrl - Original page URL used as base for resolution
+// @returns {string} HTML with all asset URLs made absolute
+
+function rewriteRelativeUrls(html, pageUrl) {
+  if (!pageUrl) return html;
+
+  const $ = cheerio.load(html, { decodeEntities: false });
+  const attrPairs = [
+    ['img[src]', 'src'], ['source[src]', 'src'], ['source[srcset]', 'srcset'],
+    ['video[src]', 'src'], ['video[poster]', 'poster'], ['audio[src]', 'src'],
+    ['script[src]', 'src'], ['img[srcset]', 'srcset'],
+  ];
+
+  for (const [sel, attr] of attrPairs) {
+    $(sel).each((_, el) => {
+      const val = $(el).attr(attr);
+      if (!val) return;
+      if (attr === 'srcset') {
+        const rewritten = val.split(',').map(entry => {
+          const parts = entry.trim().split(/\s+/);
+          const resolved = resolveUrl(parts[0], pageUrl);
+          return resolved ? [resolved, ...parts.slice(1)].join(' ') : entry;
+        }).join(', ');
+        $(el).attr(attr, rewritten);
+      } else {
+        const resolved = resolveUrl(val, pageUrl);
+        if (resolved) $(el).attr(attr, resolved);
+      }
+    });
+  }
+
+  return $.html();
+}
+
+// ── buildElementorJson ───────────────────────────────────────────────────────
+//
+// Converts affiliate-customized HTML (output of buildExportHtml) into a valid,
+// importable Elementor JSON structure (version 0.4).
+//
+// All head + body content is combined into a single Elementor HTML widget inside
+// one top-level container. CSS selectors targeting body/html/:root are rewritten
+// to a scoped wrapper class so they apply correctly within the widget.
+//
+// @param {string} html - Full HTML string with <!DOCTYPE>, <html>, <head>, <body>
+// @returns {object} Elementor JSON object ready for JSON.stringify
+
+function buildElementorJson(html) {
+  const $ = cheerio.load(html, { decodeEntities: false });
+
+  // Extract page title for the Elementor JSON envelope
+  const rawTitle = $('title').first().text().trim() || '';
+
+  // Unique ID generator — 8-char hex, collision-checked via Set
+  const usedIds = new Set();
+  function genId() {
+    let id;
+    do { id = crypto.randomBytes(4).toString('hex'); } while (usedIds.has(id));
+    usedIds.add(id);
+    return id;
+  }
+
+  // Helper: build one container wrapping one html widget
+  function makeContainer(htmlContent) {
+    return {
+      id: genId(),
+      elType: 'container',
+      isInner: false,
+      settings: { flex_direction: 'column' },
+      elements: [{
+        id: genId(),
+        elType: 'widget',
+        widgetType: 'html',
+        isInner: false,
+        settings: { html: htmlContent },
+        elements: []
+      }]
+    };
+  }
+
+  // Unique class used to scope body/html/:root CSS selectors inside the widget.
+  // Elementor renders widget content inside its own DOM — there is no <body> or
+  // <html> element inside a widget, so selectors like "body { ... }" never match.
+  // We wrap all body content in a div with this class and rewrite those selectors
+  // to ".elwrap { ... }" so they apply correctly within the widget scope.
+  const wrapClass = 'el-page-wrap-' + crypto.randomBytes(3).toString('hex');
+
+  // Collect ALL head content (styles, links, scripts) — excluding title and charset meta.
+  // After inlineExternalCss runs, there should be NO <link rel="stylesheet"> tags left —
+  // they were either inlined to <style> or removed (broken links never load in WordPress).
+  const headParts = [];
+  $('head').children().each(function() {
+    const el = $(this);
+    const tagName = (this.tagName || '').toLowerCase();
+    if (tagName === 'title') return;
+    if (tagName === 'meta' && el.attr('charset')) return;
+    headParts.push($.html(this));
+  });
+  const headBlock = headParts.join('\n').trim();
+
+  // Rewrite body/html/:root selectors in all <style> blocks so they match the
+  // wrapper div instead of the real document root (which doesn't exist in a widget).
+  // Pattern: match "body", "html", or ":root" when they appear as standalone selectors
+  // (at line start or after , { space) and replace with the wrapper class.
+  function rewriteBodySelectors(styleText) {
+    return styleText.replace(
+      /(^|[,{}\s])(?:body|html|:root)(\s*[,{>+~\s])/gm,
+      (match, pre, post) => pre + '.' + wrapClass + post
+    );
+  }
+
+  // Rewrite <style> blocks in the head portion
+  const rewrittenHead = headBlock.replace(
+    /<style([^>]*)>([\s\S]*?)<\/style>/gi,
+    (_, attrs, css) => '<style' + attrs + '>' + rewriteBodySelectors(css) + '</style>'
+  );
+
+  // Collect body content and wrap it with the scoping class div,
+  // preserving the original <body> attributes (id, class, style, data-*).
+  const bodyEl = $('body');
+  const bodyInner = bodyEl.html() || '';
+  const bodyAttrs = [];
+  const bodyNode = bodyEl[0];
+  if (bodyNode && bodyNode.attribs) {
+    for (const [attr, val] of Object.entries(bodyNode.attribs)) {
+      bodyAttrs.push(attr + '="' + val.replace(/"/g, '&quot;') + '"');
+    }
+  }
+  // Always add the wrapClass so body/html/:root selector rewriting applies
+  const classAttr = bodyAttrs.find(a => a.startsWith('class='));
+  const otherAttrs = bodyAttrs.filter(a => !a.startsWith('class='));
+  const mergedClass = classAttr
+    ? classAttr.replace(/^class="/, 'class="' + wrapClass + ' ')
+    : 'class="' + wrapClass + '"';
+  const bodyHtml = '<div ' + [mergedClass, ...otherAttrs].join(' ') + '>' + bodyInner + '</div>';
+
+  // Elementor-specific CSS fixes: WP Rocket lazy-loading replaces img src with
+  // a 0x0 SVG placeholder, which distorts images that rely on intrinsic aspect
+  // ratio. Adding object-fit:cover ensures avatars and thumbnails stay correct.
+  const elementorFixCss = '<style>.avatar{width:40px!important;height:40px!important;min-width:40px;min-height:40px;border-radius:50%!important;object-fit:cover!important;display:inline-block}img{max-width:100%;height:auto}</style>';
+
+  // Combine head styles/scripts + body content in ONE html widget.
+  // This ensures CSS and JS from <head> apply to body content — splitting them
+  // into separate Elementor containers breaks style scoping.
+  const fullContent = (rewrittenHead ? rewrittenHead + '\n' : '') + elementorFixCss + '\n' + bodyHtml;
+
+  const containers = [];
+  if (fullContent.trim()) {
+    containers.push(makeContainer(fullContent));
+  }
+
+  // Assemble root JSON envelope
+  return {
+    version: '0.4',
+    title: rawTitle,
+    type: 'page',
+    page_settings: {},
+    content: containers
+  };
+}
+
 // ── Route: POST /api/export ──────────────────────────────────────────────────
 
 app.post('/api/export', (req, res) => {
@@ -1539,6 +1778,76 @@ app.post('/api/export-zip', async (req, res) => {
   await archive.finalize();
 });
 
+// ── Route: POST /api/export-elementor ────────────────────────────────────────
+
+app.post('/api/export-elementor', async (req, res) => {
+  const { html, headerPixel, headerPreload, vslembed, checkoutLinks,
+          delaySeconds, delayScriptContent, delayType, bundleImages, extraScripts, pageUrl,
+          colorReplacements, productNameOld, productNameNew, imageReplacements } = req.body;
+
+  if (!html || typeof html !== 'string') {
+    return res.status(400).json({ error: 'Campo "html" é obrigatório.' });
+  }
+
+  // Step 1: Build the affiliate-customized HTML (same as other exports)
+  const outputHtml = buildExportHtml({ html, headerPixel, headerPreload, vslembed,
+                                       checkoutLinks, delaySeconds, delayScriptContent,
+                                       delayType, bundleImages, extraScripts, pageUrl,
+                                       colorReplacements, productNameOld, productNameNew, imageReplacements });
+
+  // Step 2: Inline external CSS (widgets can't load cross-origin stylesheets)
+  const htmlWithInlinedCss = await inlineExternalCss(outputHtml, pageUrl || null);
+
+  // Step 3: Rewrite relative asset URLs to absolute
+  const htmlWithAbsoluteUrls = rewriteRelativeUrls(htmlWithInlinedCss, pageUrl || null);
+
+  // Step 4: Convert to Elementor JSON
+  const elementorJson = buildElementorJson(htmlWithAbsoluteUrls);
+
+  // Step 5: Validate — unique IDs, settings are objects
+  const idSet = new Set();
+  let valid = true;
+  let validationError = '';
+  function walkValidate(elements) {
+    for (const el of elements) {
+      if (!el.id || typeof el.id !== 'string' || !/^[0-9a-f]{6,8}$/.test(el.id)) {
+        valid = false;
+        validationError = 'Elemento com ID inválido: ' + el.id;
+        return;
+      }
+      if (idSet.has(el.id)) {
+        valid = false;
+        validationError = 'ID duplicado: ' + el.id;
+        return;
+      }
+      idSet.add(el.id);
+      if (el.settings && typeof el.settings !== 'object') {
+        valid = false;
+        validationError = 'Settings não é objeto no elemento: ' + el.id;
+        return;
+      }
+      if (Array.isArray(el.elements)) walkValidate(el.elements);
+    }
+  }
+  if (Array.isArray(elementorJson.content)) walkValidate(elementorJson.content);
+
+  if (!valid) {
+    return res.status(422).json({ error: 'JSON Elementor inválido: ' + validationError });
+  }
+
+  // Step 6: Generate filename from title and respond
+  const slug = (elementorJson.title || 'page')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')
+    .substring(0, 50);
+  const filename = 'elementor-' + (slug || 'page') + '.json';
+
+  res.setHeader('Content-Type', 'application/json; charset=utf-8');
+  res.setHeader('Content-Disposition', 'attachment; filename="' + filename + '"');
+  return res.send(JSON.stringify(elementorJson, null, 2));
+});
+
 // ── Route: POST /api/upload-bundle-image ────────────────────────────────────
 
 const bundleImageUpload = multer({
@@ -1609,5 +1918,8 @@ module.exports.detectPageColors = detectPageColors;
 module.exports.detectProductName = detectProductName;
 module.exports.detectAllProductImages = detectAllProductImages;
 module.exports.buildExportHtml = buildExportHtml;
+module.exports.buildElementorJson = buildElementorJson;
+module.exports.inlineExternalCss = inlineExternalCss;
+module.exports.rewriteRelativeUrls = rewriteRelativeUrls;
 module.exports.uploadSessions = uploadSessions;
 module.exports.bundleImageStore = bundleImageStore;

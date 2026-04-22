@@ -647,6 +647,10 @@
     .val-elementor-hint {
       font-size: 0.68rem; color: #9CA3AF; text-align: right; margin: 0; line-height: 1.3;
     }
+    .val-warn-hint {
+      font-size: 0.78rem; color: #D97706; background: #FEF3C7; border: 1px solid #FDE68A;
+      border-radius: 6px; padding: 8px 10px; margin: 0 0 8px 0; line-height: 1.4; text-align: center;
+    }
 
     .modal {
       background: #fff; border-radius: 14px;
@@ -2327,7 +2331,7 @@
       html += '<div class="validation-summary ' + (allPass ? 'all-pass' : 'has-fail') + '" id="val-summary">';
       html += allPass
         ? passCount + '/' + total + ' itens verificados — tudo certo para exportar.'
-        : passCount + '/' + total + ' itens verificados — corrija os itens marcados.';
+        : passCount + '/' + total + ' itens verificados — alguns itens estão ausentes.';
       html += '</div>';
 
       body.innerHTML = html;
@@ -2391,11 +2395,23 @@
           });
           document.getElementById('val-cancel').addEventListener('click', closeValidationModal);
         } else {
-          footer.innerHTML = '<div class="val-download-row">'
-            + '<button class="btn btn-ghost" id="val-cancel">Fechar</button>'
-            + '<button class="btn-fix-big" id="val-fix">Corrigir itens</button>'
+          footer.innerHTML = '<div class="val-download-area">'
+            + '<p class="val-warn-hint">&#9888; Alguns dados não foram preenchidos. Você pode exportar mesmo assim ou voltar para corrigir.</p>'
+            + '<div class="val-download-row">'
+            + '<button class="btn btn-ghost" id="val-cancel">Voltar e Corrigir</button>'
+            + '<button class="btn-download-big" id="val-download">&#11123; Baixar ZIP (HTML)</button>'
+            + '<button class="btn-download-elementor" id="val-download-elementor">&#11123; Baixar JSON (Elementor)</button>'
+            + '</div>'
+            + '<p class="val-elementor-hint">Para importar o JSON: WordPress &rarr; Templates &rarr; Importar Templates (Elementor 3.6+)</p>'
             + '</div>';
-          document.getElementById('val-fix').addEventListener('click', closeValidationModal);
+          document.getElementById('val-download').addEventListener('click', function() {
+            closeValidationModal();
+            doActualDownload();
+          });
+          document.getElementById('val-download-elementor').addEventListener('click', function() {
+            closeValidationModal();
+            doActualDownloadElementor();
+          });
           document.getElementById('val-cancel').addEventListener('click', closeValidationModal);
         }
       }, totalDelay + 120);

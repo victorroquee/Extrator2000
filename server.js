@@ -1684,7 +1684,11 @@ app.post('/api/export-zip', requestTimeout(120000), async (req, res) => {
     const archive = archiver('zip', { zlib: { level: 6 } });
     archive.on('error', (err) => {
       console.error('[export-zip] archive error:', err);
-      res.destroy(err);
+      if (!res.headersSent) {
+        res.status(500).json({ error: 'Falha ao criar ZIP.' });
+      } else {
+        res.end();
+      }
     });
     archive.pipe(res);
 
@@ -1772,7 +1776,11 @@ app.post('/api/export-zip', requestTimeout(120000), async (req, res) => {
   const archive = archiver('zip', { zlib: { level: 6 } });
   archive.on('error', (err) => {
     console.error('[export-zip] archive error:', err);
-    res.destroy(err);
+    if (!res.headersSent) {
+      res.status(500).json({ error: 'Falha ao criar ZIP.' });
+    } else {
+      res.end();
+    }
   });
   archive.pipe(res);
 

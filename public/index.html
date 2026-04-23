@@ -2486,9 +2486,9 @@
         // Build filename from page title (same logic as server)
         var pageTitle = '';
         try {
-          var tmp = document.createElement('div');
-          tmp.innerHTML = state.fetchedHtml || '';
-          var titleTag = tmp.querySelector('title');
+          var parser = new DOMParser();
+          var doc = parser.parseFromString(state.fetchedHtml || '', 'text/html');
+          var titleTag = doc.querySelector('title');
           if (titleTag) pageTitle = titleTag.textContent.trim();
         } catch(e) {}
         var slug = (pageTitle || 'page').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').substring(0, 50);

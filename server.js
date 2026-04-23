@@ -169,9 +169,10 @@ function cleanHtml(html) {
     }
   });
   for (const { el, src, content } of scriptsToRemove) {
+    const hadVturb = $(el).attr('data-vturb') !== undefined;
     $(el).remove();
     scriptsRemoved++;
-    if (src.includes('vturb') || content.includes('vturb') || $(el).attr('data-vturb') !== undefined) {
+    if (src.includes('vturb') || content.includes('vturb') || hadVturb) {
       vslDetected = true;
     }
   }

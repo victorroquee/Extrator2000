@@ -1938,6 +1938,16 @@ app.get('/api/bundle-image/:id', function(req, res) {
 
 app.get('/api/health', (_, res) => res.json({ ok: true }));
 
+// ── Error Handlers ──────────────────────────────────────────────────────────
+
+process.on('uncaughtException', (err) => {
+  console.error('[FATAL] Uncaught exception:', err);
+});
+
+process.on('unhandledRejection', (reason) => {
+  console.error('[FATAL] Unhandled rejection:', reason);
+});
+
 // ── Start ────────────────────────────────────────────────────────────────────
 
 // Only listen when run directly — not when required by tests

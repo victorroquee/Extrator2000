@@ -188,4 +188,5 @@ if (failures.length > 0) {
   console.log(`  vslDetected: ${vslDetected}`);
   console.log(`  checkoutLinks: ${links.length} found`);
   links.forEach(l => console.log(`    → ${l.platform} bundle=${l.bundle} | ${l.href}`));
+  process.exit(0);
 }

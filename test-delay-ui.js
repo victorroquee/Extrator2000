@@ -346,6 +346,7 @@ async function main() {
     process.exit(1);
   } else {
     console.log(`\nPASSED ${passed}/${total} tests — DELAY-02 UI behavior verified\n`);
+    process.exit(0);
   }
 }
 

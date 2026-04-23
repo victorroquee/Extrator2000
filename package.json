@@ -5,7 +5,9 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "node server.js"
+    "dev": "node server.js",
+    "test": "node test-integration.js && node test-elementor-json.js && node test-rewrite-urls.js && node test-parse-image-dims.js && node test-apply-checkout.js && node test-css-rewriting.js",
+    "test:all": "node test-integration.js && node test-elementor-json.js && node test-delay-ui.js && node test-rewrite-urls.js && node test-parse-image-dims.js && node test-apply-checkout.js && node test-css-rewriting.js"
   },
   "keywords": [
     "vsl",

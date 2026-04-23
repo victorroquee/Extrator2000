@@ -850,6 +850,8 @@ const ALLOWED_UPLOAD_EXTENSIONS = new Set([
 ]);
 
 const SESSION_TTL_MS = 30 * 60 * 1000; // 30 minutos
+const MAX_UPLOAD_SESSIONS = 100;
+const MAX_SESSION_SIZE_BYTES = 50 * 1024 * 1024; // 50MB per session
 const uploadSessions = new Map(); // sessionId -> { assets: Map<relativePath, Buffer>, expiresAt }
 
 // Limpeza periodica de sessoes expiradas
@@ -885,6 +887,10 @@ function isSafeRelativePath(relativePath) {
 // ── Route: POST /api/upload-folder ──────────────────────────────────────────
 
 app.post('/api/upload-folder', folderUpload.array('files', 200), async function(req, res) {
+  if (uploadSessions.size >= MAX_UPLOAD_SESSIONS) {
+    return res.status(503).json({ error: 'Servidor ocupado. Tente novamente em alguns minutos.' });
+  }
+
   const files = req.files || [];
   // multer + express parses 'paths[]' field name as req.body.paths (brackets stripped)
   const rawPaths = req.body.paths || req.body['paths[]'] || [];
@@ -892,6 +898,14 @@ app.post('/api/upload-folder', folderUpload.array('files', 200), async function(
 
   if (!files.length) {
     return res.status(400).json({ error: 'Nenhum arquivo recebido.' });
+  }
+
+  let totalSize = 0;
+  for (const file of files) {
+    totalSize += file.buffer.length;
+    if (totalSize > MAX_SESSION_SIZE_BYTES) {
+      return res.status(413).json({ error: 'Upload excede o limite de 50MB por sessão.' });
+    }
   }
 
   const assets = new Map();
@@ -1860,6 +1874,7 @@ const bundleImageUpload = multer({
 });
 
 // Store uploaded bundle images in memory (keyed by a temp ID)
+const MAX_BUNDLE_IMAGE_ENTRIES = 500;
 const bundleImageStore = new Map(); // id -> { buffer, mimetype, ext }
 
 setInterval(function() {
@@ -1872,6 +1887,9 @@ setInterval(function() {
 app.post('/api/upload-bundle-image', bundleImageUpload.single('image'), function(req, res) {
   if (!req.file) {
     return res.status(400).json({ error: 'Nenhuma imagem recebida.' });
+  }
+  if (bundleImageStore.size >= MAX_BUNDLE_IMAGE_ENTRIES) {
+    return res.status(503).json({ error: 'Servidor ocupado. Tente novamente em alguns minutos.' });
   }
 
   const id = crypto.randomUUID();

@@ -7,6 +7,24 @@ const path = require('path');
 const archiver = require('archiver');
 const multer = require('multer');
 const crypto = require('crypto');
+const dns = require('dns').promises;
+
+function isPrivateIP(ip) {
+  if (!ip) return true;
+  // IPv4 private/loopback/link-local/metadata ranges
+  if (/^127\./.test(ip)) return true;
+  if (/^10\./.test(ip)) return true;
+  if (/^192\.168\./.test(ip)) return true;
+  if (/^172\.(1[6-9]|2\d|3[01])\./.test(ip)) return true;
+  if (/^169\.254\./.test(ip)) return true; // link-local + cloud metadata
+  if (ip === '0.0.0.0') return true;
+  // IPv6 loopback and private
+  if (ip === '::1' || ip === '::') return true;
+  if (/^f[cd]/i.test(ip)) return true; // fc00::/7
+  if (/^fe80/i.test(ip)) return true; // link-local
+  if (/^::ffff:(127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)/.test(ip)) return true; // IPv4-mapped
+  return false;
+}
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -798,10 +816,31 @@ app.post('/api/fetch', requestTimeout(60000), async (req, res) => {
     return res.status(400).json({ error: 'Invalid URL' });
   }
 
+  // DNS resolution check: reject domains that resolve to private IPs
+  try {
+    const parsed = new URL(url);
+    const { address } = await dns.lookup(parsed.hostname);
+    if (isPrivateIP(address)) {
+      return res.status(400).json({ error: 'URL resolves to a private/internal address' });
+    }
+  } catch (dnsErr) {
+    return res.status(400).json({ error: 'Could not resolve hostname' });
+  }
+
   let rawHtml;
   try {
     const response = await axios.get(url, {
-      maxRedirects: 10,
+      maxRedirects: 5,
+      beforeRedirect: function(options) {
+        try {
+          const redirectHost = new URL(options.href || options.hostname).hostname || options.hostname;
+          if (redirectHost === 'localhost' || /^(127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|169\.254\.)/.test(redirectHost)) {
+            throw new Error('Redirect to private address blocked');
+          }
+        } catch (e) {
+          if (e.message.includes('blocked')) throw e;
+        }
+      },
       timeout: 30000,
       maxContentLength: 10 * 1024 * 1024, // T-01-04: limit response size to 10 MB
       headers: {

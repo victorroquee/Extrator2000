@@ -1035,6 +1035,25 @@ function escapeRegExp(str) {
   return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
+// Case-insensitive literal replace using indexOf scan instead of regex.
+// Avoids event loop blocking on multi-MB strings with regex global flag.
+function replaceAllCI(str, search, replacement) {
+  if (!search) return str;
+  const searchLower = search.toLowerCase();
+  const strLower = str.toLowerCase();
+  const parts = [];
+  let lastIndex = 0;
+  let idx = strLower.indexOf(searchLower, lastIndex);
+  while (idx !== -1) {
+    parts.push(str.slice(lastIndex, idx));
+    parts.push(replacement);
+    lastIndex = idx + search.length;
+    idx = strLower.indexOf(searchLower, lastIndex);
+  }
+  parts.push(str.slice(lastIndex));
+  return parts.join('');
+}
+
 function resolveUrl(url, base) {
   try { return new URL(url, base).href; } catch { return null; }
 }
@@ -1316,10 +1335,9 @@ function buildExportHtml({ html, headerPixel, headerPreload, vslembed, checkoutL
   if (Array.isArray(colorReplacements) && colorReplacements.length > 0) {
     const validReplacements = colorReplacements.filter(r => r.oldColor && r.newColor && r.oldColor !== r.newColor);
 
-    // 1) Direct string replacement in HTML
+    // 1) Direct string replacement in HTML (case-insensitive, non-blocking)
     for (const { oldColor, newColor } of validReplacements) {
-      const escaped = oldColor.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      outputHtml = outputHtml.replace(new RegExp(escaped, 'gi'), newColor);
+      outputHtml = replaceAllCI(outputHtml, oldColor, newColor);
     }
 
     // 2) Inject CSS override <style> block
@@ -1352,8 +1370,7 @@ function buildExportHtml({ html, headerPixel, headerPreload, vslembed, checkoutL
 
   // ── Product name replacement: swap all occurrences of old name with new ──
   if (productNameOld && productNameNew && productNameOld !== productNameNew) {
-    const escapedName = productNameOld.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    outputHtml = outputHtml.replace(new RegExp(escapedName, 'gi'), productNameNew);
+    outputHtml = replaceAllCI(outputHtml, productNameOld, productNameNew);
   }
 
   return outputHtml;

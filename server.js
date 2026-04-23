@@ -1923,3 +1923,6 @@ module.exports.inlineExternalCss = inlineExternalCss;
 module.exports.rewriteRelativeUrls = rewriteRelativeUrls;
 module.exports.uploadSessions = uploadSessions;
 module.exports.bundleImageStore = bundleImageStore;
+module.exports.applyCheckoutLinks = applyCheckoutLinks;
+module.exports.parseImageDimensions = parseImageDimensions;
+module.exports.resolveUrl = resolveUrl;

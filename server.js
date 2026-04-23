@@ -1714,6 +1714,7 @@ app.post('/api/export-zip', requestTimeout(120000), async (req, res) => {
     }
 
     res.on('finish', function() { uploadSessions.delete(uploadSessionId); });
+    res.on('close', function() { uploadSessions.delete(uploadSessionId); });
     await archive.finalize();
     return;
   }

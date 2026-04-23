@@ -13,6 +13,19 @@ const PORT = process.env.PORT || 3000;
 
 // ── Middleware ───────────────────────────────────────────────────────────────
 
+function requestTimeout(ms) {
+  return function(req, res, next) {
+    const timer = setTimeout(function() {
+      if (!res.headersSent) {
+        res.status(504).json({ error: 'Tempo limite da requisição excedido.' });
+      }
+    }, ms);
+    res.on('finish', function() { clearTimeout(timer); });
+    res.on('close', function() { clearTimeout(timer); });
+    next();
+  };
+}
+
 app.use(express.json({ limit: '10mb' }));
 app.use(express.static(path.join(__dirname, 'public'), {
   etag: false,
@@ -747,7 +760,7 @@ function detectVturbDelay(rawHtml) {
 
 // ── Route: POST /api/fetch ───────────────────────────────────────────────────
 
-app.post('/api/fetch', async (req, res) => {
+app.post('/api/fetch', requestTimeout(60000), async (req, res) => {
   const { url } = req.body;
 
   if (!url || typeof url !== 'string') {
@@ -886,7 +899,7 @@ function isSafeRelativePath(relativePath) {
 
 // ── Route: POST /api/upload-folder ──────────────────────────────────────────
 
-app.post('/api/upload-folder', folderUpload.array('files', 200), async function(req, res) {
+app.post('/api/upload-folder', requestTimeout(60000), folderUpload.array('files', 200), async function(req, res) {
   if (uploadSessions.size >= MAX_UPLOAD_SESSIONS) {
     return res.status(503).json({ error: 'Servidor ocupado. Tente novamente em alguns minutos.' });
   }
@@ -1644,7 +1657,7 @@ app.post('/api/export-validate', (req, res) => {
 
 // ── Route: POST /api/export-zip ──────────────────────────────────────────────
 
-app.post('/api/export-zip', async (req, res) => {
+app.post('/api/export-zip', requestTimeout(120000), async (req, res) => {
   const { html, headerPixel, headerPreload, vslembed, checkoutLinks, pageUrl,
           delaySeconds, delayScriptContent, delayType, bundleImages, extraScripts,
           uploadSessionId, colorReplacements, productNameOld, productNameNew, imageReplacements } = req.body;
@@ -1794,7 +1807,7 @@ app.post('/api/export-zip', async (req, res) => {
 
 // ── Route: POST /api/export-elementor ────────────────────────────────────────
 
-app.post('/api/export-elementor', async (req, res) => {
+app.post('/api/export-elementor', requestTimeout(120000), async (req, res) => {
   const { html, headerPixel, headerPreload, vslembed, checkoutLinks,
           delaySeconds, delayScriptContent, delayType, bundleImages, extraScripts, pageUrl,
           colorReplacements, productNameOld, productNameNew, imageReplacements } = req.body;

@@ -1341,7 +1341,7 @@
 
   <!-- ── Preview Modal ───────────────────────────────────────────── -->
   <div class="modal-backdrop" id="modal-backdrop">
-    <div class="modal" role="dialog" aria-modal="true" aria-label="Pré-visualização da página">
+    <div class="modal" role="dialog" aria-modal="true" aria-label="Pré-visualização da página" data-i18n-aria="modal.title">
       <div class="modal-header">
         <span class="modal-title" data-i18n="modal.title">Pré-visualização da Página</span>
         <div class="modal-viewport-toggle">
@@ -1491,6 +1491,9 @@
         'dynamic.size.loading': 'Tamanho: carregando...',
         'dynamic.image': 'Imagem {n}',
         'dynamic.active': 'Ativo',
+        'dynamic.bundle.unit': 'Potes',
+        'dynamic.no.detection': 'Sem Detecção',
+        'dynamic.generic': 'Genérico',
         'dynamic.upload': '\u2191 Upload nova imagem',
         'dynamic.uploading': 'Enviando...',
         'error.fetch': 'Erro ao buscar a página. Verifique a URL e tente novamente.',
@@ -1621,6 +1624,9 @@
         'dynamic.size.loading': 'Size: loading...',
         'dynamic.image': 'Image {n}',
         'dynamic.active': 'Active',
+        'dynamic.bundle.unit': 'Bottles',
+        'dynamic.no.detection': 'No Detection',
+        'dynamic.generic': 'Generic',
         'dynamic.upload': '\u2191 Upload new image',
         'dynamic.uploading': 'Uploading...',
         'error.fetch': 'Error fetching page. Check the URL and try again.',
@@ -1659,6 +1665,9 @@
       });
       document.querySelectorAll('[data-i18n-title]').forEach(function(el) {
         el.title = t(el.getAttribute('data-i18n-title'));
+      });
+      document.querySelectorAll('[data-i18n-aria]').forEach(function(el) {
+        el.setAttribute('aria-label', t(el.getAttribute('data-i18n-aria')));
       });
       var toggle = document.getElementById('lang-toggle');
       if (toggle) {
@@ -1797,9 +1806,9 @@
     }
 
     function bundleLabel(bundle) {
-      if (bundle === 2) return '2 Potes';
-      if (bundle === 3) return '3 Potes';
-      if (bundle === 6) return '6 Potes';
+      if (bundle === 2) return '2 ' + t('dynamic.bundle.unit');
+      if (bundle === 3) return '3 ' + t('dynamic.bundle.unit');
+      if (bundle === 6) return '6 ' + t('dynamic.bundle.unit');
       return null;
     }
 
@@ -1820,10 +1829,10 @@
         var btnDown = item.querySelector('[data-action="down"]');
         if (btnUp)   btnUp.disabled   = (idx === 0);
         if (btnDown) btnDown.disabled = (idx === items.length - 1);
-        if (btnUp)   btnUp.setAttribute('aria-label', 'Mover script ' + (idx + 1) + ' para cima');
-        if (btnDown) btnDown.setAttribute('aria-label', 'Mover script ' + (idx + 1) + ' para baixo');
+        if (btnUp)   btnUp.setAttribute('aria-label', (LANG === 'en' ? 'Move script ' + (idx + 1) + ' up' : 'Mover script ' + (idx + 1) + ' para cima'));
+        if (btnDown) btnDown.setAttribute('aria-label', (LANG === 'en' ? 'Move script ' + (idx + 1) + ' down' : 'Mover script ' + (idx + 1) + ' para baixo'));
         var btnRemove = item.querySelector('[data-action="remove"]');
-        if (btnRemove) btnRemove.setAttribute('aria-label', 'Remover script ' + (idx + 1));
+        if (btnRemove) btnRemove.setAttribute('aria-label', (LANG === 'en' ? 'Remove script ' + (idx + 1) : 'Remover script ' + (idx + 1)));
       });
     }
 
@@ -2192,7 +2201,7 @@
           div.className = 'checkout-item';
           div.innerHTML =
             '<div class="checkout-meta">' +
-              '<div class="platform">Sem Detecção</div>' +
+              '<div class="platform">' + t('dynamic.no.detection') + '</div>' +
               '<div class="anchor">' + item.label + '</div>' +
             '</div>' +
             '<div class="field-group">' +
@@ -2209,7 +2218,7 @@
         var bundleTagHtml = link.bundle ? '<span class="bundle-tag">' + bundleLabel(link.bundle) + '</span>' : '';
         div.innerHTML =
           '<div class="checkout-meta">' +
-            '<div class="platform">' + escapeHtml(link.platform || 'Generico') + '</div>' +
+            '<div class="platform">' + escapeHtml(link.platform || t('dynamic.generic')) + '</div>' +
             '<div class="anchor">' + escapeHtml(link.anchorText || '') + '</div>' +
             bundleTagHtml +
           '</div>' +

@@ -5,7 +5,7 @@ milestone_name: — Editor Avançado
 status: ready_to_plan
 stopped_at: Phase 12 context gathered
 last_updated: "2026-04-20T12:45:43.437Z"
-last_activity: 2026-04-23 - Completed quick task 260422-x2h: Unit test suite for critical failure points
+last_activity: 2026-04-27 - Completed quick task 260427-59i: i18n language toggle (PT-BR/EN)
 progress:
   total_phases: 2
   completed_phases: 1
@@ -81,6 +81,7 @@ None.
 | # | Description | Date | Commit | Directory |
 |---|-------------|------|--------|-----------|
 | 260422-x2h | Unit test suite for critical failure points | 2026-04-23 | 4f76d5c | [260422-x2h-criar-suite-de-testes-unitarios-para-pon](./quick/260422-x2h-criar-suite-de-testes-unitarios-para-pon/) |
+| 260427-59i | i18n language toggle (PT-BR/EN) with /us route | 2026-04-27 | 5835535 | [260427-59i-i18n-language-toggle](./quick/260427-59i-i18n-language-toggle/) |
 
 ## Session Continuity
 

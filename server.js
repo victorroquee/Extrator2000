@@ -928,8 +928,10 @@ function saveSession(sessionId, assets) {
   fs.mkdirSync(dir, { recursive: true });
   const manifest = { expiresAt: Date.now() + SESSION_TTL_MS, files: [] };
   for (const [relativePath, buffer] of assets) {
-    const safePath = relativePath.replace(/\.\./g, '_');
-    const filePath = path.join(dir, safePath);
+    const safePath = path.normalize(relativePath).replace(/\.\./g, '_');
+    const filePath = path.resolve(dir, safePath);
+    // Ensure resolved path stays within session directory
+    if (!filePath.startsWith(dir + path.sep) && filePath !== dir) continue;
     const fileDir = path.dirname(filePath);
     if (!fs.existsSync(fileDir)) fs.mkdirSync(fileDir, { recursive: true });
     fs.writeFileSync(filePath, buffer);
@@ -950,7 +952,8 @@ function loadSession(sessionId) {
     }
     const assets = new Map();
     for (const relativePath of manifest.files) {
-      const filePath = path.join(dir, relativePath);
+      const filePath = path.resolve(dir, relativePath);
+      if (!filePath.startsWith(dir + path.sep) && filePath !== dir) continue;
       if (fs.existsSync(filePath)) {
         assets.set(relativePath, fs.readFileSync(filePath));
       }

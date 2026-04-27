@@ -8,6 +8,8 @@ const archiver = require('archiver');
 const multer = require('multer');
 const crypto = require('crypto');
 const dns = require('dns').promises;
+const fs = require('fs');
+const os = require('os');
 
 function isPrivateIP(ip) {
   if (!ip) return true;
@@ -910,14 +912,85 @@ const ALLOWED_UPLOAD_EXTENSIONS = new Set([
 const SESSION_TTL_MS = 30 * 60 * 1000; // 30 minutos
 const MAX_UPLOAD_SESSIONS = 100;
 const MAX_SESSION_SIZE_BYTES = 50 * 1024 * 1024; // 50MB per session
-const uploadSessions = new Map(); // sessionId -> { assets: Map<relativePath, Buffer>, expiresAt }
+
+// ── Disk-based upload sessions (survives server restarts) ───────────────────
+const SESSIONS_DIR = path.join(os.tmpdir(), 'vsl-cloner-sessions');
+if (!fs.existsSync(SESSIONS_DIR)) fs.mkdirSync(SESSIONS_DIR, { recursive: true });
+
+function sessionDir(sessionId) {
+  // Sanitize sessionId to prevent path traversal
+  const safe = sessionId.replace(/[^a-f0-9-]/gi, '');
+  return path.join(SESSIONS_DIR, safe);
+}
+
+function saveSession(sessionId, assets) {
+  const dir = sessionDir(sessionId);
+  fs.mkdirSync(dir, { recursive: true });
+  const manifest = { expiresAt: Date.now() + SESSION_TTL_MS, files: [] };
+  for (const [relativePath, buffer] of assets) {
+    const safePath = relativePath.replace(/\.\./g, '_');
+    const filePath = path.join(dir, safePath);
+    const fileDir = path.dirname(filePath);
+    if (!fs.existsSync(fileDir)) fs.mkdirSync(fileDir, { recursive: true });
+    fs.writeFileSync(filePath, buffer);
+    manifest.files.push(safePath);
+  }
+  fs.writeFileSync(path.join(dir, '_manifest.json'), JSON.stringify(manifest));
+}
+
+function loadSession(sessionId) {
+  const dir = sessionDir(sessionId);
+  const manifestPath = path.join(dir, '_manifest.json');
+  if (!fs.existsSync(manifestPath)) return null;
+  try {
+    const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+    if (manifest.expiresAt < Date.now()) {
+      deleteSession(sessionId);
+      return null;
+    }
+    const assets = new Map();
+    for (const relativePath of manifest.files) {
+      const filePath = path.join(dir, relativePath);
+      if (fs.existsSync(filePath)) {
+        assets.set(relativePath, fs.readFileSync(filePath));
+      }
+    }
+    return { assets, expiresAt: manifest.expiresAt };
+  } catch (e) {
+    return null;
+  }
+}
+
+function deleteSession(sessionId) {
+  const dir = sessionDir(sessionId);
+  if (fs.existsSync(dir)) {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+}
+
+function countSessions() {
+  try {
+    return fs.readdirSync(SESSIONS_DIR).filter(function(f) {
+      return !f.startsWith('.');
+    }).length;
+  } catch (e) { return 0; }
+}
 
 // Limpeza periodica de sessoes expiradas
 setInterval(function() {
-  const now = Date.now();
-  for (const [id, session] of uploadSessions) {
-    if (session.expiresAt < now) uploadSessions.delete(id);
-  }
+  try {
+    const entries = fs.readdirSync(SESSIONS_DIR);
+    for (const entry of entries) {
+      const manifestPath = path.join(SESSIONS_DIR, entry, '_manifest.json');
+      try {
+        if (!fs.existsSync(manifestPath)) continue;
+        const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+        if (manifest.expiresAt < Date.now()) {
+          fs.rmSync(path.join(SESSIONS_DIR, entry), { recursive: true, force: true });
+        }
+      } catch (e) { /* skip broken sessions */ }
+    }
+  } catch (e) { /* ignore */ }
 }, 5 * 60 * 1000);
 
 const folderUpload = multer({
@@ -945,7 +1018,7 @@ function isSafeRelativePath(relativePath) {
 // ── Route: POST /api/upload-folder ──────────────────────────────────────────
 
 app.post('/api/upload-folder', requestTimeout(60000), folderUpload.array('files', 200), async function(req, res) {
-  if (uploadSessions.size >= MAX_UPLOAD_SESSIONS) {
+  if (countSessions() >= MAX_UPLOAD_SESSIONS) {
     return res.status(503).json({ error: 'Servidor ocupado. Tente novamente em alguns minutos.' });
   }
 
@@ -996,10 +1069,7 @@ app.post('/api/upload-folder', requestTimeout(60000), folderUpload.array('files'
   const bundleImages = await detectBundleImages($, checkoutLinks, null);
 
   const sessionId = crypto.randomUUID();
-  uploadSessions.set(sessionId, {
-    assets,
-    expiresAt: Date.now() + SESSION_TTL_MS,
-  });
+  saveSession(sessionId, assets);
 
   const allProductImages = detectAllProductImages($);
 
@@ -1735,7 +1805,7 @@ app.post('/api/export-zip', requestTimeout(120000), async (req, res) => {
 
   // Upload session branch — assets already in memory, no network download needed
   if (uploadSessionId) {
-    const session = uploadSessions.get(uploadSessionId);
+    const session = loadSession(uploadSessionId);
     if (!session) {
       return res.status(400).json({ error: 'Sessao de upload expirada. Refaca o upload da pasta.' });
     }
@@ -1779,8 +1849,8 @@ app.post('/api/export-zip', requestTimeout(120000), async (req, res) => {
       }
     }
 
-    res.on('finish', function() { uploadSessions.delete(uploadSessionId); });
-    res.on('close', function() { uploadSessions.delete(uploadSessionId); });
+    res.on('finish', function() { deleteSession(uploadSessionId); });
+    res.on('close', function() { deleteSession(uploadSessionId); });
     await archive.finalize();
     return;
   }
@@ -2033,7 +2103,7 @@ module.exports.buildExportHtml = buildExportHtml;
 module.exports.buildElementorJson = buildElementorJson;
 module.exports.inlineExternalCss = inlineExternalCss;
 module.exports.rewriteRelativeUrls = rewriteRelativeUrls;
-module.exports.uploadSessions = uploadSessions;
+module.exports.loadSession = loadSession;
 module.exports.bundleImageStore = bundleImageStore;
 module.exports.applyCheckoutLinks = applyCheckoutLinks;
 module.exports.parseImageDimensions = parseImageDimensions;

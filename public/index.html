@@ -54,6 +54,28 @@
       font-size: 0.68rem; padding: 2px 8px;
       border-radius: 20px; font-weight: 600;
     }
+    .lang-toggle {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      margin-left: 8px;
+    }
+    .lang-toggle button {
+      background: none;
+      border: 1px solid transparent;
+      border-radius: 4px;
+      cursor: pointer;
+      padding: 2px 4px;
+      font-size: 1.1rem;
+      line-height: 1;
+      opacity: 0.45;
+      transition: opacity 0.2s, border-color 0.2s;
+    }
+    .lang-toggle button:hover { opacity: 0.8; }
+    .lang-toggle button.active {
+      opacity: 1;
+      border-color: #D1D5DB;
+    }
 
     /* ── App body ─────────────────────────────────────────────────── */
     .app-body { min-height: calc(100vh - 56px); padding: 20px 24px; }
@@ -924,10 +946,14 @@
         <img src="https://affiliview-v2.vercel.app/og-logo.png" alt="OG Group" class="navbar-logo" />
         <div class="navbar-title">
           <span class="navbar-name">VSL Cloner</span>
-          <span class="navbar-tagline">by OG Group</span>
+          <span class="navbar-tagline" data-i18n="nav.tagline">by OG Group</span>
         </div>
       </div>
       <span class="navbar-badge">v1.1</span>
+      <div class="lang-toggle" id="lang-toggle">
+        <button type="button" data-lang="pt-BR" title="Português">&#127463;&#127479;</button>
+        <button type="button" data-lang="en" title="English">&#127482;&#127480;</button>
+      </div>
     </div>
   </nav>
 
@@ -943,42 +969,43 @@
         <section class="card" id="section-fetch">
           <div class="card-header">
             <span class="step-num">1</span>
-            <span class="card-title">Página para Clonar</span>
+            <span class="card-title" data-i18n="step1.title">Página para Clonar</span>
           </div>
 
           <!-- Tab toggle -->
           <div class="input-tabs">
-            <button class="input-tab tab-active" id="tab-url" type="button">URL</button>
-            <button class="input-tab" id="tab-folder" type="button">Pasta de Arquivos</button>
+            <button class="input-tab tab-active" id="tab-url" type="button" data-i18n="step1.tab.url">URL</button>
+            <button class="input-tab" id="tab-folder" type="button" data-i18n="step1.tab.folder">Pasta de Arquivos</button>
           </div>
 
           <!-- Panel URL -->
           <div id="panel-url">
-            <p class="card-hint">Cole a URL da VSL que deseja clonar e clique em <strong>Analisar</strong></p>
+            <p class="card-hint" data-i18n="step1.hint.url">Cole a URL da VSL que deseja clonar e clique em <strong>Analisar</strong></p>
             <div class="url-row">
               <input
                 type="url"
                 id="url-input"
                 placeholder="https://exemplo.com/pagina-vsl"
+                data-i18n-placeholder="step1.placeholder.url"
                 autocomplete="off"
                 spellcheck="false"
               />
               <button class="btn btn-primary" id="btn-fetch" type="button">
                 <span class="spinner" aria-hidden="true"></span>
-                <span class="btn-label">Analisar</span>
+                <span class="btn-label" data-i18n="step1.btn.fetch">Analisar</span>
               </button>
             </div>
           </div>
 
           <!-- Panel Pasta -->
           <div id="panel-folder" style="display:none;">
-            <p class="card-hint">Selecione a pasta que contém o <strong>index.html</strong> e seus assets</p>
+            <p class="card-hint" data-i18n="step1.hint.folder">Selecione a pasta que contém o <strong>index.html</strong> e seus assets</p>
             <div class="folder-row">
               <input type="file" id="folder-input" webkitdirectory multiple />
-              <label class="folder-label" id="folder-label" for="folder-input">Nenhuma pasta selecionada</label>
+              <label class="folder-label" id="folder-label" for="folder-input" data-i18n="step1.folder.none">Nenhuma pasta selecionada</label>
               <button class="btn btn-primary" id="btn-upload" type="button">
                 <span class="spinner" aria-hidden="true"></span>
-                <span class="btn-label">Processar Pasta</span>
+                <span class="btn-label" data-i18n="step1.btn.upload">Processar Pasta</span>
               </button>
             </div>
           </div>
@@ -992,20 +1019,20 @@
         <!-- Resumo da análise ────────────────────────────────────── -->
         <section class="card section-hidden" id="section-summary">
           <div class="card-header" style="margin-bottom:12px;">
-            <span class="card-title" style="text-transform:none;font-size:0.8rem;color:#6B7280;font-weight:500;letter-spacing:0;">Resultado da análise</span>
+            <span class="card-title" style="text-transform:none;font-size:0.8rem;color:#6B7280;font-weight:500;letter-spacing:0;" data-i18n="step1.analysis.title">Resultado da análise</span>
           </div>
           <div class="summary-strip">
             <div class="summary-stat" id="summary-scripts">
               <span class="stat-value" id="val-scripts">0</span>
-              <span class="stat-label">Trackers removidos</span>
+              <span class="stat-label" data-i18n="step1.stat.trackers">Trackers removidos</span>
             </div>
             <div class="summary-stat" id="summary-vsl">
               <span class="stat-value" id="val-vsl">—</span>
-              <span class="stat-label">Player VTURB</span>
+              <span class="stat-label" data-i18n="step1.stat.player">Player VTURB</span>
             </div>
             <div class="summary-stat">
               <span class="stat-value" id="val-links">0</span>
-              <span class="stat-label">Links de checkout</span>
+              <span class="stat-label" data-i18n="step1.stat.links">Links de checkout</span>
             </div>
           </div>
         </section>
@@ -1014,24 +1041,26 @@
         <section class="card section-hidden" id="section-header">
           <div class="card-header">
             <span class="step-num">2</span>
-            <span class="card-title">Scripts de Header</span>
+            <span class="card-title" data-i18n="step2.title">Scripts de Header</span>
           </div>
           <div class="two-col">
             <div class="field-group">
-              <label for="header-pixel">Pixel &amp; Rastreamento</label>
+              <label for="header-pixel" data-i18n="step2.label.pixel">Pixel &amp; Rastreamento</label>
               <textarea
                 id="header-pixel"
                 class="mono"
                 placeholder="<!-- Meta Pixel, Google Tag Manager, etc -->"
+                data-i18n-placeholder="step2.placeholder.pixel"
                 rows="5"
               ></textarea>
             </div>
             <div class="field-group">
-              <label for="header-preload">Script VTURB / Preload</label>
+              <label for="header-preload" data-i18n="step2.label.preload">Script VTURB / Preload</label>
               <textarea
                 id="header-preload"
                 class="mono"
                 placeholder="<!-- Script de preload do VTURB -->"
+                data-i18n-placeholder="step2.placeholder.preload"
                 rows="5"
               ></textarea>
             </div>
@@ -1042,14 +1071,15 @@
         <section class="card section-hidden" id="section-player">
           <div class="card-header">
             <span class="step-num">3</span>
-            <span class="card-title">Embed do Player VTURB</span>
+            <span class="card-title" data-i18n="step3.title">Embed do Player VTURB</span>
           </div>
           <div class="field-group">
-            <label for="vsl-embed">Código de embed do seu player</label>
+            <label for="vsl-embed" data-i18n="step3.label">Código de embed do seu player</label>
             <textarea
               id="vsl-embed"
               class="mono"
               placeholder="<!-- Cole aqui o embed completo do seu player VTURB -->"
+              data-i18n-placeholder="step3.placeholder"
               rows="5"
               style="min-height: 100px;"
             ></textarea>
@@ -1060,9 +1090,9 @@
         <section class="card section-hidden" id="section-extra-scripts">
           <div class="card-header">
             <span class="step-num">4</span>
-            <span class="card-title">Scripts Adicionais</span>
+            <span class="card-title" data-i18n="step4.title">Scripts Adicionais</span>
           </div>
-          <p class="card-hint">
+          <p class="card-hint" data-i18n="step4.hint">
             Cole scripts de terceiros que devem ser injetados na página —
             como <strong>ClickMagic</strong>, <strong>Tumify</strong>, <strong>ActiveCampaign</strong>, scripts de chat,
             pop-ups, redirecionamentos ou qualquer outro código personalizado.
@@ -1070,7 +1100,7 @@
           <div id="scripts-list-container"></div>
           <button class="btn btn-ghost" id="btn-add-script" type="button"
                   style="margin-top:12px; padding:7px 14px; font-size:0.82rem;">
-            + Adicionar Script
+            <span data-i18n="step4.btn.add">+ Adicionar Script</span>
           </button>
         </section>
 
@@ -1078,9 +1108,9 @@
         <section class="card section-hidden" id="section-delay">
           <div class="card-header">
             <span class="step-num">5</span>
-            <span class="card-title">Delay do Player</span>
+            <span class="card-title" data-i18n="step5.title">Delay do Player</span>
           </div>
-          <p class="card-hint">Tempo em segundos antes de revelar os botões de compra na página</p>
+          <p class="card-hint" data-i18n="step5.hint">Tempo em segundos antes de revelar os botões de compra na página</p>
           <div class="delay-inline">
             <div class="delay-status-badge" id="delay-status">
               <span class="delay-status-dot" id="delay-status-dot"></span>
@@ -1095,7 +1125,7 @@
                 step="1"
                 placeholder="—"
               />
-              <span class="delay-unit">segundos</span>
+              <span class="delay-unit" data-i18n="step5.unit">segundos</span>
             </div>
           </div>
         </section>
@@ -1104,7 +1134,7 @@
         <section class="card section-hidden" id="section-checkout">
           <div class="card-header">
             <span class="step-num">6</span>
-            <span class="card-title">Links de Checkout</span>
+            <span class="card-title" data-i18n="step6.title">Links de Checkout</span>
             <span class="navbar-badge" id="checkout-count-badge">0</span>
           </div>
           <div id="checkout-inputs-container"></div>
@@ -1114,23 +1144,23 @@
         <section class="card section-hidden" id="section-customize">
           <div class="card-header">
             <span class="step-num">7</span>
-            <span class="card-title">Personalizar Produto da Página</span>
+            <span class="card-title" data-i18n="step7.title">Personalizar Produto da Página</span>
           </div>
-          <p class="card-hint">
+          <p class="card-hint" data-i18n="step7.hint">
             Opções <strong>opcionais</strong> para personalizar o produto da página.
             Se não precisar alterar, deixe como está.
           </p>
 
           <!-- Sub-tabs -->
           <div class="customize-tabs">
-            <button class="customize-tab tab-active" data-panel="panel-colors" type="button">Cores</button>
-            <button class="customize-tab" data-panel="panel-bundle-img" type="button">Imagens de Bundle</button>
-            <button class="customize-tab" data-panel="panel-product-name" type="button">Nome do Produto</button>
+            <button class="customize-tab tab-active" data-panel="panel-colors" type="button" data-i18n="step7.tab.colors">Cores</button>
+            <button class="customize-tab" data-panel="panel-bundle-img" type="button" data-i18n="step7.tab.bundle">Imagens de Bundle</button>
+            <button class="customize-tab" data-panel="panel-product-name" type="button" data-i18n="step7.tab.product">Nome do Produto</button>
           </div>
 
           <!-- Panel: Cores ──────────────────────────────────────── -->
           <div class="customize-panel" id="panel-colors">
-            <p class="card-hint" style="margin-top:10px;">
+            <p class="card-hint" style="margin-top:10px;" data-i18n="step7.colors.hint">
               Cores principais detectadas na página. Clique em uma cor para alterá-la no resultado final.
             </p>
             <div id="colors-container" class="colors-grid"></div>
@@ -1141,7 +1171,7 @@
 
           <!-- Panel: Imagens de Bundle ──────────────────────────── -->
           <div class="customize-panel" id="panel-bundle-img" style="display:none;">
-            <p class="card-hint" style="margin-top:10px;">
+            <p class="card-hint" style="margin-top:10px;" data-i18n="step7.bundle.hint">
               Imagens de bundles detectadas. Você pode manter as originais ou fazer upload de novas.
             </p>
             <div id="bundle-images-container"></div>
@@ -1152,18 +1182,18 @@
 
           <!-- Panel: Nome do Produto ────────────────────────────── -->
           <div class="customize-panel" id="panel-product-name" style="display:none;">
-            <p class="card-hint" style="margin-top:10px;">
+            <p class="card-hint" style="margin-top:10px;" data-i18n="step7.product.hint">
               Substitua o nome do produto em todas as menções na página.
               <strong>Use apenas quando necessário.</strong>
             </p>
             <div class="two-col" style="margin-top:10px;">
               <div class="field-group">
-                <label for="product-name-old">Nome atual do produto</label>
-                <input type="text" id="product-name-old" placeholder="Nome detectado automaticamente" />
+                <label for="product-name-old" data-i18n="step7.product.old">Nome atual do produto</label>
+                <input type="text" id="product-name-old" placeholder="Nome detectado automaticamente" data-i18n-placeholder="step7.product.old.placeholder" />
               </div>
               <div class="field-group">
-                <label for="product-name-new">Novo nome do produto</label>
-                <input type="text" id="product-name-new" placeholder="Deixe vazio para manter o original" />
+                <label for="product-name-new" data-i18n="step7.product.new">Novo nome do produto</label>
+                <input type="text" id="product-name-new" placeholder="Deixe vazio para manter o original" data-i18n-placeholder="step7.product.new.placeholder" />
               </div>
             </div>
             <div id="product-name-badge" class="product-name-badge" style="display:none;"></div>
@@ -1174,9 +1204,9 @@
         <!-- Export ─────────────────────────────────────────────────── -->
         <section class="card card-export">
           <button class="btn-export" id="btn-export" type="button" disabled>
-            Gerar Página do Afiliado
+            <span data-i18n="export.btn">Gerar Página do Afiliado</span>
           </button>
-          <p class="export-hint">Valida e oferece download em ZIP (HTML) ou JSON (Elementor)</p>
+          <p class="export-hint" data-i18n="export.hint">Valida e oferece download em ZIP (HTML) ou JSON (Elementor)</p>
         </section>
 
       </div><!-- /.form-panel -->
@@ -1189,10 +1219,10 @@
         <!-- Header -->
         <div class="pvw-header">
           <div>
-            <span class="pvw-title">Checklist da Página</span>
-            <span class="pvw-subtitle" id="pvw-subtitle">Cole uma URL para começar</span>
+            <span class="pvw-title" data-i18n="checklist.title">Checklist da Página</span>
+            <span class="pvw-subtitle" id="pvw-subtitle" data-i18n="checklist.subtitle.empty">Cole uma URL para começar</span>
           </div>
-          <span class="pvw-badge" id="pvw-badge">Aguardando</span>
+          <span class="pvw-badge" id="pvw-badge" data-i18n="checklist.badge.waiting">Aguardando</span>
         </div>
 
         <!-- VSL Warning -->
@@ -1201,8 +1231,8 @@
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
           </div>
           <div>
-            <strong>Não é uma página VSL</strong>
-            <p>Player VTURB não detectado. Se o erro persistir, contate o suporte.</p>
+            <strong data-i18n="checklist.warn.title">Não é uma página VSL</strong>
+            <p data-i18n="checklist.warn.desc">Player VTURB não detectado. Se o erro persistir, contate o suporte.</p>
           </div>
         </div>
 
@@ -1211,8 +1241,8 @@
           <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
             <path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
           </svg>
-          <h3>Checklist de Configuração</h3>
-          <p>Após analisar uma URL, o checklist mostra em tempo real o que está configurado e o que falta preencher</p>
+          <h3 data-i18n="checklist.empty.title">Checklist de Configuração</h3>
+          <p data-i18n="checklist.empty.desc">Após analisar uma URL, o checklist mostra em tempo real o que está configurado e o que falta preencher</p>
         </div>
 
         <!-- Slots: filled after fetch -->
@@ -1222,8 +1252,8 @@
           <div class="pvw-slot" id="pvw-slot-pixel">
             <div class="pvw-slot-head">
               <div class="pvw-slot-info">
-                <div class="pvw-slot-name">Pixel & Rastreamento</div>
-                <div class="pvw-slot-hint">Cole seu Meta Pixel, GTM, etc.</div>
+                <div class="pvw-slot-name" data-i18n="checklist.slot.pixel.name">Pixel & Rastreamento</div>
+                <div class="pvw-slot-hint" data-i18n="checklist.slot.pixel.hint">Cole seu Meta Pixel, GTM, etc.</div>
               </div>
               <div class="pvw-slot-status">Aguardando</div>
             </div>
@@ -1236,8 +1266,8 @@
           <div class="pvw-slot" id="pvw-slot-preload">
             <div class="pvw-slot-head">
               <div class="pvw-slot-info">
-                <div class="pvw-slot-name">Script VTURB Preload</div>
-                <div class="pvw-slot-hint">Cole o script de preload do VTURB</div>
+                <div class="pvw-slot-name" data-i18n="checklist.slot.preload.name">Script VTURB Preload</div>
+                <div class="pvw-slot-hint" data-i18n="checklist.slot.preload.hint">Cole o script de preload do VTURB</div>
               </div>
               <div class="pvw-slot-status">Aguardando</div>
             </div>
@@ -1250,13 +1280,13 @@
           <div class="pvw-slot" id="pvw-slot-player">
             <div class="pvw-slot-head">
               <div class="pvw-slot-info">
-                <div class="pvw-slot-name">Embed do Player VTURB</div>
-                <div class="pvw-slot-hint">Cole o embed completo do seu player</div>
+                <div class="pvw-slot-name" data-i18n="checklist.slot.player.name">Embed do Player VTURB</div>
+                <div class="pvw-slot-hint" data-i18n="checklist.slot.player.hint">Cole o embed completo do seu player</div>
               </div>
               <div class="pvw-slot-status">Aguardando</div>
             </div>
             <div class="pvw-slot-body">
-              <div class="pvw-player-box" id="pvw-player-box">Cole o embed do player para ativar</div>
+              <div class="pvw-player-box" id="pvw-player-box" data-i18n="checklist.slot.player.box">Cole o embed do player para ativar</div>
             </div>
           </div>
 
@@ -1264,15 +1294,15 @@
           <div class="pvw-slot" id="pvw-slot-delay" style="display:none;">
             <div class="pvw-slot-head">
               <div class="pvw-slot-info">
-                <div class="pvw-slot-name">Delay do Player</div>
-                <div class="pvw-slot-hint">Segundos antes de revelar botões</div>
+                <div class="pvw-slot-name" data-i18n="checklist.slot.delay.name">Delay do Player</div>
+                <div class="pvw-slot-hint" data-i18n="checklist.slot.delay.hint">Segundos antes de revelar botões</div>
               </div>
               <div class="pvw-slot-status" id="pvw-status-delay">Aguardando</div>
             </div>
             <div class="pvw-slot-body">
               <div class="pvw-delay-display">
                 <span class="pvw-delay-num" id="pvw-delay-num">—</span>
-                <span class="pvw-delay-unit">segundos</span>
+                <span class="pvw-delay-unit" data-i18n="checklist.slot.delay.unit">segundos</span>
               </div>
             </div>
           </div>
@@ -1281,8 +1311,8 @@
           <div class="pvw-slot" id="pvw-slot-checkout">
             <div class="pvw-slot-head">
               <div class="pvw-slot-info">
-                <div class="pvw-slot-name">Links de Checkout</div>
-                <div class="pvw-slot-hint">Preencha os links de afiliado</div>
+                <div class="pvw-slot-name" data-i18n="checklist.slot.checkout.name">Links de Checkout</div>
+                <div class="pvw-slot-hint" data-i18n="checklist.slot.checkout.hint">Preencha os links de afiliado</div>
               </div>
               <div class="pvw-slot-status" id="pvw-status-checkout">Aguardando</div>
             </div>
@@ -1297,10 +1327,10 @@
         <div class="pvw-footer">
           <button class="btn-preview" id="btn-open-preview" type="button" disabled>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
-            Pré-visualizar Página
+            <span data-i18n="checklist.btn.preview">Pré-visualizar Página</span>
           </button>
           <button class="btn-export-panel" id="btn-export-panel" type="button" disabled>
-            Gerar Página do Afiliado
+            <span data-i18n="checklist.btn.export">Gerar Página do Afiliado</span>
           </button>
         </div>
 
@@ -1313,7 +1343,7 @@
   <div class="modal-backdrop" id="modal-backdrop">
     <div class="modal" role="dialog" aria-modal="true" aria-label="Pré-visualização da página">
       <div class="modal-header">
-        <span class="modal-title">Pré-visualização da Página</span>
+        <span class="modal-title" data-i18n="modal.title">Pré-visualização da Página</span>
         <div class="modal-viewport-toggle">
           <button class="btn-viewport active" id="btn-vp-desktop" type="button">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
@@ -1324,7 +1354,7 @@
             Mobile
           </button>
         </div>
-        <button class="btn-modal-close" id="btn-modal-close" type="button" title="Fechar">
+        <button class="btn-modal-close" id="btn-modal-close" type="button" title="Fechar" data-i18n-title="modal.close">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
       </div>
@@ -1342,6 +1372,301 @@
 
   <script>
     'use strict';
+
+    // ── i18n ──────────────────────────────────────────────────────────
+    var LANG = (window.location.pathname.indexOf('/us') === 0) ? 'en' : 'pt-BR';
+
+    var T = {
+      'pt-BR': {
+        'nav.tagline': 'by OG Group',
+        'step1.title': 'Página para Clonar',
+        'step1.tab.url': 'URL',
+        'step1.tab.folder': 'Pasta de Arquivos',
+        'step1.hint.url': 'Cole a URL da VSL que deseja clonar e clique em <strong>Analisar</strong>',
+        'step1.placeholder.url': 'https://exemplo.com/pagina-vsl',
+        'step1.btn.fetch': 'Analisar',
+        'step1.hint.folder': 'Selecione a pasta que contém o <strong>index.html</strong> e seus assets',
+        'step1.folder.none': 'Nenhuma pasta selecionada',
+        'step1.btn.upload': 'Processar Pasta',
+        'step1.analysis.title': 'Resultado da análise',
+        'step1.stat.trackers': 'Trackers removidos',
+        'step1.stat.player': 'Player VTURB',
+        'step1.stat.links': 'Links de checkout',
+        'step2.title': 'Scripts de Header',
+        'step2.label.pixel': 'Pixel & Rastreamento',
+        'step2.placeholder.pixel': '<!-- Meta Pixel, Google Tag Manager, etc -->',
+        'step2.label.preload': 'Script VTURB / Preload',
+        'step2.placeholder.preload': '<!-- Script de preload do VTURB -->',
+        'step3.title': 'Embed do Player VTURB',
+        'step3.label': 'Código de embed do seu player',
+        'step3.placeholder': '<!-- Cole aqui o embed completo do seu player VTURB -->',
+        'step4.title': 'Scripts Adicionais',
+        'step4.hint': 'Cole scripts de terceiros que devem ser injetados na página — como <strong>ClickMagic</strong>, <strong>Tumify</strong>, <strong>ActiveCampaign</strong>, scripts de chat, pop-ups, redirecionamentos ou qualquer outro código personalizado.',
+        'step4.btn.add': '+ Adicionar Script',
+        'step4.script.placeholder': '<!-- Cole aqui seu script extra -->\n<script>\n  // seu código aqui\n<\/script>',
+        'step4.script.label': 'Script',
+        'step5.title': 'Delay do Player',
+        'step5.hint': 'Tempo em segundos antes de revelar os botões de compra na página',
+        'step5.unit': 'segundos',
+        'step6.title': 'Links de Checkout',
+        'step6.link.label': 'Link do Afiliado',
+        'step7.title': 'Personalizar Produto da Página',
+        'step7.hint': 'Opções <strong>opcionais</strong> para personalizar o produto da página. Se não precisar alterar, deixe como está.',
+        'step7.tab.colors': 'Cores',
+        'step7.tab.bundle': 'Imagens de Bundle',
+        'step7.tab.product': 'Nome do Produto',
+        'step7.colors.hint': 'Cores principais detectadas na página. Clique em uma cor para alterá-la no resultado final.',
+        'step7.colors.empty': 'Nenhuma cor relevante detectada nesta página',
+        'step7.bundle.hint': 'Imagens de bundles detectadas. Você pode manter as originais ou fazer upload de novas.',
+        'step7.bundle.empty': 'Nenhuma imagem de bundle detectada nesta página',
+        'step7.product.hint': 'Substitua o nome do produto em todas as menções na página. <strong>Use apenas quando necessário.</strong>',
+        'step7.product.old': 'Nome atual do produto',
+        'step7.product.old.placeholder': 'Nome detectado automaticamente',
+        'step7.product.new': 'Novo nome do produto',
+        'step7.product.new.placeholder': 'Deixe vazio para manter o original',
+        'export.btn': 'Gerar Página do Afiliado',
+        'export.hint': 'Valida e oferece download em ZIP (HTML) ou JSON (Elementor)',
+        'export.validating': 'Validando...',
+        'export.generating.zip': 'Gerando ZIP...',
+        'export.generating.json': 'Gerando JSON...',
+        'checklist.title': 'Checklist da Página',
+        'checklist.subtitle.empty': 'Cole uma URL para começar',
+        'checklist.badge.waiting': 'Aguardando',
+        'checklist.warn.title': 'Não é uma página VSL',
+        'checklist.warn.desc': 'Player VTURB não detectado. Se o erro persistir, contate o suporte.',
+        'checklist.empty.title': 'Checklist de Configuração',
+        'checklist.empty.desc': 'Após analisar uma URL, o checklist mostra em tempo real o que está configurado e o que falta preencher',
+        'checklist.slot.pixel.name': 'Pixel & Rastreamento',
+        'checklist.slot.pixel.hint': 'Cole seu Meta Pixel, GTM, etc.',
+        'checklist.slot.preload.name': 'Script VTURB Preload',
+        'checklist.slot.preload.hint': 'Cole o script de preload do VTURB',
+        'checklist.slot.player.name': 'Embed do Player VTURB',
+        'checklist.slot.player.hint': 'Cole o embed completo do seu player',
+        'checklist.slot.player.box': 'Cole o embed do player para ativar',
+        'checklist.slot.delay.name': 'Delay do Player',
+        'checklist.slot.delay.hint': 'Segundos antes de revelar botões',
+        'checklist.slot.delay.unit': 'segundos',
+        'checklist.slot.checkout.name': 'Links de Checkout',
+        'checklist.slot.checkout.hint': 'Preencha os links de afiliado',
+        'checklist.btn.preview': 'Pré-visualizar Página',
+        'checklist.btn.export': 'Gerar Página do Afiliado',
+        'checklist.fill.empty': 'Preencha os campos para configurar',
+        'checklist.fill.done': 'Tudo configurado! Pronto para exportar.',
+        'checklist.fill.partial': '{filled} de {total} itens configurados',
+        'checklist.link.waiting': 'Aguardando link',
+        'modal.title': 'Pré-visualização da Página',
+        'modal.close': 'Fechar',
+        'validation.title': 'Verificação de configuração',
+        'validation.subtitle': 'Checando os itens antes de gerar o arquivo',
+        'validation.checking': 'verificando',
+        'validation.ok': 'OK',
+        'validation.missing': 'Ausente',
+        'validation.allpass': '{pass}/{total} itens verificados — tudo certo para exportar.',
+        'validation.hasfail': '{pass}/{total} itens verificados — alguns itens estão ausentes.',
+        'validation.label.pixel': 'Meta Pixel',
+        'validation.label.preload': 'Script de Preload',
+        'validation.label.vturb': 'Player VTURB',
+        'validation.label.delay': 'Delay de Revelação',
+        'validation.label.checkout': 'Links de Checkout',
+        'validation.btn.cancel': 'Cancelar',
+        'validation.btn.cancel.fix': 'Voltar e Corrigir',
+        'validation.btn.zip': '\u2B73 Baixar ZIP (HTML)',
+        'validation.btn.elementor': '\u2B73 Baixar JSON (Elementor)',
+        'validation.elementor.hint': 'Para importar o JSON: WordPress \u2192 Templates \u2192 Importar Templates (Elementor 3.6+). Importe apenas em sites WordPress de sua confiança.',
+        'validation.warn.hint': '\u26A0 Alguns dados não foram preenchidos. Você pode exportar mesmo assim ou voltar para corrigir.',
+        'analyzing.step1': 'Conectando à página...',
+        'analyzing.step2': 'Baixando HTML...',
+        'analyzing.step3': 'Removendo trackers e pixels...',
+        'analyzing.step4': 'Detectando player VTURB...',
+        'analyzing.step5': 'Analisando links de checkout...',
+        'analyzing.step6': 'Finalizando extração...',
+        'dynamic.detected': 'Detectado: {val}',
+        'dynamic.notdetected': 'Não detectado',
+        'dynamic.yes': 'Sim',
+        'dynamic.no': 'Não',
+        'dynamic.embed.configured': 'Embed configurado — {len} chars',
+        'dynamic.files.selected': '{count} arquivo(s) selecionado(s)',
+        'dynamic.original.size': 'Tamanho original: {size}',
+        'dynamic.size.warn': 'A nova imagem deve ter exatamente {size} para evitar conflitos',
+        'dynamic.size.loading': 'Tamanho: carregando...',
+        'dynamic.image': 'Imagem {n}',
+        'dynamic.active': 'Ativo',
+        'dynamic.upload': '\u2191 Upload nova imagem',
+        'dynamic.uploading': 'Enviando...',
+        'error.fetch': 'Erro ao buscar a página. Verifique a URL e tente novamente.',
+        'error.url.empty': 'Digite a URL da página VSL antes de extrair.',
+        'error.folder': 'Erro ao processar pasta. Verifique se contém index.html.',
+        'error.folder.empty': 'Selecione uma pasta antes de processar.',
+        'error.validate': 'Erro ao validar página.',
+        'error.export': 'Erro ao gerar página. Tente novamente.',
+        'error.elementor': 'Erro ao gerar JSON Elementor. Tente novamente.',
+        'error.connection': 'Falha de conexão com o servidor. Verifique se o servidor está rodando.',
+        'error.connection.folder': 'Falha de conexão ao processar pasta. Verifique se o servidor está rodando.',
+        'error.connection.validate': 'Falha de conexão ao validar. Verifique se o servidor está rodando.',
+        'error.connection.export': 'Falha de conexão ao exportar. Verifique se o servidor está rodando.',
+        'error.connection.elementor': 'Falha de conexão ao exportar JSON Elementor. Verifique se o servidor está rodando.',
+        'error.no.page': 'Nenhuma página foi extraída. Extraia primeiro.',
+      },
+      'en': {
+        'nav.tagline': 'by OG Group',
+        'step1.title': 'Page to Clone',
+        'step1.tab.url': 'URL',
+        'step1.tab.folder': 'File Folder',
+        'step1.hint.url': 'Paste the VSL URL you want to clone and click <strong>Analyze</strong>',
+        'step1.placeholder.url': 'https://example.com/vsl-page',
+        'step1.btn.fetch': 'Analyze',
+        'step1.hint.folder': 'Select the folder containing <strong>index.html</strong> and its assets',
+        'step1.folder.none': 'No folder selected',
+        'step1.btn.upload': 'Process Folder',
+        'step1.analysis.title': 'Analysis Result',
+        'step1.stat.trackers': 'Trackers removed',
+        'step1.stat.player': 'VTURB Player',
+        'step1.stat.links': 'Checkout links',
+        'step2.title': 'Header Scripts',
+        'step2.label.pixel': 'Pixel & Tracking',
+        'step2.placeholder.pixel': '<!-- Meta Pixel, Google Tag Manager, etc -->',
+        'step2.label.preload': 'VTURB Script / Preload',
+        'step2.placeholder.preload': '<!-- VTURB preload script -->',
+        'step3.title': 'VTURB Player Embed',
+        'step3.label': 'Your player embed code',
+        'step3.placeholder': '<!-- Paste your full VTURB player embed here -->',
+        'step4.title': 'Additional Scripts',
+        'step4.hint': 'Paste third-party scripts to be injected into the page — such as <strong>ClickMagic</strong>, <strong>Tumify</strong>, <strong>ActiveCampaign</strong>, chat scripts, pop-ups, redirects, or any other custom code.',
+        'step4.btn.add': '+ Add Script',
+        'step4.script.placeholder': '<!-- Paste your extra script here -->\n<script>\n  // your code here\n<\/script>',
+        'step4.script.label': 'Script',
+        'step5.title': 'Player Delay',
+        'step5.hint': 'Seconds before revealing the purchase buttons on the page',
+        'step5.unit': 'seconds',
+        'step6.title': 'Checkout Links',
+        'step6.link.label': 'Affiliate Link',
+        'step7.title': 'Customize Page Product',
+        'step7.hint': '<strong>Optional</strong> settings to customize the page product. If you don\'t need changes, leave as is.',
+        'step7.tab.colors': 'Colors',
+        'step7.tab.bundle': 'Bundle Images',
+        'step7.tab.product': 'Product Name',
+        'step7.colors.hint': 'Main colors detected on the page. Click a color to change it in the final result.',
+        'step7.colors.empty': 'No relevant colors detected on this page',
+        'step7.bundle.hint': 'Bundle images detected. You can keep the originals or upload new ones.',
+        'step7.bundle.empty': 'No bundle images detected on this page',
+        'step7.product.hint': 'Replace the product name in all mentions on the page. <strong>Use only when necessary.</strong>',
+        'step7.product.old': 'Current product name',
+        'step7.product.old.placeholder': 'Automatically detected name',
+        'step7.product.new': 'New product name',
+        'step7.product.new.placeholder': 'Leave empty to keep the original',
+        'export.btn': 'Generate Affiliate Page',
+        'export.hint': 'Validates and offers download as ZIP (HTML) or JSON (Elementor)',
+        'export.validating': 'Validating...',
+        'export.generating.zip': 'Generating ZIP...',
+        'export.generating.json': 'Generating JSON...',
+        'checklist.title': 'Page Checklist',
+        'checklist.subtitle.empty': 'Paste a URL to get started',
+        'checklist.badge.waiting': 'Waiting',
+        'checklist.warn.title': 'Not a VSL page',
+        'checklist.warn.desc': 'VTURB player not detected. If the error persists, contact support.',
+        'checklist.empty.title': 'Configuration Checklist',
+        'checklist.empty.desc': 'After analyzing a URL, the checklist shows in real time what is configured and what still needs to be filled in',
+        'checklist.slot.pixel.name': 'Pixel & Tracking',
+        'checklist.slot.pixel.hint': 'Paste your Meta Pixel, GTM, etc.',
+        'checklist.slot.preload.name': 'VTURB Preload Script',
+        'checklist.slot.preload.hint': 'Paste the VTURB preload script',
+        'checklist.slot.player.name': 'VTURB Player Embed',
+        'checklist.slot.player.hint': 'Paste your full player embed',
+        'checklist.slot.player.box': 'Paste the player embed to activate',
+        'checklist.slot.delay.name': 'Player Delay',
+        'checklist.slot.delay.hint': 'Seconds before revealing buttons',
+        'checklist.slot.delay.unit': 'seconds',
+        'checklist.slot.checkout.name': 'Checkout Links',
+        'checklist.slot.checkout.hint': 'Fill in the affiliate links',
+        'checklist.btn.preview': 'Preview Page',
+        'checklist.btn.export': 'Generate Affiliate Page',
+        'checklist.fill.empty': 'Fill in the fields to configure',
+        'checklist.fill.done': 'All set! Ready to export.',
+        'checklist.fill.partial': '{filled} of {total} items configured',
+        'checklist.link.waiting': 'Waiting for link',
+        'modal.title': 'Page Preview',
+        'modal.close': 'Close',
+        'validation.title': 'Configuration Check',
+        'validation.subtitle': 'Checking items before generating the file',
+        'validation.checking': 'checking',
+        'validation.ok': 'OK',
+        'validation.missing': 'Missing',
+        'validation.allpass': '{pass}/{total} items verified — all good to export.',
+        'validation.hasfail': '{pass}/{total} items verified — some items are missing.',
+        'validation.label.pixel': 'Meta Pixel',
+        'validation.label.preload': 'Preload Script',
+        'validation.label.vturb': 'VTURB Player',
+        'validation.label.delay': 'Reveal Delay',
+        'validation.label.checkout': 'Checkout Links',
+        'validation.btn.cancel': 'Cancel',
+        'validation.btn.cancel.fix': 'Go Back and Fix',
+        'validation.btn.zip': '\u2B73 Download ZIP (HTML)',
+        'validation.btn.elementor': '\u2B73 Download JSON (Elementor)',
+        'validation.elementor.hint': 'To import the JSON: WordPress \u2192 Templates \u2192 Import Templates (Elementor 3.6+). Only import on WordPress sites you trust.',
+        'validation.warn.hint': '\u26A0 Some fields are missing. You can export anyway or go back to fix.',
+        'analyzing.step1': 'Connecting to page...',
+        'analyzing.step2': 'Downloading HTML...',
+        'analyzing.step3': 'Removing trackers and pixels...',
+        'analyzing.step4': 'Detecting VTURB player...',
+        'analyzing.step5': 'Analyzing checkout links...',
+        'analyzing.step6': 'Finalizing extraction...',
+        'dynamic.detected': 'Detected: {val}',
+        'dynamic.notdetected': 'Not detected',
+        'dynamic.yes': 'Yes',
+        'dynamic.no': 'No',
+        'dynamic.embed.configured': 'Embed configured — {len} chars',
+        'dynamic.files.selected': '{count} file(s) selected',
+        'dynamic.original.size': 'Original size: {size}',
+        'dynamic.size.warn': 'New image must be exactly {size} to avoid conflicts',
+        'dynamic.size.loading': 'Size: loading...',
+        'dynamic.image': 'Image {n}',
+        'dynamic.active': 'Active',
+        'dynamic.upload': '\u2191 Upload new image',
+        'dynamic.uploading': 'Uploading...',
+        'error.fetch': 'Error fetching page. Check the URL and try again.',
+        'error.url.empty': 'Enter the VSL page URL before extracting.',
+        'error.folder': 'Error processing folder. Check that it contains index.html.',
+        'error.folder.empty': 'Select a folder before processing.',
+        'error.validate': 'Error validating page.',
+        'error.export': 'Error generating page. Try again.',
+        'error.elementor': 'Error generating Elementor JSON. Try again.',
+        'error.connection': 'Connection failed. Check that the server is running.',
+        'error.connection.folder': 'Connection failed while processing folder. Check that the server is running.',
+        'error.connection.validate': 'Connection failed while validating. Check that the server is running.',
+        'error.connection.export': 'Connection failed while exporting. Check that the server is running.',
+        'error.connection.elementor': 'Connection failed while exporting Elementor JSON. Check that the server is running.',
+        'error.no.page': 'No page extracted yet. Extract one first.',
+      }
+    };
+
+    function t(key, replacements) {
+      var str = (T[LANG] && T[LANG][key]) || (T['pt-BR'] && T['pt-BR'][key]) || key;
+      if (replacements) {
+        Object.keys(replacements).forEach(function(k) {
+          str = str.replace('{' + k + '}', replacements[k]);
+        });
+      }
+      return str;
+    }
+
+    function applyLang() {
+      document.documentElement.lang = (LANG === 'en') ? 'en' : 'pt-BR';
+      document.querySelectorAll('[data-i18n]').forEach(function(el) {
+        el.innerHTML = t(el.getAttribute('data-i18n'));
+      });
+      document.querySelectorAll('[data-i18n-placeholder]').forEach(function(el) {
+        el.placeholder = t(el.getAttribute('data-i18n-placeholder'));
+      });
+      document.querySelectorAll('[data-i18n-title]').forEach(function(el) {
+        el.title = t(el.getAttribute('data-i18n-title'));
+      });
+      var toggle = document.getElementById('lang-toggle');
+      if (toggle) {
+        toggle.querySelectorAll('button').forEach(function(btn) {
+          btn.classList.toggle('active', btn.getAttribute('data-lang') === LANG);
+        });
+      }
+    }
 
     // ── Estado ───────────────────────────────────────────────────────
     const state = {
@@ -1456,11 +1781,11 @@
     folderInput.addEventListener('change', function() {
       var files = folderInput.files;
       if (!files || !files.length) {
-        folderLabel.textContent = 'Nenhuma pasta selecionada';
+        folderLabel.textContent = t('step1.folder.none');
         folderLabel.classList.remove('has-files');
         return;
       }
-      folderLabel.textContent = files.length + ' arquivo(s) selecionado(s)';
+      folderLabel.textContent = t('dynamic.files.selected', {count: files.length});
       folderLabel.classList.add('has-files');
     });
 
@@ -1490,7 +1815,7 @@
       var items = scriptsListContainer.querySelectorAll('.script-item');
       items.forEach(function(item, idx) {
         var label = item.querySelector('.script-item-label');
-        if (label) label.textContent = 'Script ' + (idx + 1);
+        if (label) label.textContent = t('step4.script.label') + ' ' + (idx + 1);
         var btnUp   = item.querySelector('[data-action="up"]');
         var btnDown = item.querySelector('[data-action="down"]');
         if (btnUp)   btnUp.disabled   = (idx === 0);
@@ -1514,7 +1839,7 @@
       item.dataset.scriptId = id;
       item.innerHTML =
         '<div class="script-item-header">' +
-          '<span class="script-item-label">Script ' + state.extraScripts.length + '</span>' +
+          '<span class="script-item-label">' + t('step4.script.label') + ' ' + state.extraScripts.length + '</span>' +
           '<div class="script-item-controls">' +
             '<button type="button" class="btn-script-control" data-action="up" aria-label="Mover para cima">\u2191</button>' +
             '<button type="button" class="btn-script-control" data-action="down" aria-label="Mover para baixo">\u2193</button>' +
@@ -1522,7 +1847,7 @@
           '</div>' +
         '</div>' +
         '<textarea class="mono" data-script-id="' + id + '" rows="4" ' +
-          'placeholder="<!-- Cole aqui seu script extra -->\n<script>\n  // seu c\u00f3digo aqui\n<\/script>"></textarea>';
+          'placeholder="' + escapeAttr(t('step4.script.placeholder')) + '"></textarea>';
 
       scriptsListContainer.appendChild(item);
       renderScriptLabels();
@@ -1596,16 +1921,16 @@
         if (sizeText) {
           var sizeEl = document.createElement('span');
           sizeEl.className = 'bundle-image-size';
-          sizeEl.textContent = 'Tamanho original: ' + sizeText;
+          sizeEl.textContent = t('dynamic.original.size', {size: sizeText});
           labelWrap.appendChild(sizeEl);
           var warnEl = document.createElement('span');
           warnEl.className = 'bundle-image-warn';
-          warnEl.textContent = 'A nova imagem deve ter exatamente ' + sizeText + ' para evitar conflitos';
+          warnEl.textContent = t('dynamic.size.warn', {size: sizeText});
           labelWrap.appendChild(warnEl);
         } else {
           var noSizeEl = document.createElement('span');
           noSizeEl.className = 'bundle-image-size';
-          noSizeEl.textContent = 'Tamanho: carregando...';
+          noSizeEl.textContent = t('dynamic.size.loading');
           labelWrap.appendChild(noSizeEl);
         }
 
@@ -1632,14 +1957,14 @@
         var uploadBtn = document.createElement('label');
         uploadBtn.className = 'btn-upload-img';
         uploadBtn.setAttribute('for', 'bundle-file-' + qty);
-        uploadBtn.innerHTML = '\u2191 Upload nova imagem';
+        uploadBtn.innerHTML = t('dynamic.upload');
 
         fileInput.addEventListener('change', function() {
           var file = this.files[0];
           if (!file) return;
           var formData = new FormData();
           formData.append('image', file);
-          uploadBtn.innerHTML = 'Enviando...';
+          uploadBtn.innerHTML = t('dynamic.uploading');
           fetch('/api/upload-bundle-image', { method: 'POST', body: formData })
             .then(function(r) { return r.json(); })
             .then(function(data) {
@@ -1649,7 +1974,7 @@
                 thumb.style.display = '';
                 input.dispatchEvent(new Event('input'));
               }
-              uploadBtn.innerHTML = '\u2191 Upload nova imagem';
+              uploadBtn.innerHTML = t('dynamic.upload');
             })
             .catch(function() { uploadBtn.innerHTML = '\u2191 Upload nova imagem'; });
         });
@@ -1753,13 +2078,13 @@
         var thumbSrc = resolveImgSrc(imgData.src);
         var thumb = document.createElement('img');
         thumb.className = 'bundle-image-thumb';
-        thumb.src = thumbSrc; thumb.alt = imgData.alt || ('Imagem ' + (idx + 1));
+        thumb.src = thumbSrc; thumb.alt = imgData.alt || t('dynamic.image', {n: idx + 1});
         thumb.onerror = function() { this.style.display = 'none'; };
 
         var labelWrap = document.createElement('div');
         var labelEl = document.createElement('span');
         labelEl.className = 'bundle-image-label';
-        labelEl.textContent = imgData.alt || ('Imagem ' + (idx + 1));
+        labelEl.textContent = imgData.alt || t('dynamic.image', {n: idx + 1});
         labelWrap.appendChild(labelEl);
         if (imgData.width && imgData.height) {
           var sizeEl = document.createElement('span');
@@ -1790,14 +2115,14 @@
         var uploadBtn = document.createElement('label');
         uploadBtn.className = 'btn-upload-img';
         uploadBtn.setAttribute('for', 'img-file-' + idx);
-        uploadBtn.innerHTML = '\u2191 Upload nova imagem';
+        uploadBtn.innerHTML = t('dynamic.upload');
 
         fileInput.addEventListener('change', function() {
           var file = this.files[0];
           if (!file) return;
           var formData = new FormData();
           formData.append('image', file);
-          uploadBtn.innerHTML = 'Enviando...';
+          uploadBtn.innerHTML = t('dynamic.uploading');
           fetch('/api/upload-bundle-image', { method: 'POST', body: formData })
             .then(function(r) { return r.json(); })
             .then(function(data) {
@@ -1807,7 +2132,7 @@
                 thumb.style.display = '';
                 input.dispatchEvent(new Event('input'));
               }
-              uploadBtn.innerHTML = '\u2191 Upload nova imagem';
+              uploadBtn.innerHTML = t('dynamic.upload');
             })
             .catch(function() { uploadBtn.innerHTML = '\u2191 Upload nova imagem'; });
         });
@@ -1871,7 +2196,7 @@
               '<div class="anchor">' + item.label + '</div>' +
             '</div>' +
             '<div class="field-group">' +
-              '<label for="checkout-empty-' + i + '">Link do Afiliado</label>' +
+              '<label for="checkout-empty-' + i + '">' + t('step6.link.label') + '</label>' +
               '<input type="url" id="checkout-empty-' + i + '" data-empty-index="' + i + '" placeholder="' + item.ph + '" />' +
             '</div>';
           checkoutContainer.appendChild(div);
@@ -1889,7 +2214,7 @@
             bundleTagHtml +
           '</div>' +
           '<div class="field-group">' +
-            '<label for="checkout-link-' + i + '">Link do Afiliado</label>' +
+            '<label for="checkout-link-' + i + '">' + t('step6.link.label') + '</label>' +
             '<input type="url" id="checkout-link-' + i + '" data-link-index="' + i + '" ' +
               'value="' + escapeAttr(link.href || '') + '" placeholder="https://seu-link-afiliado.com/" />' +
           '</div>';
@@ -1961,7 +2286,7 @@
     var fetchInFlight = false;
     btnFetch.addEventListener('click', async function() {
       var url = urlInput.value.trim();
-      if (!url) { showError('Digite a URL da página VSL antes de extrair.'); return; }
+      if (!url) { showError(t('error.url.empty')); return; }
       if (fetchInFlight) return;
       fetchInFlight = true;
       clearError();
@@ -1977,7 +2302,7 @@
         var data = await response.json();
 
         if (!response.ok) {
-          showError(data.error || 'Erro ao buscar a página. Verifique a URL e tente novamente.');
+          showError(data.error || t('error.fetch'));
           return;
         }
 
@@ -2000,10 +2325,10 @@
         valLinks.textContent   = linksFound;
 
         if (vslDetected) {
-          valVsl.textContent = 'Sim';
+          valVsl.textContent = t('dynamic.yes');
           summaryVslItem.classList.remove('muted');
         } else {
-          valVsl.textContent = 'Não';
+          valVsl.textContent = t('dynamic.no');
           summaryVslItem.classList.add('muted');
         }
 
@@ -2025,13 +2350,13 @@
             delayInput.value = state.delaySeconds;
             delayInput.disabled = false;
             if (badge) badge.className = 'delay-status-badge detected';
-            if (txt)   txt.textContent = 'Detectado: ' + state.delaySeconds + 's';
+            if (txt)   txt.textContent = t('dynamic.detected', {val: state.delaySeconds + 's'});
           } else {
             delayInput.value = '';
             delayInput.disabled = false;
             delayInput.placeholder = '—';
             if (badge) badge.className = 'delay-status-badge';
-            if (txt)   txt.textContent = 'Não detectado';
+            if (txt)   txt.textContent = t('dynamic.notdetected');
           }
           showSection(sectionDelay);
         }
@@ -2052,7 +2377,7 @@
         if (productNameOldInput && state.productName) {
           productNameOldInput.value = state.productName;
           if (productNameBadge) {
-            productNameBadge.textContent = 'Detectado: ' + state.productName;
+            productNameBadge.textContent = t('dynamic.detected', {val: state.productName});
             productNameBadge.style.display = '';
           }
         }
@@ -2069,7 +2394,7 @@
         renderSlots();
 
       } catch (err) {
-        showError('Falha de conexão com o servidor. Verifique se o servidor está rodando.');
+        showError(t('error.connection'));
         stopAnalyzing(false);
       } finally {
         setFetchLoading(false);
@@ -2086,7 +2411,7 @@
     btnUpload.addEventListener('click', async function() {
       var files = folderInput.files;
       if (!files || !files.length) {
-        showError('Selecione uma pasta antes de processar.');
+        showError(t('error.folder.empty'));
         return;
       }
       if (uploadInFlight) return;
@@ -2111,7 +2436,7 @@
         var data = await response.json();
 
         if (!response.ok) {
-          showError(data.error || 'Erro ao processar pasta. Verifique se contém index.html.');
+          showError(data.error || t('error.folder'));
           return;
         }
 
@@ -2134,10 +2459,10 @@
         valLinks.textContent   = linksFound;
 
         if (vslDetected) {
-          valVsl.textContent = 'Sim';
+          valVsl.textContent = t('dynamic.yes');
           summaryVslItem.classList.remove('muted');
         } else {
-          valVsl.textContent = 'Não';
+          valVsl.textContent = t('dynamic.no');
           summaryVslItem.classList.add('muted');
         }
 
@@ -2159,13 +2484,13 @@
             delayInput.value = state.delaySeconds;
             delayInput.disabled = false;
             if (badge) badge.className = 'delay-status-badge detected';
-            if (txt)   txt.textContent = 'Detectado: ' + state.delaySeconds + 's';
+            if (txt)   txt.textContent = t('dynamic.detected', {val: state.delaySeconds + 's'});
           } else {
             delayInput.value = '';
             delayInput.disabled = false;
             delayInput.placeholder = '—';
             if (badge) badge.className = 'delay-status-badge';
-            if (txt)   txt.textContent = 'Não detectado';
+            if (txt)   txt.textContent = t('dynamic.notdetected');
           }
           showSection(sectionDelay);
         }
@@ -2186,7 +2511,7 @@
         if (productNameOldInput && state.productName) {
           productNameOldInput.value = state.productName;
           if (productNameBadge) {
-            productNameBadge.textContent = 'Detectado: ' + state.productName;
+            productNameBadge.textContent = t('dynamic.detected', {val: state.productName});
             productNameBadge.style.display = '';
           }
         }
@@ -2203,7 +2528,7 @@
         renderSlots();
 
       } catch (err) {
-        showError('Falha de conexão ao processar pasta. Verifique se o servidor está rodando.');
+        showError(t('error.connection.folder'));
         stopAnalyzing(false);
       } finally {
         uploadInFlight = false;
@@ -2269,11 +2594,11 @@
     }
 
     async function doExport() {
-      if (!state.fetchedHtml) { showError('Nenhuma página foi extraída. Extraia primeiro.'); return; }
+      if (!state.fetchedHtml) { showError(t('error.no.page')); return; }
       clearError();
       setExportEnabled(false);
-      if (btnExport)      btnExport.textContent      = 'Validando...';
-      if (btnExportPanel) btnExportPanel.textContent = 'Validando...';
+      if (btnExport)      btnExport.textContent      = t('export.validating');
+      if (btnExportPanel) btnExportPanel.textContent = t('export.validating');
 
       try {
         var payload = buildExportPayload();
@@ -2286,7 +2611,7 @@
 
         if (!valResponse.ok) {
           var errData = await valResponse.json().catch(function() { return {}; });
-          showError(errData.error || 'Erro ao validar página.');
+          showError(errData.error || t('error.validate'));
           return;
         }
 
@@ -2294,11 +2619,11 @@
         showValidationModal(valResult, payload);
 
       } catch (err) {
-        showError('Falha de conexão ao validar. Verifique se o servidor está rodando.');
+        showError(t('error.connection.validate'));
       } finally {
         setExportEnabled(true);
-        if (btnExport)      btnExport.textContent      = 'Gerar Página do Afiliado';
-        if (btnExportPanel) btnExportPanel.textContent = 'Gerar Página do Afiliado';
+        if (btnExport)      btnExport.textContent      = t('export.btn');
+        if (btnExportPanel) btnExportPanel.textContent = t('export.btn');
       }
     }
 
@@ -2308,11 +2633,11 @@
       var footer   = document.getElementById('validation-footer');
 
       var labels = {
-        pixel:    'Meta Pixel',
-        preload:  'Script de Preload',
-        vturb:    'Player VTURB',
-        delay:    'Delay de Revelação',
-        checkout: 'Links de Checkout'
+        pixel:    t('validation.label.pixel'),
+        preload:  t('validation.label.preload'),
+        vturb:    t('validation.label.vturb'),
+        delay:    t('validation.label.delay'),
+        checkout: t('validation.label.checkout')
       };
 
       var html = '';
@@ -2320,7 +2645,7 @@
         html += '<div class="validation-item" id="val-item-' + i + '">';
         html += '<div class="validation-icon checking" id="val-icon-' + i + '"><span></span></div>';
         html += '<span class="validation-label">' + (labels[c.id] || c.label || c.id) + '</span>';
-        html += '<span class="validation-status" id="val-status-' + i + '">verificando</span>';
+        html += '<span class="validation-status" id="val-status-' + i + '">' + t('validation.checking') + '</span>';
         html += '</div>';
       });
 
@@ -2330,8 +2655,8 @@
 
       html += '<div class="validation-summary ' + (allPass ? 'all-pass' : 'has-fail') + '" id="val-summary">';
       html += allPass
-        ? passCount + '/' + total + ' itens verificados — tudo certo para exportar.'
-        : passCount + '/' + total + ' itens verificados — alguns itens estão ausentes.';
+        ? t('validation.allpass', {pass: passCount, total: total})
+        : t('validation.hasfail', {pass: passCount, total: total});
       html += '</div>';
 
       body.innerHTML = html;
@@ -2361,7 +2686,7 @@
             iconEl.className = 'validation-icon ' + (c.passed ? 'pass' : 'fail');
             iconEl.innerHTML = c.passed ? '&#10003;' : '&#10007;';
             statusEl.className = 'validation-status ' + (c.passed ? 'pass' : 'fail');
-            statusEl.textContent = c.passed ? 'OK' : 'Ausente';
+            statusEl.textContent = c.passed ? t('validation.ok') : t('validation.missing');
           }, RESOLVE_AT);
 
         }, i * ITEM_DELAY);
@@ -2379,11 +2704,11 @@
         if (allPass) {
           footer.innerHTML = '<div class="val-download-area">'
             + '<div class="val-download-row">'
-            + '<button class="btn btn-ghost" id="val-cancel">Cancelar</button>'
-            + '<button class="btn-download-big" id="val-download">&#11123; Baixar ZIP (HTML)</button>'
-            + '<button class="btn-download-elementor" id="val-download-elementor">&#11123; Baixar JSON (Elementor)</button>'
+            + '<button class="btn btn-ghost" id="val-cancel">' + t('validation.btn.cancel') + '</button>'
+            + '<button class="btn-download-big" id="val-download">' + t('validation.btn.zip') + '</button>'
+            + '<button class="btn-download-elementor" id="val-download-elementor">' + t('validation.btn.elementor') + '</button>'
             + '</div>'
-            + '<p class="val-elementor-hint">Para importar o JSON: WordPress &rarr; Templates &rarr; Importar Templates (Elementor 3.6+). Importe apenas em sites WordPress de sua confian&ccedil;a.</p>'
+            + '<p class="val-elementor-hint">' + t('validation.elementor.hint') + '</p>'
             + '</div>';
           document.getElementById('val-download').addEventListener('click', function() {
             closeValidationModal();
@@ -2396,13 +2721,13 @@
           document.getElementById('val-cancel').addEventListener('click', closeValidationModal);
         } else {
           footer.innerHTML = '<div class="val-download-area">'
-            + '<p class="val-warn-hint">&#9888; Alguns dados não foram preenchidos. Você pode exportar mesmo assim ou voltar para corrigir.</p>'
+            + '<p class="val-warn-hint">' + t('validation.warn.hint') + '</p>'
             + '<div class="val-download-row">'
-            + '<button class="btn btn-ghost" id="val-cancel">Voltar e Corrigir</button>'
-            + '<button class="btn-download-big" id="val-download">&#11123; Baixar ZIP (HTML)</button>'
-            + '<button class="btn-download-elementor" id="val-download-elementor">&#11123; Baixar JSON (Elementor)</button>'
+            + '<button class="btn btn-ghost" id="val-cancel">' + t('validation.btn.cancel.fix') + '</button>'
+            + '<button class="btn-download-big" id="val-download">' + t('validation.btn.zip') + '</button>'
+            + '<button class="btn-download-elementor" id="val-download-elementor">' + t('validation.btn.elementor') + '</button>'
             + '</div>'
-            + '<p class="val-elementor-hint">Para importar o JSON: WordPress &rarr; Templates &rarr; Importar Templates (Elementor 3.6+). Importe apenas em sites WordPress de sua confian&ccedil;a.</p>'
+            + '<p class="val-elementor-hint">' + t('validation.elementor.hint') + '</p>'
             + '</div>';
           document.getElementById('val-download').addEventListener('click', function() {
             closeValidationModal();
@@ -2424,8 +2749,8 @@
     async function doActualDownload() {
       var payload = buildExportPayload();
       setExportEnabled(false);
-      if (btnExport)      btnExport.textContent      = 'Gerando ZIP...';
-      if (btnExportPanel) btnExportPanel.textContent = 'Gerando ZIP...';
+      if (btnExport)      btnExport.textContent      = t('export.generating.zip');
+      if (btnExportPanel) btnExportPanel.textContent = t('export.generating.zip');
 
       try {
         var response = await fetchWithTimeout('/api/export-zip', {
@@ -2436,7 +2761,7 @@
 
         if (!response.ok) {
           var errData = await response.json().catch(function() { return {}; });
-          showError(errData.error || 'Erro ao gerar página. Tente novamente.');
+          showError(errData.error || t('error.export'));
           return;
         }
 
@@ -2451,19 +2776,19 @@
         URL.revokeObjectURL(blobUrl);
 
       } catch (err) {
-        showError('Falha de conexão ao exportar. Verifique se o servidor está rodando.');
+        showError(t('error.connection.export'));
       } finally {
         setExportEnabled(true);
-        if (btnExport)      btnExport.textContent      = 'Gerar Página do Afiliado';
-        if (btnExportPanel) btnExportPanel.textContent = 'Gerar Página do Afiliado';
+        if (btnExport)      btnExport.textContent      = t('export.btn');
+        if (btnExportPanel) btnExportPanel.textContent = t('export.btn');
       }
     }
 
     async function doActualDownloadElementor() {
       var payload = buildExportPayload();
       setExportEnabled(false);
-      if (btnExport)      btnExport.textContent      = 'Gerando JSON...';
-      if (btnExportPanel) btnExportPanel.textContent = 'Gerando JSON...';
+      if (btnExport)      btnExport.textContent      = t('export.generating.json');
+      if (btnExportPanel) btnExportPanel.textContent = t('export.generating.json');
 
       try {
         var response = await fetchWithTimeout('/api/export-elementor', {
@@ -2474,7 +2799,7 @@
 
         if (!response.ok) {
           var errData = await response.json().catch(function() { return {}; });
-          showError(errData.error || 'Erro ao gerar JSON Elementor. Tente novamente.');
+          showError(errData.error || t('error.elementor'));
           return;
         }
 
@@ -2502,11 +2827,11 @@
         }, 100);
 
       } catch (err) {
-        showError('Falha de conexão ao exportar JSON Elementor. Verifique se o servidor está rodando.');
+        showError(t('error.connection.elementor'));
       } finally {
         setExportEnabled(true);
-        if (btnExport)      btnExport.textContent      = 'Gerar Página do Afiliado';
-        if (btnExportPanel) btnExportPanel.textContent = 'Gerar Página do Afiliado';
+        if (btnExport)      btnExport.textContent      = t('export.btn');
+        if (btnExportPanel) btnExportPanel.textContent = t('export.btn');
       }
     }
 
@@ -2518,12 +2843,8 @@
     var analyzingTimer = null;
     var analyzingStepIdx = 0;
     var ANALYZING_STEPS = [
-      'Conectando à página...',
-      'Baixando HTML...',
-      'Removendo trackers e pixels...',
-      'Detectando player VTURB...',
-      'Analisando links de checkout...',
-      'Finalizando extração...',
+      t('analyzing.step1'), t('analyzing.step2'), t('analyzing.step3'),
+      t('analyzing.step4'), t('analyzing.step5'), t('analyzing.step6'),
     ];
 
     function startAnalyzing() {
@@ -2585,7 +2906,7 @@
       if (!slot) return;
       slot.classList.add('active');
       var s = slot.querySelector('.pvw-slot-status');
-      if (s) s.textContent = statusText || 'Ativo ✓';
+      if (s) s.textContent = statusText || (t('dynamic.active') + ' ✓');
     }
 
     function deactivateSlot(id) {
@@ -2593,7 +2914,7 @@
       if (!slot) return;
       slot.classList.remove('active');
       var s = slot.querySelector('.pvw-slot-status');
-      if (s) s.textContent = 'Aguardando';
+      if (s) s.textContent = t('checklist.badge.waiting');
     }
 
     function truncateUrl(url) {
@@ -2625,7 +2946,7 @@
       total++;
       if (pixelVal) {
         filled++;
-        activateSlot('pvw-slot-pixel', 'Ativo ✓');
+        activateSlot('pvw-slot-pixel', t('dynamic.active') + ' ✓');
         var codeEl = document.getElementById('pvw-code-pixel');
         if (codeEl) {
           var lines = pixelVal.split('\n');
@@ -2638,7 +2959,7 @@
       total++;
       if (preloadVal) {
         filled++;
-        activateSlot('pvw-slot-preload', 'Ativo ✓');
+        activateSlot('pvw-slot-preload', t('dynamic.active') + ' ✓');
         var codeEl2 = document.getElementById('pvw-code-preload');
         if (codeEl2) {
           var lines2 = preloadVal.split('\n');
@@ -2652,11 +2973,11 @@
       var playerBox = document.getElementById('pvw-player-box');
       if (embedVal) {
         filled++;
-        activateSlot('pvw-slot-player', 'Ativo ✓');
-        if (playerBox) { playerBox.className = 'pvw-player-box filled'; playerBox.textContent = 'Embed configurado — ' + embedVal.length + ' chars'; }
+        activateSlot('pvw-slot-player', t('dynamic.active') + ' ✓');
+        if (playerBox) { playerBox.className = 'pvw-player-box filled'; playerBox.textContent = t('dynamic.embed.configured', {len: embedVal.length}); }
       } else {
         deactivateSlot('pvw-slot-player');
-        if (playerBox) { playerBox.className = 'pvw-player-box'; playerBox.textContent = 'Cole o embed do player para ativar'; }
+        if (playerBox) { playerBox.className = 'pvw-player-box'; playerBox.textContent = t('checklist.slot.player.box'); }
       }
 
       // Delay
@@ -2711,7 +3032,7 @@
           div.innerHTML =
             '<span class="pvw-link-pill ' + (row.val ? 'filled' : '') + '">' + escapeHtml(row.label) + '</span>' +
             '<span class="pvw-link-url ' + (row.val ? 'filled' : '') + '">' +
-              (row.val ? escapeHtml(truncateUrl(row.val)) : 'Aguardando link') +
+              (row.val ? escapeHtml(truncateUrl(row.val)) : t('checklist.link.waiting')) +
             '</span>' +
             (row.val ? '<span class="pvw-link-check">✓</span>' : '');
           linksList.appendChild(div);
@@ -2724,7 +3045,7 @@
         if (checkoutSlot) checkoutSlot.classList.toggle('active', chkFilled > 0);
         if (statusCheckout) {
           if (chkFilled === 0) {
-            statusCheckout.textContent = 'Aguardando'; statusCheckout.style.cssText = '';
+            statusCheckout.textContent = t('checklist.badge.waiting'); statusCheckout.style.cssText = '';
           } else if (chkFilled === chkTotal) {
             statusCheckout.textContent = chkFilled + '/' + chkTotal + ' ✓';
             statusCheckout.style.background = '#DCFCE7'; statusCheckout.style.color = '#16A34A';
@@ -2741,9 +3062,9 @@
         pvwBadge.className = 'pvw-badge' + (filled === total && total > 0 ? ' ready' : '');
       }
       if (pvwSub) {
-        if (filled === 0) pvwSub.textContent = 'Preencha os campos para configurar';
-        else if (filled === total) pvwSub.textContent = 'Tudo configurado! Pronto para exportar.';
-        else pvwSub.textContent = filled + ' de ' + total + ' itens configurados';
+        if (filled === 0) pvwSub.textContent = t('checklist.fill.empty');
+        else if (filled === total) pvwSub.textContent = t('checklist.fill.done');
+        else pvwSub.textContent = t('checklist.fill.partial', {filled: filled, total: total});
       }
     }
 
@@ -2832,14 +3153,33 @@
       if (e.key === 'Escape' && modalBackdrop.classList.contains('open')) closeModal();
     });
 
+    // ── i18n: flag toggle navigation ──────────────────────────────────────
+    var langToggle = document.getElementById('lang-toggle');
+    if (langToggle) {
+      langToggle.addEventListener('click', function(e) {
+        var btn = e.target.closest('button[data-lang]');
+        if (!btn) return;
+        var targetLang = btn.getAttribute('data-lang');
+        if (targetLang === LANG) return;
+        if (targetLang === 'en') {
+          window.location.href = '/us';
+        } else {
+          window.location.href = '/';
+        }
+      });
+    }
+
+    // Apply language on page load
+    applyLang();
+
   </script>
 
   <!-- Validation Modal -->
   <div class="validation-backdrop" id="validation-backdrop">
     <div class="validation-card">
       <div class="validation-header">
-        <h3>Verificação de configuração</h3>
-        <p>Checando os itens antes de gerar o arquivo</p>
+        <h3 data-i18n="validation.title">Verificação de configuração</h3>
+        <p data-i18n="validation.subtitle">Checando os itens antes de gerar o arquivo</p>
       </div>
       <div class="validation-body" id="validation-body">
         <!-- Populated by JS -->

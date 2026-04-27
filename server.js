@@ -52,6 +52,11 @@ app.use(express.static(path.join(__dirname, 'public'), {
   },
 }));
 
+// ── i18n: English route ─────────────────────────────────────────────────────
+app.get('/us', function(req, res) {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
 // ── Constants: cleanup patterns ──────────────────────────────────────────────
 
 /**

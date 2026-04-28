@@ -1365,6 +1365,12 @@ function buildExportHtml({ html, headerPixel, headerPreload, vslembed, checkoutL
     );
   }
 
+  // Rewrite all relative asset URLs (CSS, images, scripts) to absolute so the
+  // exported flat HTML can load them from the original domain.
+  if (pageUrl) {
+    outputHtml = rewriteRelativeUrls(outputHtml, pageUrl);
+  }
+
   if (vslembed && vslembed.trim()) {
     outputHtml = outputHtml.replace(
       /<!--\s*\[VSL_PLACEHOLDER\]\s*-->[\s\S]*?<div id="vsl(?:-cloner)?-placeholder"[\s\S]*?<\/div>/,
@@ -1541,6 +1547,8 @@ function rewriteRelativeUrls(html, pageUrl) {
 
   const $ = cheerio.load(html, { decodeEntities: false });
   const attrPairs = [
+    ['link[rel="stylesheet"][href]', 'href'], ['link[rel="icon"][href]', 'href'],
+    ['link[rel="shortcut icon"][href]', 'href'],
     ['img[src]', 'src'], ['source[src]', 'src'], ['source[srcset]', 'srcset'],
     ['video[src]', 'src'], ['video[poster]', 'poster'], ['audio[src]', 'src'],
     ['script[src]', 'src'], ['img[srcset]', 'srcset'],

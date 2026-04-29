@@ -1806,6 +1806,7 @@
     }
 
     function bundleLabel(bundle) {
+      if (bundle === 1) return '1 ' + t('dynamic.bundle.unit');
       if (bundle === 2) return '2 ' + t('dynamic.bundle.unit');
       if (bundle === 3) return '3 ' + t('dynamic.bundle.unit');
       if (bundle === 6) return '6 ' + t('dynamic.bundle.unit');
@@ -2215,12 +2216,13 @@
       links.forEach(function(link, i) {
         var div = document.createElement('div');
         div.className = 'checkout-item';
-        var bundleTagHtml = link.bundle ? '<span class="bundle-tag">' + bundleLabel(link.bundle) + '</span>' : '';
+        var bundleTagHtml = link.bundle ? '<span class="bundle-tag">' + escapeHtml(bundleLabel(link.bundle) || '') + '</span>' : '';
+        var jsTagHtml = link.jsEmbedded ? '<span class="bundle-tag" style="background:#6366f1;color:#fff;">JS Config</span>' : '';
         div.innerHTML =
           '<div class="checkout-meta">' +
             '<div class="platform">' + escapeHtml(link.platform || t('dynamic.generic')) + '</div>' +
-            '<div class="anchor">' + escapeHtml(link.anchorText || '') + '</div>' +
-            bundleTagHtml +
+            '<div class="anchor">' + escapeHtml(link.anchorText || link.href || '') + '</div>' +
+            bundleTagHtml + jsTagHtml +
           '</div>' +
           '<div class="field-group">' +
             '<label for="checkout-link-' + i + '">' + t('step6.link.label') + '</label>' +
@@ -2251,7 +2253,9 @@
       }
       return state.checkoutLinks.map(function(link, i) {
         var input = checkoutContainer.querySelector('input[data-link-index="' + i + '"]');
-        return { selector: link.selector, affiliateHref: input ? input.value.trim() : (link.href || '') };
+        var payload = { selector: link.selector, affiliateHref: input ? input.value.trim() : (link.href || '') };
+        if (link.jsEmbedded && link.href) payload.originalHref = link.href;
+        return payload;
       });
     }
 
@@ -2602,8 +2606,11 @@
       return payload;
     }
 
+    var exportInFlight = false;
     async function doExport() {
+      if (exportInFlight) return;
       if (!state.fetchedHtml) { showError(t('error.no.page')); return; }
+      exportInFlight = true;
       clearError();
       setExportEnabled(false);
       if (btnExport)      btnExport.textContent      = t('export.validating');
@@ -2630,6 +2637,7 @@
       } catch (err) {
         showError(t('error.connection.validate'));
       } finally {
+        exportInFlight = false;
         setExportEnabled(true);
         if (btnExport)      btnExport.textContent      = t('export.btn');
         if (btnExportPanel) btnExportPanel.textContent = t('export.btn');

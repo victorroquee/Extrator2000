@@ -28,6 +28,21 @@ function isPrivateIP(ip) {
   return false;
 }
 
+function isBlockedHostname(hostname) {
+  hostname = (hostname || '').toLowerCase();
+  if (hostname.startsWith('[')) return true;
+  if (/^[\d.]+$/.test(hostname)) return true;
+  if (
+    hostname === 'localhost' ||
+    hostname === '127.0.0.1' ||
+    hostname.startsWith('192.168.') ||
+    hostname.startsWith('10.') ||
+    /^172\.(1[6-9]|2\d|3[01])\./.test(hostname) ||
+    hostname.endsWith('.local')
+  ) return true;
+  return false;
+}
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -104,6 +119,7 @@ const CHECKOUT_URL_PATTERNS = [
   /kiwify\.com\.br/i,
   /eduzz\.com/i,
   /monetizze\.com\.br/i,
+  /checkout-ds24\.com/i,
   /\/checkout(?:[/?#]|$)/i,
   /\/buy(?:[/?#]|$)/i,
   /\/order(?:[/?#]|$)/i,
@@ -114,9 +130,10 @@ const CHECKOUT_URL_PATTERNS = [
  * Bundle context keywords (CHECK-02)
  */
 const BUNDLE_KEYWORDS = {
-  2: ['2 pote', '2pote', 'dois pote', '2 frasco', 'starter', 'basico', 'básico', 'básica', 'basic'],
-  3: ['3 pote', '3pote', 'três pote', 'tres pote', '3 frasco', 'popular', 'mais popular', 'most popular'],
-  6: ['6 pote', '6pote', 'seis pote', '6 frasco', 'best value', 'melhor valor', 'maior desconto', 'premium'],
+  1: ['1 pote', '1pote', 'um pote', '1 frasco', '1 bottle', '1bottle', 'single'],
+  2: ['2 pote', '2pote', 'dois pote', '2 frasco', '2 bottle', '2bottle', 'starter', 'basico', 'básico', 'básica', 'basic'],
+  3: ['3 pote', '3pote', 'três pote', 'tres pote', '3 frasco', '3 bottle', '3bottle', 'popular', 'mais popular', 'most popular'],
+  6: ['6 pote', '6pote', 'seis pote', '6 frasco', '6 bottle', '6bottle', 'best value', 'melhor valor', 'maior desconto', 'premium'],
 };
 
 // ── Helpers: Checkout platform classification ────────────────────────────────
@@ -128,6 +145,7 @@ function classifyPlatform(url) {
   if (/kiwify\.com\.br/i.test(url)) return 'Kiwify';
   if (/eduzz\.com/i.test(url)) return 'Eduzz';
   if (/monetizze\.com\.br/i.test(url)) return 'Monetizze';
+  if (/checkout-ds24\.com/i.test(url)) return 'Digistore24';
   return 'generic';
 }
 
@@ -292,7 +310,9 @@ function cleanHtml(html) {
 function detectCheckoutLinks($, html) {
   const links = [];
   const usedSelectors = new Set();
+  const seenUrls = new Set();
 
+  // Strategy 1: checkout URLs in <a>/<button> href or onclick attributes
   $('a, button').each((_, el) => {
     const href = $(el).attr('href') || '';
     const onclick = $(el).attr('onclick') || '';
@@ -308,13 +328,56 @@ function detectCheckoutLinks($, html) {
     const contextText = `${anchorText} ${parentText}`;
     const bundle = detectBundle(contextText);
 
+    const checkoutUrl = href || null;
+    if (checkoutUrl) seenUrls.add(checkoutUrl);
+
     links.push({
-      href: href || null,
+      href: checkoutUrl,
       selector: buildCssSelector($, el, usedSelectors),
       anchorText,
       platform: classifyPlatform(href),
       bundle,
     });
+  });
+
+  // Strategy 2: checkout URLs embedded in <script> JS config objects / variables
+  // Handles patterns like: MS_CONFIG = { checkout6x: 'https://checkout-ds24.com/...' }
+  // or: var checkoutUrl = 'https://pay.hotmart.com/...'
+  $('script').each((_, el) => {
+    const content = $(el).html() || '';
+    if (!content) return;
+
+    // Extract all URLs from the script content
+    const urlRegex = /['"`](https?:\/\/[^'"`\s]+)['"`]/g;
+    let match;
+    while ((match = urlRegex.exec(content)) !== null) {
+      const url = match[1];
+      if (seenUrls.has(url)) continue;
+      const isCheckout = CHECKOUT_URL_PATTERNS.some((pattern) => pattern.test(url));
+      if (!isCheckout) continue;
+      seenUrls.add(url);
+
+      // Try to infer bundle from the JS property/variable name near the URL
+      // Look backwards from the match position for a key name like checkout6x, checkout3x, etc.
+      const before = content.slice(Math.max(0, match.index - 80), match.index);
+      let bundle = null;
+
+      // Pattern: key contains a number — e.g. checkout6x, url_3, link3x, product1
+      const keyMatch = before.match(/[\w]*?(\d+)\s*[x]?\s*['"]?\s*[:=]\s*$/i);
+      if (keyMatch) {
+        const num = parseInt(keyMatch[1], 10);
+        if ([1, 2, 3, 6].includes(num)) bundle = num;
+      }
+
+      links.push({
+        href: url,
+        selector: null,
+        anchorText: '',
+        platform: classifyPlatform(url),
+        bundle,
+        jsEmbedded: true,
+      });
+    }
   });
 
   return links;
@@ -327,7 +390,7 @@ function detectCheckoutLinks($, html) {
  * Returns { width, height } or null.
  */
 function parseImageDimensions(buffer) {
-  if (!buffer || buffer.length < 30) return null;
+  if (!buffer || buffer.length < 24) return null;
 
   // PNG: bytes 16-23 contain width (4 bytes) and height (4 bytes) in IHDR
   if (buffer[0] === 0x89 && buffer[1] === 0x50 && buffer[2] === 0x4E && buffer[3] === 0x47) {
@@ -796,28 +859,8 @@ app.post('/api/fetch', requestTimeout(60000), async (req, res) => {
   // T-01-03 mitigation: reject non-http(s) schemes and private IP ranges
   try {
     const parsed = new URL(url);
-    if (!['http:', 'https:'].includes(parsed.protocol)) {
-      return res.status(400).json({ error: 'Only http and https URLs are allowed' });
-    }
-    // Block private / loopback addresses
-    const hostname = parsed.hostname.toLowerCase();
-    // Block IPv6 literals (bracket-enclosed addresses)
-    if (hostname.startsWith('[')) {
-      return res.status(400).json({ error: 'IPv6 addresses are not allowed' });
-    }
-    // Block pure-numeric hostnames (decimal/octal encoded IPs like 2130706433 or 0177.0.0.1)
-    if (/^[\d.]+$/.test(hostname)) {
-      return res.status(400).json({ error: 'Numeric IP addresses are not allowed' });
-    }
-    if (
-      hostname === 'localhost' ||
-      hostname === '127.0.0.1' ||
-      hostname.startsWith('192.168.') ||
-      hostname.startsWith('10.') ||
-      /^172\.(1[6-9]|2\d|3[01])\./.test(hostname) ||
-      hostname.endsWith('.local')
-    ) {
-      return res.status(400).json({ error: 'Private/loopback URLs are not allowed' });
+    if (!['http:', 'https:'].includes(parsed.protocol) || isBlockedHostname(parsed.hostname)) {
+      return res.status(400).json({ error: 'URL blocked by security policy' });
     }
   } catch {
     return res.status(400).json({ error: 'Invalid URL' });
@@ -1215,32 +1258,82 @@ function applyCheckoutLinks(outputHtml, checkoutLinks) {
     outputHtml = $2.html();
   }
 
-  // No-selector bulk replacement: replace any checkout-pattern URL in href/onclick
+  // No-selector replacement: split into JS-embedded (have originalHref) and truly generic
   const noSelector = checkoutLinks.filter((l) => !l.selector && (l.affiliateHref || l.affiliateUrl));
-  if (noSelector.length > 0) {
-    // Only the first no-selector link is used; multiple no-selector entries are not supported
-    // because there is no originalHref in the payload to match against.
-    // Users with multiple distinct checkout links should use CSS selectors.
-    if (noSelector.length > 1) {
-      console.warn(`[export] ${noSelector.length} no-selector checkout links provided; only the first will be applied. Use selectors to target multiple distinct checkout buttons.`);
-    }
+
+  // JS-embedded links with originalHref: do targeted string replacement in <script> tags
+  const jsEmbedded = noSelector.filter((l) => l.originalHref);
+  if (jsEmbedded.length > 0) {
     const $3 = cheerio.load(outputHtml, { decodeEntities: false });
+    $3('script').each((_, el) => {
+      let content = $3(el).html() || '';
+      if (!content) return;
+      let changed = false;
+      for (const link of jsEmbedded) {
+        const affiliateHref = link.affiliateHref || link.affiliateUrl;
+        if (content.includes(link.originalHref)) {
+          content = content.split(link.originalHref).join(affiliateHref);
+          changed = true;
+        }
+      }
+      if (changed) $3(el).html(content);
+    });
+    // Also replace in href/onclick attributes for completeness
     $3('a, button').each((_, el) => {
-      const href = $3(el).attr('href') || '';
-      const onclick = $3(el).attr('onclick') || '';
-      const isCheckout = CHECKOUT_URL_PATTERNS.some((p) => p.test(href) || p.test(onclick));
-      if (!isCheckout) return;
-      // Only the first no-selector entry is supported (see warning above)
-      const affiliateHref = noSelector[0].affiliateHref || noSelector[0].affiliateUrl;
-      if (href) $3(el).attr('href', affiliateHref);
-      if (onclick) {
-        const checkoutUrlMatch = onclick.match(/https?:\/\/[^'"\s);>]+/);
-        if (checkoutUrlMatch) {
-          $3(el).attr('onclick', onclick.replace(checkoutUrlMatch[0], affiliateHref));
+      for (const link of jsEmbedded) {
+        const affiliateHref = link.affiliateHref || link.affiliateUrl;
+        const href = $3(el).attr('href') || '';
+        if (href === link.originalHref) $3(el).attr('href', affiliateHref);
+        const onclick = $3(el).attr('onclick') || '';
+        if (onclick.includes(link.originalHref)) {
+          $3(el).attr('onclick', onclick.split(link.originalHref).join(affiliateHref));
         }
       }
     });
     outputHtml = $3.html();
+  }
+
+  // Truly generic no-selector links (no originalHref): bulk replace checkout-pattern URLs
+  const generic = noSelector.filter((l) => !l.originalHref);
+  if (generic.length > 0) {
+    if (generic.length > 1) {
+      console.warn(`[export] ${generic.length} no-selector checkout links provided; only the first will be applied. Use selectors to target multiple distinct checkout buttons.`);
+    }
+    const $4 = cheerio.load(outputHtml, { decodeEntities: false });
+    const affiliateHref = generic[0].affiliateHref || generic[0].affiliateUrl;
+
+    // Replace in <a>/<button> href and onclick
+    $4('a, button').each((_, el) => {
+      const href = $4(el).attr('href') || '';
+      const onclick = $4(el).attr('onclick') || '';
+      const isCheckout = CHECKOUT_URL_PATTERNS.some((p) => p.test(href) || p.test(onclick));
+      if (!isCheckout) return;
+      if (href) $4(el).attr('href', affiliateHref);
+      if (onclick) {
+        const checkoutUrlMatch = onclick.match(/https?:\/\/[^'"\s);>]+/);
+        if (checkoutUrlMatch) {
+          $4(el).attr('onclick', onclick.replace(checkoutUrlMatch[0], affiliateHref));
+        }
+      }
+    });
+
+    // Also replace checkout URLs inside <script> tags
+    $4('script').each((_, el) => {
+      let content = $4(el).html() || '';
+      if (!content) return;
+      const urlRegex = /https?:\/\/[^'"`\s]+/g;
+      let changed = false;
+      content = content.replace(urlRegex, (foundUrl) => {
+        if (CHECKOUT_URL_PATTERNS.some((p) => p.test(foundUrl))) {
+          changed = true;
+          return affiliateHref;
+        }
+        return foundUrl;
+      });
+      if (changed) $4(el).html(content);
+    });
+
+    outputHtml = $4.html();
   }
 
   return outputHtml;
@@ -1786,10 +1879,17 @@ app.post('/api/export-validate', (req, res) => {
           var href = $(el).attr('href') || '';
           var cls  = $(el).attr('class') || '';
           var bottles = $(el).attr('data-bottles');
-          if (/checkout|order|buy|clickbank|payment|hotmart|monetizze|eduzz|kiwify|pay\./i.test(href)) found = true;
+          if (/checkout|order|buy|clickbank|payment|hotmart|monetizze|eduzz|kiwify|pay\.|checkout-ds24|digistore/i.test(href)) found = true;
           if (/buylink/i.test(cls)) found = true;
           if (bottles !== undefined) found = true;
         });
+        // Also check <script> tags for JS-embedded checkout URLs
+        if (!found) {
+          $('script').each(function(_, el) {
+            var content = $(el).html() || '';
+            if (/checkout|clickbank|hotmart|monetizze|eduzz|kiwify|checkout-ds24|digistore/i.test(content)) found = true;
+          });
+        }
         return found;
       })()
     }
@@ -1871,6 +1971,15 @@ app.post('/api/export-zip', requestTimeout(120000), async (req, res) => {
   const downloaded = new Map(); // absUrl → { buffer, localPath }
 
   if (pageUrl) {
+    // Validate pageUrl against SSRF blocklist
+    try {
+      const parsedPageUrl = new URL(pageUrl);
+      if (!['http:', 'https:'].includes(parsedPageUrl.protocol) || isBlockedHostname(parsedPageUrl.hostname)) {
+        return res.status(400).json({ error: 'pageUrl blocked by security policy' });
+      }
+    } catch {
+      return res.status(400).json({ error: 'Invalid pageUrl' });
+    }
     const $$ = cheerio.load(outputHtml, { decodeEntities: false });
     const assets = collectAssets($$, pageUrl, usedPaths); // absUrl → localPath
 

@@ -2254,7 +2254,8 @@
       return state.checkoutLinks.map(function(link, i) {
         var input = checkoutContainer.querySelector('input[data-link-index="' + i + '"]');
         var payload = { selector: link.selector, affiliateHref: input ? input.value.trim() : (link.href || '') };
-        if (link.jsEmbedded && link.href) payload.originalHref = link.href;
+        if (link.href) payload.originalHref = link.href;
+        if (link.jsEmbedded) payload.jsEmbedded = true;
         return payload;
       });
     }
@@ -3115,6 +3116,16 @@
         var safeUrl = state.fetchedUrl.replace(/"/g, '%22');
         var injected = html.replace(/(<head[^>]*>)/i, '$1<base href="' + safeUrl + '">');
         html = (injected !== html) ? injected : '<base href="' + safeUrl + '">' + html;
+      }
+      // Reveal VTURB-delay hidden sections (.esconder) immediately in preview
+      // so the user can see the full page before exporting
+      var revealCss = '<style data-vsl-preview="1">' +
+        '.esconder { display: block !important; opacity: 1 !important; visibility: visible !important; }' +
+        '</style>';
+      if (/<\/head>/i.test(html)) {
+        html = html.replace(/<\/head>/i, revealCss + '</head>');
+      } else {
+        html = revealCss + html;
       }
       return html;
     }

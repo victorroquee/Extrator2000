@@ -472,16 +472,34 @@ async function fetchImageDimensions(url) {
 async function detectBundleImages($, checkoutLinks, pageUrl) {
   const result = {};
 
-  // ── Strategy 1: DOM-based (existing logic) ──
+  // ── Strategy 1: DOM-based — find checkout element by href (more reliable than CSS selector) ──
   const bundleLinks = (checkoutLinks || []).filter((l) => l.bundle !== null && l.bundle !== undefined);
 
   for (const link of bundleLinks) {
     const bundle = link.bundle;
     if (result[bundle]) continue;
 
+    // Find checkout element by href first (reliable), fall back to selector
     let el;
-    try { el = $(link.selector); } catch (_) { continue; }
+    if (link.href) {
+      el = $(`a[href="${link.href.replace(/"/g, '\\"')}"]`);
+      if (!el || el.length === 0) {
+        // Try button with onclick containing the href
+        $('button').each((_, btnEl) => {
+          if (!el || el.length === 0) {
+            const onclick = $(btnEl).attr('onclick') || '';
+            if (onclick.includes(link.href)) el = $(btnEl);
+          }
+        });
+      }
+    }
+    if ((!el || el.length === 0) && link.selector) {
+      try { el = $(link.selector); } catch (_) { /* skip */ }
+    }
     if (!el || el.length === 0) continue;
+
+    // When multiple elements match, use only the first one
+    if (el.length > 1) el = el.first();
 
     const ancestor = el.closest('section, article, div');
     if (!ancestor || ancestor.length === 0) continue;
@@ -1234,92 +1252,82 @@ function collectAssets($, pageUrl, usedPaths) {
 function applyCheckoutLinks(outputHtml, checkoutLinks) {
   if (!Array.isArray(checkoutLinks) || checkoutLinks.length === 0) return outputHtml;
 
-  // Selector-based replacement
-  const withSelector = checkoutLinks.filter((l) => l.selector && (l.affiliateHref || l.affiliateUrl));
-  if (withSelector.length > 0) {
-    const $2 = cheerio.load(outputHtml, { decodeEntities: false });
-    for (const link of withSelector) {
-      const affiliateHref = link.affiliateHref || link.affiliateUrl;
-      try {
-        $2(link.selector).each((_, el) => {
-          if ($2(el).attr('href') !== undefined) $2(el).attr('href', affiliateHref);
-          if ($2(el).attr('onclick') !== undefined) {
-            const oldOnclick = $2(el).attr('onclick') || '';
-            const checkoutUrlMatch = oldOnclick.match(/https?:\/\/[^'"\s);>]+/);
-            if (checkoutUrlMatch) {
-              $2(el).attr('onclick', oldOnclick.replace(checkoutUrlMatch[0], affiliateHref));
-            }
-          }
-        });
-      } catch (_) {
-        console.warn(`[export] invalid selector skipped: ${link.selector}`);
+  const $ = cheerio.load(outputHtml, { decodeEntities: false });
+
+  // Strategy 1: href-based matching (most reliable — matches by original checkout URL)
+  const withHref = checkoutLinks.filter((l) => l.originalHref && (l.affiliateHref || l.affiliateUrl));
+  for (const link of withHref) {
+    const affiliateHref = link.affiliateHref || link.affiliateUrl;
+    if (!affiliateHref) continue;
+
+    // Replace in <a>/<button> href attributes
+    $('a, button').each((_, el) => {
+      const href = $(el).attr('href') || '';
+      if (href === link.originalHref) {
+        $(el).attr('href', affiliateHref);
       }
-    }
-    outputHtml = $2.html();
-  }
+      // Also check onclick for the original URL
+      const onclick = $(el).attr('onclick') || '';
+      if (onclick.includes(link.originalHref)) {
+        $(el).attr('onclick', onclick.split(link.originalHref).join(affiliateHref));
+      }
+    });
 
-  // No-selector replacement: split into JS-embedded (have originalHref) and truly generic
-  const noSelector = checkoutLinks.filter((l) => !l.selector && (l.affiliateHref || l.affiliateUrl));
-
-  // JS-embedded links with originalHref: do targeted string replacement in <script> tags
-  const jsEmbedded = noSelector.filter((l) => l.originalHref);
-  if (jsEmbedded.length > 0) {
-    const $3 = cheerio.load(outputHtml, { decodeEntities: false });
-    $3('script').each((_, el) => {
-      let content = $3(el).html() || '';
-      if (!content) return;
-      let changed = false;
-      for (const link of jsEmbedded) {
-        const affiliateHref = link.affiliateHref || link.affiliateUrl;
+    // Replace in <script> tags (for JS-embedded checkout URLs)
+    if (link.jsEmbedded) {
+      $('script').each((_, el) => {
+        let content = $(el).html() || '';
         if (content.includes(link.originalHref)) {
-          content = content.split(link.originalHref).join(affiliateHref);
-          changed = true;
+          $(el).html(content.split(link.originalHref).join(affiliateHref));
         }
-      }
-      if (changed) $3(el).html(content);
-    });
-    // Also replace in href/onclick attributes for completeness
-    $3('a, button').each((_, el) => {
-      for (const link of jsEmbedded) {
-        const affiliateHref = link.affiliateHref || link.affiliateUrl;
-        const href = $3(el).attr('href') || '';
-        if (href === link.originalHref) $3(el).attr('href', affiliateHref);
-        const onclick = $3(el).attr('onclick') || '';
-        if (onclick.includes(link.originalHref)) {
-          $3(el).attr('onclick', onclick.split(link.originalHref).join(affiliateHref));
-        }
-      }
-    });
-    outputHtml = $3.html();
+      });
+    }
   }
 
-  // Truly generic no-selector links (no originalHref): bulk replace checkout-pattern URLs
-  const generic = noSelector.filter((l) => !l.originalHref);
+  // Strategy 2: selector-based fallback (only for links without originalHref)
+  const selectorOnly = checkoutLinks.filter((l) => !l.originalHref && l.selector && (l.affiliateHref || l.affiliateUrl));
+  for (const link of selectorOnly) {
+    const affiliateHref = link.affiliateHref || link.affiliateUrl;
+    try {
+      $(link.selector).each((_, el) => {
+        if ($(el).attr('href') !== undefined) $(el).attr('href', affiliateHref);
+        if ($(el).attr('onclick') !== undefined) {
+          const oldOnclick = $(el).attr('onclick') || '';
+          const checkoutUrlMatch = oldOnclick.match(/https?:\/\/[^'"\s);>]+/);
+          if (checkoutUrlMatch) {
+            $(el).attr('onclick', oldOnclick.replace(checkoutUrlMatch[0], affiliateHref));
+          }
+        }
+      });
+    } catch (_) {
+      console.warn(`[export] invalid selector skipped: ${link.selector}`);
+    }
+  }
+
+  // Strategy 3: generic bulk replace (no originalHref, no selector)
+  const generic = checkoutLinks.filter((l) => !l.originalHref && !l.selector && (l.affiliateHref || l.affiliateUrl));
   if (generic.length > 0) {
     if (generic.length > 1) {
-      console.warn(`[export] ${generic.length} no-selector checkout links provided; only the first will be applied. Use selectors to target multiple distinct checkout buttons.`);
+      console.warn(`[export] ${generic.length} generic checkout links; only the first will be applied.`);
     }
-    const $4 = cheerio.load(outputHtml, { decodeEntities: false });
     const affiliateHref = generic[0].affiliateHref || generic[0].affiliateUrl;
 
-    // Replace in <a>/<button> href and onclick
-    $4('a, button').each((_, el) => {
-      const href = $4(el).attr('href') || '';
-      const onclick = $4(el).attr('onclick') || '';
+    $('a, button').each((_, el) => {
+      const href = $(el).attr('href') || '';
+      const onclick = $(el).attr('onclick') || '';
       const isCheckout = CHECKOUT_URL_PATTERNS.some((p) => p.test(href) || p.test(onclick));
       if (!isCheckout) return;
-      if (href) $4(el).attr('href', affiliateHref);
+      if (href) $(el).attr('href', affiliateHref);
       if (onclick) {
         const checkoutUrlMatch = onclick.match(/https?:\/\/[^'"\s);>]+/);
         if (checkoutUrlMatch) {
-          $4(el).attr('onclick', onclick.replace(checkoutUrlMatch[0], affiliateHref));
+          $(el).attr('onclick', onclick.replace(checkoutUrlMatch[0], affiliateHref));
         }
       }
     });
 
-    // Also replace checkout URLs inside <script> tags
-    $4('script').each((_, el) => {
-      let content = $4(el).html() || '';
+    $('script').each((_, el) => {
+      let content = $(el).html() || '';
       if (!content) return;
       const urlRegex = /https?:\/\/[^'"`\s]+/g;
       let changed = false;
@@ -1330,13 +1338,11 @@ function applyCheckoutLinks(outputHtml, checkoutLinks) {
         }
         return foundUrl;
       });
-      if (changed) $4(el).html(content);
+      if (changed) $(el).html(content);
     });
-
-    outputHtml = $4.html();
   }
 
-  return outputHtml;
+  return $.html();
 }
 
 // ── Shared: build modified HTML from export payload ──────────────────────────
@@ -1378,51 +1384,73 @@ function buildExportHtml({ html, headerPixel, headerPreload, vslembed, checkoutL
     });
   }
 
-  // BUNDLE-03: Replace bundle image sources globally (D-12, D-13)
+  // BUNDLE-03: Replace bundle image sources (D-12, D-13)
+  // Handles the case where multiple bundles share the same originalSrc by replacing
+  // each occurrence in DOM order (bundle 2 → 1st occurrence, bundle 3 → 2nd, etc.)
   if (bundleImages && typeof bundleImages === 'object') {
-    for (const [, imgData] of Object.entries(bundleImages)) {
-      const originalSrc = imgData.originalSrc;
-      const newSrc = imgData.newSrc;
-      const dataImage = imgData.dataImage; // JS-rendered image filename (from data-image attr)
-      if (!newSrc || originalSrc === newSrc) continue;
+    const entries = Object.entries(bundleImages)
+      .filter(([, d]) => d.newSrc && d.originalSrc !== d.newSrc)
+      .filter(([, d]) => { try { new URL(d.newSrc); return true; } catch { return false; } });
 
-      // Validate newSrc is a valid URL (T-05-01 mitigation)
-      try { new URL(newSrc); } catch { continue; }
-
-      // Replace data-image attributes (for JS-rendered product pages like ClickBank/products.js)
-      if (dataImage) {
+    // Replace data-image attributes (for JS-rendered product pages)
+    for (const [, imgData] of entries) {
+      if (imgData.dataImage) {
         $('a[data-image]').each((_, el) => {
-          if ($(el).attr('data-image') === dataImage) {
-            // Extract just the filename from newSrc for data-image replacement
-            const newFilename = newSrc.split('/').pop().split('?')[0];
+          if ($(el).attr('data-image') === imgData.dataImage) {
+            const newFilename = imgData.newSrc.split('/').pop().split('?')[0];
             $(el).attr('data-image', newFilename);
           }
         });
       }
+    }
 
-      if (originalSrc) {
-        // Replace in all <img> src attributes matching the original (D-12)
+    // Group entries by originalSrc to handle shared-image case
+    const bySrc = {};
+    for (const [, imgData] of entries) {
+      if (!imgData.originalSrc) continue;
+      if (!bySrc[imgData.originalSrc]) bySrc[imgData.originalSrc] = [];
+      bySrc[imgData.originalSrc].push(imgData.newSrc);
+    }
+
+    for (const [originalSrc, newSrcs] of Object.entries(bySrc)) {
+      if (newSrcs.length === 1) {
+        // Single bundle using this src — replace ALL occurrences globally
         $('img').each((_, el) => {
-          if ($(el).attr('src') === originalSrc) {
-            $(el).attr('src', newSrc);
-          }
+          if ($(el).attr('src') === originalSrc) $(el).attr('src', newSrcs[0]);
         });
-        // Replace in <source> src attributes
         $('source').each((_, el) => {
+          if ($(el).attr('src') === originalSrc) $(el).attr('src', newSrcs[0]);
+        });
+      } else {
+        // Multiple bundles share the same originalSrc — replace in DOM order
+        let idx = 0;
+        $('img').each((_, el) => {
+          if (idx >= newSrcs.length) return;
           if ($(el).attr('src') === originalSrc) {
-            $(el).attr('src', newSrc);
+            $(el).attr('src', newSrcs[idx]);
+            idx++;
           }
         });
-        // Replace in srcset attributes (img and source) — each entry is "url descriptor"
-        $('img[srcset], source[srcset]').each((_, el) => {
-          const srcset = $(el).attr('srcset');
-          if (srcset && srcset.includes(originalSrc)) {
-            $(el).attr('srcset', srcset.split(',').map((entry) => {
-              return entry.trim().replace(originalSrc, newSrc);
-            }).join(', '));
+        // Also handle <source> tags for responsive images
+        $('source').each((_, el) => {
+          if (idx >= newSrcs.length) return;
+          if ($(el).attr('src') === originalSrc) {
+            $(el).attr('src', newSrcs[idx]);
+            idx++;
           }
         });
       }
+
+      // Replace in srcset attributes
+      $('img[srcset], source[srcset]').each((_, el) => {
+        const srcset = $(el).attr('srcset');
+        if (srcset && srcset.includes(originalSrc)) {
+          // Use the first newSrc for srcset (best effort for shared-src case)
+          $(el).attr('srcset', srcset.split(',').map((entry) => {
+            return entry.trim().replace(originalSrc, newSrcs[0]);
+          }).join(', '));
+        }
+      });
     }
   }
 
@@ -1513,8 +1541,21 @@ function buildExportHtml({ html, headerPixel, headerPreload, vslembed, checkoutL
     const validReplacements = colorReplacements.filter(r => r.oldColor && r.newColor && r.oldColor !== r.newColor);
 
     // 1) Direct string replacement in HTML (case-insensitive, non-blocking)
+    // Replace both hex AND rgb() forms so external CSS with rgb() values gets patched too
     for (const { oldColor, newColor } of validReplacements) {
       outputHtml = replaceAllCI(outputHtml, oldColor, newColor);
+      // Also replace rgb() form of the old hex color
+      const hexMatch = oldColor.match(/^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i);
+      if (hexMatch) {
+        const r = parseInt(hexMatch[1], 16);
+        const g = parseInt(hexMatch[2], 16);
+        const b = parseInt(hexMatch[3], 16);
+        // Match rgb(R, G, B) with variable spacing
+        const rgbPattern = `rgb(${r}, ${g}, ${b})`;
+        const rgbNoSpace = `rgb(${r},${g},${b})`;
+        outputHtml = replaceAllCI(outputHtml, rgbPattern, newColor);
+        if (rgbPattern !== rgbNoSpace) outputHtml = replaceAllCI(outputHtml, rgbNoSpace, newColor);
+      }
     }
 
     // 2) Inject CSS override <style> block
@@ -2052,6 +2093,15 @@ app.post('/api/export-zip', requestTimeout(120000), async (req, res) => {
       for (const { oldColor, newColor } of validColorRepl) {
         const escaped = oldColor.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
         cssText = cssText.replace(new RegExp(escaped, 'gi'), newColor);
+        // Also replace rgb() form of the hex color in CSS files
+        const hexMatch = oldColor.match(/^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i);
+        if (hexMatch) {
+          const r = parseInt(hexMatch[1], 16);
+          const g = parseInt(hexMatch[2], 16);
+          const b = parseInt(hexMatch[3], 16);
+          const rgbEscaped = `rgb\\(\\s*${r}\\s*,\\s*${g}\\s*,\\s*${b}\\s*\\)`;
+          cssText = cssText.replace(new RegExp(rgbEscaped, 'gi'), newColor);
+        }
       }
       if (productNameOld && productNameNew && productNameOld !== productNameNew) {
         const escapedName = productNameOld.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');

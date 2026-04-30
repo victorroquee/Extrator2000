@@ -328,14 +328,19 @@ function detectCheckoutLinks($, html) {
     const contextText = `${anchorText} ${parentText}`;
     const bundle = detectBundle(contextText);
 
-    const checkoutUrl = href || null;
+    // Extract checkout URL from href or onclick
+    let checkoutUrl = href || null;
+    if (!checkoutUrl && onclick) {
+      const onclickUrlMatch = onclick.match(/https?:\/\/[^'"\s);>]+/);
+      if (onclickUrlMatch) checkoutUrl = onclickUrlMatch[0];
+    }
     if (checkoutUrl) seenUrls.add(checkoutUrl);
 
     links.push({
       href: checkoutUrl,
       selector: buildCssSelector($, el, usedSelectors),
       anchorText,
-      platform: classifyPlatform(href),
+      platform: classifyPlatform(checkoutUrl || ''),
       bundle,
     });
   });
@@ -1587,11 +1592,13 @@ function buildExportHtml({ html, headerPixel, headerPreload, vslembed, checkoutL
         lines.push('}');
       }
 
-      const overrideBlock = `<style data-vsl-color-override="1">\n${lines.join('\n')}\n</style>`;
-      if (/<\/head>/i.test(outputHtml)) {
-        outputHtml = outputHtml.replace(/<\/head>/i, `${overrideBlock}\n</head>`);
-      } else {
-        outputHtml = overrideBlock + outputHtml;
+      if (lines.length > 0) {
+        const overrideBlock = `<style data-vsl-color-override="1">\n${lines.join('\n')}\n</style>`;
+        if (/<\/head>/i.test(outputHtml)) {
+          outputHtml = outputHtml.replace(/<\/head>/i, `${overrideBlock}\n</head>`);
+        } else {
+          outputHtml = overrideBlock + outputHtml;
+        }
       }
     }
   }
@@ -1997,8 +2004,8 @@ app.post('/api/export-zip', requestTimeout(120000), async (req, res) => {
       const cacheBust = Date.now().toString(36);
       $$u('link[rel="stylesheet"]').each((_, el) => {
         const href = $$u(el).attr('href');
-        if (href && href.endsWith('.css')) {
-          $$u(el).attr('href', href + '?v=' + cacheBust);
+        if (href && /\.css($|\?)/i.test(href)) {
+          $$u(el).attr('href', href + (href.includes('?') ? '&' : '?') + 'v=' + cacheBust);
         }
       });
       outputHtml = $$u.html();
@@ -2106,8 +2113,8 @@ app.post('/api/export-zip', requestTimeout(120000), async (req, res) => {
       const cacheBust = Date.now().toString(36);
       $$2('link[rel="stylesheet"]').each((_, el) => {
         const href = $$2(el).attr('href');
-        if (href && href.endsWith('.css')) {
-          $$2(el).attr('href', href + '?v=' + cacheBust);
+        if (href && /\.css($|\?)/i.test(href)) {
+          $$2(el).attr('href', href + (href.includes('?') ? '&' : '?') + 'v=' + cacheBust);
         }
       });
     }

@@ -1541,20 +1541,30 @@ function buildExportHtml({ html, headerPixel, headerPreload, vslembed, checkoutL
     const validReplacements = colorReplacements.filter(r => r.oldColor && r.newColor && r.oldColor !== r.newColor);
 
     // 1) Direct string replacement in HTML (case-insensitive, non-blocking)
-    // Replace both hex AND rgb() forms so external CSS with rgb() values gets patched too
+    // Replace hex, rgb(), and rgba() forms so all CSS color formats get patched
     for (const { oldColor, newColor } of validReplacements) {
       outputHtml = replaceAllCI(outputHtml, oldColor, newColor);
-      // Also replace rgb() form of the old hex color
+      // Also replace rgb()/rgba() forms of the old hex color
       const hexMatch = oldColor.match(/^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i);
       if (hexMatch) {
         const r = parseInt(hexMatch[1], 16);
         const g = parseInt(hexMatch[2], 16);
         const b = parseInt(hexMatch[3], 16);
-        // Match rgb(R, G, B) with variable spacing
+        // Replace rgb(R, G, B) → newColor
         const rgbPattern = `rgb(${r}, ${g}, ${b})`;
         const rgbNoSpace = `rgb(${r},${g},${b})`;
         outputHtml = replaceAllCI(outputHtml, rgbPattern, newColor);
         if (rgbPattern !== rgbNoSpace) outputHtml = replaceAllCI(outputHtml, rgbNoSpace, newColor);
+        // Replace rgba(R, G, B, A) → rgba(newR, newG, newB, A) preserving alpha
+        const newHexMatch = newColor.match(/^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i);
+        if (newHexMatch) {
+          const nr = parseInt(newHexMatch[1], 16);
+          const ng = parseInt(newHexMatch[2], 16);
+          const nb = parseInt(newHexMatch[3], 16);
+          const rgbaRegex = new RegExp(
+            `rgba\\(\\s*${r}\\s*,\\s*${g}\\s*,\\s*${b}\\s*,\\s*([^)]+)\\)`, 'gi');
+          outputHtml = outputHtml.replace(rgbaRegex, `rgba(${nr}, ${ng}, ${nb}, $1)`);
+        }
       }
     }
 
@@ -1976,12 +1986,25 @@ app.post('/api/export-zip', requestTimeout(120000), async (req, res) => {
     });
     archive.pipe(res);
 
-    archive.append(outputHtml, { name: 'index.html' });
+    // Cache bust CSS links in output HTML when colors/names were modified
     const validColorReplUpload = Array.isArray(colorReplacements)
       ? colorReplacements.filter(r => r.oldColor && r.newColor && r.oldColor !== r.newColor)
       : [];
     const hasReplUpload = validColorReplUpload.length > 0
       || (productNameOld && productNameNew && productNameOld !== productNameNew);
+    if (hasReplUpload) {
+      const $$u = cheerio.load(outputHtml, { decodeEntities: false });
+      const cacheBust = Date.now().toString(36);
+      $$u('link[rel="stylesheet"]').each((_, el) => {
+        const href = $$u(el).attr('href');
+        if (href && href.endsWith('.css')) {
+          $$u(el).attr('href', href + '?v=' + cacheBust);
+        }
+      });
+      outputHtml = $$u.html();
+    }
+
+    archive.append(outputHtml, { name: 'index.html' });
     for (const [relativePath, buffer] of session.assets) {
       if (relativePath !== 'index.html' && relativePath !== 'index.htm') {
         if (hasReplUpload && relativePath.endsWith('.css')) {
@@ -1989,6 +2012,24 @@ app.post('/api/export-zip', requestTimeout(120000), async (req, res) => {
           for (const { oldColor, newColor } of validColorReplUpload) {
             const escaped = oldColor.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
             cssText = cssText.replace(new RegExp(escaped, 'gi'), newColor);
+            // Also replace rgb() and rgba() forms
+            const hexMatch = oldColor.match(/^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i);
+            if (hexMatch) {
+              const r = parseInt(hexMatch[1], 16);
+              const g = parseInt(hexMatch[2], 16);
+              const b = parseInt(hexMatch[3], 16);
+              const rgbEscaped = `rgb\\(\\s*${r}\\s*,\\s*${g}\\s*,\\s*${b}\\s*\\)`;
+              cssText = cssText.replace(new RegExp(rgbEscaped, 'gi'), newColor);
+              const newHexMatch = newColor.match(/^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i);
+              if (newHexMatch) {
+                const nr = parseInt(newHexMatch[1], 16);
+                const ng = parseInt(newHexMatch[2], 16);
+                const nb = parseInt(newHexMatch[3], 16);
+                const rgbaRegex = new RegExp(
+                  `rgba\\(\\s*${r}\\s*,\\s*${g}\\s*,\\s*${b}\\s*,\\s*([^)]+)\\)`, 'gi');
+                cssText = cssText.replace(rgbaRegex, `rgba(${nr}, ${ng}, ${nb}, $1)`);
+              }
+            }
           }
           if (productNameOld && productNameNew && productNameOld !== productNameNew) {
             const escapedName = productNameOld.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -2059,6 +2100,18 @@ app.post('/api/export-zip', requestTimeout(120000), async (req, res) => {
     $$2('img[src]').each((_, el) => rewriteAttr(el, 'src'));
     $$2('source[src]').each((_, el) => rewriteAttr(el, 'src'));
 
+    // Cache bust: add ?v= to CSS links when colors/names were modified
+    // Forces browsers to fetch updated CSS files instead of serving stale cache
+    if (hasTextReplacements) {
+      const cacheBust = Date.now().toString(36);
+      $$2('link[rel="stylesheet"]').each((_, el) => {
+        const href = $$2(el).attr('href');
+        if (href && href.endsWith('.css')) {
+          $$2(el).attr('href', href + '?v=' + cacheBust);
+        }
+      });
+    }
+
     outputHtml = $$2.html();
   }
 
@@ -2093,14 +2146,25 @@ app.post('/api/export-zip', requestTimeout(120000), async (req, res) => {
       for (const { oldColor, newColor } of validColorRepl) {
         const escaped = oldColor.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
         cssText = cssText.replace(new RegExp(escaped, 'gi'), newColor);
-        // Also replace rgb() form of the hex color in CSS files
+        // Also replace rgb() and rgba() forms
         const hexMatch = oldColor.match(/^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i);
         if (hexMatch) {
           const r = parseInt(hexMatch[1], 16);
           const g = parseInt(hexMatch[2], 16);
           const b = parseInt(hexMatch[3], 16);
+          // rgb(R, G, B) → newColor
           const rgbEscaped = `rgb\\(\\s*${r}\\s*,\\s*${g}\\s*,\\s*${b}\\s*\\)`;
           cssText = cssText.replace(new RegExp(rgbEscaped, 'gi'), newColor);
+          // rgba(R, G, B, A) → rgba(newR, newG, newB, A) preserving alpha
+          const newHexMatch = newColor.match(/^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i);
+          if (newHexMatch) {
+            const nr = parseInt(newHexMatch[1], 16);
+            const ng = parseInt(newHexMatch[2], 16);
+            const nb = parseInt(newHexMatch[3], 16);
+            const rgbaRegex = new RegExp(
+              `rgba\\(\\s*${r}\\s*,\\s*${g}\\s*,\\s*${b}\\s*,\\s*([^)]+)\\)`, 'gi');
+            cssText = cssText.replace(rgbaRegex, `rgba(${nr}, ${ng}, ${nb}, $1)`);
+          }
         }
       }
       if (productNameOld && productNameNew && productNameOld !== productNameNew) {
